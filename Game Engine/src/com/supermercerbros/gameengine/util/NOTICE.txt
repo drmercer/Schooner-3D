@@ -1,0 +1,5 @@
+# This is the official list of the AUTHORS of libgdx
+# for copyright purposes.
+
+Mario Zechner <badlogicgames@gmail.com>
+Nathan Sweet <nathan.sweet@gmail.com>
