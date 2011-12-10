@@ -1,0 +1,8 @@
+precision mediump float;
+attribute vec4 a_pos;
+attribute vec3 a_mtl;
+varying vec3 v_color;
+void main() {
+	gl_Position = a_pos;
+	v_color = a_mtl;
+}
