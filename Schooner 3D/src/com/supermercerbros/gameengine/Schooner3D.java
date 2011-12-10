@@ -1,6 +1,6 @@
 package com.supermercerbros.gameengine;
 
-public class TheGameEngine {
+public class Schooner3D {
 	/**
 	 * The default VBO size, in bytes.
 	 */

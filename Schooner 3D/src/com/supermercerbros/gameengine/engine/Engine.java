@@ -5,7 +5,7 @@ import java.util.Collection;
 
 import android.util.Log;
 
-import com.supermercerbros.gameengine.TheGameEngine;
+import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
@@ -66,8 +66,8 @@ public class Engine implements Runnable {
 		this.vboB = new int[pipe.VBO_capacity / 4];
 		this.iboA = new short[pipe.IBO_capacity / 2];
 		this.iboB = new short[pipe.IBO_capacity / 2];
-		this.mmA = new float[TheGameEngine.maxObjects];
-		this.mmB = new float[TheGameEngine.maxObjects];
+		this.mmA = new float[Schooner3D.maxObjects];
+		this.mmB = new float[Schooner3D.maxObjects];
 		this.lightA = new float[3];
 		this.lightB = new float[3];
 		this.colorA = new float[3];

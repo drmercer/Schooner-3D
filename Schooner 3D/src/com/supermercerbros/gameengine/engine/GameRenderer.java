@@ -15,7 +15,7 @@ import android.opengl.Matrix;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.Log;
 
-import com.supermercerbros.gameengine.TheGameEngine;
+import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.Metadata;
 
 public class GameRenderer implements Renderer {
@@ -158,10 +158,10 @@ public class GameRenderer implements Renderer {
 		GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, pipe.IBO_capacity,
 				ibo, GLES20.GL_DYNAMIC_DRAW);
 
-		GLES20.glClearColor(TheGameEngine.backgroundColor[0],
-				TheGameEngine.backgroundColor[1],
-				TheGameEngine.backgroundColor[2],
-				TheGameEngine.backgroundColor[3]);
+		GLES20.glClearColor(Schooner3D.backgroundColor[0],
+				Schooner3D.backgroundColor[1],
+				Schooner3D.backgroundColor[2],
+				Schooner3D.backgroundColor[3]);
 		// GLES20.glEnable(GLES20.GL_CULL_FACE);
 		// GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 

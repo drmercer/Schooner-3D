@@ -9,6 +9,8 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.opengl.ETC1Util;
+import android.opengl.ETC1Util.ETC1Texture;
 
 public class TextureLib {
 	@SuppressWarnings("unused")
@@ -57,7 +59,7 @@ public class TextureLib {
 		}
 
 		String name = res.getResourceEntryName(id);
-//		textures.put(name, new Texture(bmp)); TODO subclass Texture
+		textures.put(name, new BitmapTexture(bmp));
 	}
 
 	/**
@@ -76,13 +78,19 @@ public class TextureLib {
 			throw new IllegalStateException(
 					"TextureLib has not been initialized");
 
+		String[] pathParts = fileName.split("/");
+		String name = pathParts[pathParts.length - 1];
+		String[] nameParts = name.split("\\.");
+		String ext = nameParts[nameParts.length - 1];
+		
 		InputStream is = am.open(fileName);
-		Bitmap bmp = BitmapFactory.decodeStream(is, null, opts);
-
-		String[] parts = fileName.split("/");
-		String name = parts[parts.length - 1];
-//		textures.put(name, new Texture(bmp)); TODO subclass Texture
-
+		if(ext.equals("pkm")){
+			ETC1Texture tex = ETC1Util.createTexture(is);
+			textures.put(name, new ETC1CompressedTexture(tex));
+		} else {
+			Bitmap tex = BitmapFactory.decodeStream(is, null, opts);
+			textures.put(name, new BitmapTexture(tex));
+		}
 		return name;
 	}
 

@@ -6,7 +6,7 @@ import java.util.concurrent.DelayQueue;
 
 import android.content.Context;
 
-import com.supermercerbros.gameengine.TheGameEngine;
+import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
 
@@ -18,8 +18,8 @@ public class DataPipe {
 	@SuppressWarnings("unused")
 	private static final String TAG = "com.supermercerbros.gameengine.engine.DataPipe";
 
-	final int VBO_capacity = TheGameEngine.vboSize;
-	final int IBO_capacity = TheGameEngine.iboSize;
+	final int VBO_capacity = Schooner3D.vboSize;
+	final int IBO_capacity = Schooner3D.iboSize;
 
 	/**
 	 * Used for passing commands from the UI thread to the {@link Engine}

@@ -29,7 +29,7 @@ public class TestActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate() called");
 		float[] bg = {1.0f, 1.0f, 1.0f, 1.0f};
-		TheGameEngine.backgroundColor = bg;
+		Schooner3D.backgroundColor = bg;
 		
 		pipe = new DataPipe(this);
 		
