@@ -8,8 +8,6 @@ import android.opengl.GLES20;
  * or environment map. (Note that these maps would require specialized
  * materials, which Schooner does not include at the current time.)
  * 
- * @author Daniel
- * 
  */
 public abstract class Texture {
 	/**
