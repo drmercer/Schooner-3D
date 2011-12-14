@@ -45,10 +45,11 @@ public class TextureLib {
 	/**
 	 * @param id
 	 *            The Resource id of the texture to load.
+	 * @return 
 	 * @throws IOException
 	 *             If the texture could not be loaded.
 	 */
-	public static synchronized void loadTexture(int id) throws IOException {
+	public static synchronized String loadTexture(int id) throws IOException {
 		if (!initialized)
 			throw new IllegalStateException(
 					"TextureLib has not been initialized");
@@ -60,6 +61,7 @@ public class TextureLib {
 
 		String name = res.getResourceEntryName(id);
 		textures.put(name, new BitmapTexture(bmp));
+		return name;
 	}
 
 	/**
@@ -94,8 +96,12 @@ public class TextureLib {
 		return name;
 	}
 
-	public static synchronized Texture getTexture(String name) {
-		return textures.get(name);
+	public static synchronized Texture getTexture(String name) throws IOException {
+		Texture tex = textures.get(name);
+		if (tex == null){
+			throw new IOException("Texture \"" + name + "\" could not be found");
+		}
+		return tex;
 	}
 
 }

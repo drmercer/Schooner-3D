@@ -28,15 +28,16 @@ public class TestActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "onCreate() called");
-		float[] bg = {1.0f, 1.0f, 1.0f, 1.0f};
+		float[] bg = {0.5f, 1.0f, 0.7f, 1.0f};
 		Schooner3D.backgroundColor = bg;
 		
 		pipe = new DataPipe(this);
 		
+		String texName = "";
 		try {
-			TextureLib.loadTexture(R.drawable.icon);
+			texName = TextureLib.loadTexture(R.drawable.test_texture);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Log.w(TAG, e);
 		}
 
 		view = new GameView(this); 
@@ -44,7 +45,7 @@ public class TestActivity extends Activity {
 
 		cam = new Camera();
 		engine = new Engine(pipe, cam);
-		engine.addObject(quad());
+		engine.addObject(quad(texName));
 		engine.addObject(tri());
 		engine.setLight(0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f);
 		engine.start();
@@ -53,7 +54,7 @@ public class TestActivity extends Activity {
 		setContentView(view);
 	}
 
-	private GameObject quad() {
+	private GameObject quad(String texName) {
 		float[] verts = {0.1f, -0.6f, 0.0f, 0.6f, -0.6f, 0.0f, 0.6f,
 				0.6f, 0.0f, 0.1f, 0.6f, 0.0f};
 		float[] uvs = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
@@ -61,7 +62,7 @@ public class TestActivity extends Activity {
 		short[] indices = { 0, 1, 2, 0, 2, 3};
 		float[] normals = {};
 
-		GameObject obj = new GameObject(verts, indices, uvs, normals, new TexturedMaterial("icon"));
+		GameObject obj = new GameObject(verts, indices, uvs, normals, new TexturedMaterial(texName));
 		return obj;
 	}
 	

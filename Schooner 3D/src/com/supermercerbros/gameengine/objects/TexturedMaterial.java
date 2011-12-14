@@ -1,5 +1,7 @@
 package com.supermercerbros.gameengine.objects;
 
+import java.io.IOException;
+
 import android.opengl.GLES20;
 
 import com.supermercerbros.gameengine.engine.ShaderLib;
@@ -32,8 +34,13 @@ public class TexturedMaterial extends Material {
 		attachAttrib(a_normal, 0.0f, 0.0f, 1.0f);
 		attachAttrib(a_mtl, 2);
 				
-		TextureLib.getTexture(texture).use(0, ShaderLib.S_BASEMAP,
-				this.program.getHandle());
+		try {
+			TextureLib.getTexture(texture)
+				.use(0, ShaderLib.S_BASEMAP, 
+						this.program.getHandle());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 		return response;
 	}

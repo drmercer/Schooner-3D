@@ -2,17 +2,21 @@ package com.supermercerbros.gameengine;
 
 public class Schooner3D {
 	/**
+	 * The default maximum number of objects.
+	 */
+	public static final int DEFAULT_MAX_OBJECTS = 100;
+	/**
+	 * The approximate number of vertices per object.
+	 */
+	private static final int vertsPerObject = 500;
+	/**
 	 * The default VBO size, in bytes.
 	 */
-	public static final int DEFAULT_VBO_SIZE = 4 * (3 + 3 + 2) * 2000;
+	public static final int DEFAULT_VBO_SIZE = 4 * (3 + 3 + 2) * DEFAULT_MAX_OBJECTS * vertsPerObject;
 	/**
 	 * The default IBO size, in bytes.
 	 */
-	public static final int DEFAULT_IBO_SIZE = 2 * 3 * 3000;
-	/**
-	 * The default maximum number of objects.
-	 */
-	public static final int DEFAULT_MAX_OBJECTS = 150;
+	public static final int DEFAULT_IBO_SIZE = 2 * 3 * DEFAULT_MAX_OBJECTS * vertsPerObject;
 	/**
 	 * The default render backgroundColor color.
 	 */
