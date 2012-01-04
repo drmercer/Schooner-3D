@@ -31,9 +31,9 @@ public class BasicMaterial extends Material {
 	public int loadObjectToVBO(GameObject obj, int[] vbo, int offset) {
 		int numOfVerts = obj.verts.length / 3;
 		
-		clearLoadPosition();
-		loadArrayToVbo(obj.verts, vbo, offset, 3, numOfVerts); // Vertex position data
-		loadArrayToVbo(obj.mtl, vbo, offset, 3, numOfVerts);   // Vertex color data
+		setLoadOffset(offset);
+		loadArrayToVbo(obj.verts, vbo, 3, numOfVerts); // Vertex position data
+		loadArrayToVbo(obj.mtl, vbo, 3, numOfVerts);   // Vertex color data
 		
 		return obj.info.count * STRIDE;
 	}

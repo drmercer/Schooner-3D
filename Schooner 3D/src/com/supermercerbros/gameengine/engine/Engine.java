@@ -309,7 +309,7 @@ public class Engine implements Runnable {
 			vertexOffset += object.count();
 
 			System.arraycopy(object.modelMatrix, 0, out.modelMatrices,
-					matrixOffset * 16, 16);
+					matrixOffset++ * 16, 16);
 		}
 
 		out.primitives = new Metadata[objects.size()];
