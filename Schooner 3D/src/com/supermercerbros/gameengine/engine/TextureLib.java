@@ -45,7 +45,7 @@ public class TextureLib {
 	/**
 	 * @param id
 	 *            The Resource id of the texture to load.
-	 * @return 
+	 * @return The String name of the texture that was loaded.
 	 * @throws IOException
 	 *             If the texture could not be loaded.
 	 */
@@ -84,9 +84,9 @@ public class TextureLib {
 		String name = pathParts[pathParts.length - 1];
 		String[] nameParts = name.split("\\.");
 		String ext = nameParts[nameParts.length - 1];
-		
+
 		InputStream is = am.open(fileName);
-		if(ext.equals("pkm")){
+		if (ext.equals("pkm")) {
 			ETC1Texture tex = ETC1Util.createTexture(is);
 			textures.put(name, new ETC1CompressedTexture(tex));
 		} else {
@@ -96,9 +96,10 @@ public class TextureLib {
 		return name;
 	}
 
-	public static synchronized Texture getTexture(String name) throws IOException {
+	public static synchronized Texture getTexture(String name)
+			throws IOException {
 		Texture tex = textures.get(name);
-		if (tex == null){
+		if (tex == null) {
 			throw new IOException("Texture \"" + name + "\" could not be found");
 		}
 		return tex;

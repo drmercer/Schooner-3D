@@ -46,8 +46,6 @@ public class Engine implements Runnable {
 	private volatile Boolean paused = false, ending = false, flush = false;
 	private volatile boolean started = false; 
 	private boolean lightsChanged = false;
-//	private final boolean debugging = true;
-//	private int framePrintCount = 0;
 
 	/**
 	 * @param pipe
