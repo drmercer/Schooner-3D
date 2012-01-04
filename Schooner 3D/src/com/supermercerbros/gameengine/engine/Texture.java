@@ -10,19 +10,25 @@ import android.opengl.GLES20;
  * 
  */
 public abstract class Texture {
+	private static int newHandle = 1;
+
+	protected static int genTextureHandle() {
+		return newHandle++;
+	}
+
 	/**
 	 * Contains the integer handle to this texture used by the OpenGL context.
 	 */
 	protected int handle = -1;
-	private int boundTo;
+	private boolean loaded = false;
 
 	/**
-	 * This is called to load the Texture to OpenGL.
+	 * This is called to load the Texture into the OpenGL context.
 	 * 
 	 * @param target
 	 *            {@link GLES20#GL_TEXTURE_2D}
 	 */
-	protected abstract void load(int target);
+	protected abstract void load();
 
 	/**
 	 * This is called during rendering.
@@ -33,22 +39,30 @@ public abstract class Texture {
 	 * @param programHandle
 	 */
 	public void use(int glTexture, String samplerName, int programHandle) {
-		if (boundTo != glTexture) {
-			load(GLES20.GL_TEXTURE_2D);
-
-			GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + glTexture);
-			GameRenderer.logError("glActiveTexture(GL_TEXTURE" + glTexture);
-			GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, handle);
-			GameRenderer.logError("glBindTexture");
-
-			boundTo = glTexture;
-			if (TextureLib.boundTextures[glTexture] != null)
-				TextureLib.boundTextures[glTexture].boundTo = -1;
-			TextureLib.boundTextures[glTexture] = this;
+		if (!loaded) {
+			load();
+			loaded = true;
 		}
-		GLES20.glUniform1i(GLES20.glGetUniformLocation(programHandle,
-				samplerName), glTexture);
-		GameRenderer.logError("glUniform1i");
+		
+		int samplerLoc = GLES20.glGetUniformLocation(programHandle,
+				samplerName);
 
+		GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + glTexture);
+		GameRenderer.logError("ActiveTexture(GL_TEXTURE" + glTexture + ")");
+		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, handle);
+		GameRenderer.logError("BindTexture");
+
+		GLES20.glUniform1i(samplerLoc, glTexture);
+		GameRenderer.logError("Uniform1i");
+	}
+
+	/**
+	 * Unloads this texture from the GPU
+	 */
+	public void unload() {
+		int[] tex = { handle };
+		GLES20.glDeleteTextures(1, tex, 0);
+		loaded = false;
+		handle = -1;
 	}
 }

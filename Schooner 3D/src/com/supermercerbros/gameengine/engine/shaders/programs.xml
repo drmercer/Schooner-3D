@@ -6,6 +6,6 @@
 	schooner:fragment-shader="frag1.txt" />
 	
 <Program
-	schooner:program-name="basic"
+	schooner:program-name="texture"
 	schooner:vertex-shader="vert2.txt"
 	schooner:fragment-shader="frag2.txt"/>

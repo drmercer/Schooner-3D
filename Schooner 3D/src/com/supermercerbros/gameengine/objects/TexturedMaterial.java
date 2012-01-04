@@ -5,6 +5,7 @@ import java.io.IOException;
 import android.opengl.GLES20;
 
 import com.supermercerbros.gameengine.engine.ShaderLib;
+import com.supermercerbros.gameengine.engine.Texture;
 import com.supermercerbros.gameengine.engine.TextureLib;
 
 /**
@@ -19,28 +20,27 @@ import com.supermercerbros.gameengine.engine.TextureLib;
  * </pre>
  */
 public class TexturedMaterial extends Material {
-	private String texture;
+	private final static int STRIDE = 5;
+	private Texture texture;
+	
 	public TexturedMaterial(String textureName){
-		super("basic", 5);
-		texture = textureName;
+		super("texture", STRIDE);
+		try {
+			texture = TextureLib.getTexture(textureName);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public int attachAttribs(Metadata primitive, int vboOffset, float[] matrix, int matrixOffset) {
 		int response = super.attachAttribs(primitive, vboOffset, matrix, matrixOffset);
 
-		setVboOffset(vboOffset);
 		attachAttrib(a_pos, 3);
-		attachAttrib(a_normal, 0.0f, 0.0f, 1.0f);
 		attachAttrib(a_mtl, 2);
 				
-		try {
-			TextureLib.getTexture(texture)
-				.use(0, ShaderLib.S_BASEMAP, 
-						this.program.getHandle());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		texture.use(0, ShaderLib.S_BASEMAP, 
+					this.program.getHandle());
 		
 		return response;
 	}
@@ -58,7 +58,7 @@ public class TexturedMaterial extends Material {
 		loadArrayToVbo(obj.verts, vbo, vboOffset, 3, numOfVerts);
 		loadArrayToVbo(obj.mtl, vbo, vboOffset, 2, numOfVerts);
 		
-		return obj.info.count * stride;
+		return obj.info.count * STRIDE;
 
 	}
 

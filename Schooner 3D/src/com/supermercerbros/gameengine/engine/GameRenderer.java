@@ -74,6 +74,9 @@ public class GameRenderer implements Renderer {
 		Log.d(TAG, "Constructing GameRenderer...");
 		this.pipe = pipe;
 		Log.d(TAG, "GameRenderer constructed!");
+		
+		Matrix.setIdentityM(projMatrix, 0);
+		Matrix.setIdentityM(wvpMatrix, 0);
 	}
 
 	@Override
@@ -89,8 +92,6 @@ public class GameRenderer implements Renderer {
 			drawFrameCount--;
 			return;
 		}
-
-		loadUniforms(in.viewMatrix, in.light, in.color);
 
 		long startFrame = System.nanoTime();
 
@@ -116,9 +117,11 @@ public class GameRenderer implements Renderer {
 		int matrixNumber = 0, iboOffset = 0, vboOffset = 0;
 		for (Metadata primitive : in.primitives) {
 			useProgram(primitive.mtl.getProgramName());
+			loadUniforms(in.viewMatrix, in.light, in.color);
 
 			vboOffset += primitive.mtl.attachAttribs(primitive, vboOffset,
 					in.modelMatrices, matrixNumber);
+			Log.d(TAG, "attachAttribs (" + primitive.mtl.getClass().getSimpleName() + ")");
 
 			// Render primitive!
 			GLES20.glDrawElements(primitive.mtl.getGeometryType(),

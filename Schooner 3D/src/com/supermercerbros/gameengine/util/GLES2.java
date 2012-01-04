@@ -1,4 +1,4 @@
-package com.supermercerbros.gameengine.engine;
+package com.supermercerbros.gameengine.util;
 
 import android.opengl.GLES20;
 import android.util.Log;

@@ -37,7 +37,7 @@ public class TestActivity extends Activity {
 		try {
 			texName = TextureLib.loadTexture(R.drawable.test_texture);
 		} catch (IOException e) {
-			Log.w(TAG, e);
+			e.printStackTrace();
 		}
 
 		view = new GameView(this); 
