@@ -56,7 +56,7 @@ public abstract class Material {
 	private int a_model;
 
 	/**
-	 * The loading offset for the VBO. Starts at zero. //TODO merge with vboOffset
+	 * The loading offset for the VBO. Starts at the offset provided by {@link #setLoadOffset(int)}
 	 */
 	private int inPos = 0;
 	/**
@@ -123,10 +123,13 @@ public abstract class Material {
 	}
 
 	/**
-	 * @return
+	 * @return The OpenGL geometry type. Usually {@link GLES20#GL_TRIANGLES}
 	 */
 	public abstract int getGeometryType();
 
+	/**
+	 * @return The name of the program that this Material uses
+	 */
 	public final String getProgramName() {
 		return programName;
 	}
@@ -157,11 +160,11 @@ public abstract class Material {
 	 * @param count
 	 *            The number of vertices represented
 	 */
-	protected final void loadArrayToVbo(float[] data, int[] vbo, int vboOffset,
+	protected final void loadArrayToVbo(float[] data, int[] vbo,
 			int size, int count) {
 		for (int i = 0; i < count; i++) {
 			for (int j = 0; j < size; j++) {
-				vbo[vboOffset + inPos + i * stride + j] = Float
+				vbo[inPos + i * stride + j] = Float
 						.floatToRawIntBits(data[i * size + j]);
 			}
 		}
@@ -172,8 +175,8 @@ public abstract class Material {
 	 * Call from {@link #loadObjectToVBO(GameObject, int[], int)} before calling
 	 * {@link #loadArrayToVbo(float[], int[], int, int, int)}
 	 */
-	protected final void clearLoadPosition() {
-		inPos = 0;
+	protected final void setLoadOffset(int vboOffset) {
+		inPos = vboOffset;
 	}
 
 	/**

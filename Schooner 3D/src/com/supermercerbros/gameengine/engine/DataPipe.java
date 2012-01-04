@@ -86,7 +86,7 @@ public class DataPipe {
 				} catch (InterruptedException e) {
 				}
 			}
-		this.data = data.copy();
+		this.data = data;
 
 		isRead = false;
 		notify();

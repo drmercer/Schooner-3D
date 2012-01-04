@@ -54,9 +54,9 @@ public class TexturedMaterial extends Material {
 	public int loadObjectToVBO(GameObject obj, int[] vbo, int vboOffset) {
 		int numOfVerts = obj.verts.length / 3;
 
-		clearLoadPosition();
-		loadArrayToVbo(obj.verts, vbo, vboOffset, 3, numOfVerts);
-		loadArrayToVbo(obj.mtl, vbo, vboOffset, 2, numOfVerts);
+		setLoadOffset(vboOffset);
+		loadArrayToVbo(obj.verts, vbo, 3, numOfVerts);
+		loadArrayToVbo(obj.mtl, vbo, 2, numOfVerts);
 		
 		return obj.info.count * STRIDE;
 
