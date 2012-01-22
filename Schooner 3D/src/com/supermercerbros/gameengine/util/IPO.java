@@ -1,8 +1,7 @@
 package com.supermercerbros.gameengine.util;
 
 import com.supermercerbros.gameengine.math.Vector;
-
-import com.supermercerbros.gameengine.util.Log;
+import android.util.Log;
 
 /**
  * Contains interpolation utilities. (IPO is shorthand for interpolation.)
@@ -75,7 +74,7 @@ public class IPO {
 			int ei = emOffset + i;
 			m[12 + mi] = sm[12 + si] + (em[12 + ei] - sm[12 + si]) * framePoint;
 		}
-		
+
 		// Linearly interpolate the bottom row
 		for (int i = 3; i < 16; i += 4) {
 			int mi = mOffset + i;
@@ -187,25 +186,19 @@ public class IPO {
 	 *             if <code>frame</code>, <code>startKeyframe</code>, or
 	 *             <code>endKeyframe</code> is null.
 	 */
-	public static void mesh(float[] frame, int frameOffset, int size,
-			float[] startKeyframe, int startKeyframeOffset,
-			float[] endKeyframe, int endKeyframeOffset, float framePoint) {
-
-		if (size < 0)
-			throw new IllegalArgumentException();
-		if (frameOffset + size > frame.length
-				|| startKeyframeOffset + size > startKeyframe.length
-				|| endKeyframeOffset + size > endKeyframe.length
-				|| frameOffset < 0 || startKeyframeOffset < 0
-				|| endKeyframeOffset < 0)
-			throw new IndexOutOfBoundsException();
+	public static void mesh(float[] frame, float[] startKeyframe,
+			float[] endKeyframe, float framePoint) {
+		
+		int size = frame.length;
+		
 		if (frame == null || startKeyframe == null || endKeyframe == null)
 			throw new NullPointerException();
+		if (size != startKeyframe.length && size != endKeyframe.length)
+			throw new IllegalArgumentException();
 
 		for (int i = 0; i < size; i++) {
-			frame[frameOffset + i] = startKeyframe[startKeyframeOffset + i]
-					+ ((endKeyframe[endKeyframeOffset + i] - startKeyframe[startKeyframeOffset
-							+ i]) * framePoint);
+			frame[i] = startKeyframe[i]
+					+ ((endKeyframe[i] - startKeyframe[i]) * framePoint);
 		}
 	}
 

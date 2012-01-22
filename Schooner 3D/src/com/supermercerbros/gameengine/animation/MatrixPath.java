@@ -3,7 +3,7 @@ package com.supermercerbros.gameengine.animation;
 import android.opengl.Matrix;
 
 import com.supermercerbros.gameengine.util.IPO;
-import com.supermercerbros.gameengine.util.Log;
+import android.util.Log;
 
 public class MatrixPath implements Movement {
 	private static final String TAG = null;

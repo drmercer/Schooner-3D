@@ -13,5 +13,12 @@ public class RenderData {
 	public float[] color;
 
 	public Metadata[] primitives;
+	
+	protected RenderData prep(){
+		for (Metadata primitive : primitives){
+			primitive.prep();
+		}
+		return this;
+	}
 
 }

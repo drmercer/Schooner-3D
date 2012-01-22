@@ -298,29 +298,24 @@ public class Engine implements Runnable {
 		out.ibo = aBufs ? iboA : iboB;
 		out.modelMatrices = aBufs ? mmA : mmB;
 		out.ibo_updatePos = iboA.length;
+		out.primitives = new Metadata[objects.size()];
 
-		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixOffset = 0;
+		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixIndex = 0, i = 0;
 		for (GameObject object : objects) {
 			int bufferSize = object.info.mtl.loadObjectToVBO(object, out.vbo, vOffset);
 			vOffset += bufferSize;
 
 			iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
 
-			vertexOffset += object.count();
+			vertexOffset += object.info.count;
 
 			System.arraycopy(object.modelMatrix, 0, out.modelMatrices,
-					matrixOffset++ * 16, 16);
+					matrixIndex++ * 16, 16);
+			
+			out.primitives[i++] = object.info;
 		}
 
-		out.primitives = new Metadata[objects.size()];
-		for (int i = 0; i < objects.size(); i++) {
-			GameObject object = objects.get(i);
-			if (object.info == null) {
-				Log.e(TAG, "null Metadata found at index " + i);
-			}
-			out.primitives[i] = object.info;
 			
-		}
 		
 		cam.copyToArray(out.viewMatrix, 0);
 		if (out.viewMatrix == null) {
