@@ -5,13 +5,14 @@ import java.util.ArrayList;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.supermercerbros.gameengine.animation.Movable;
 import com.supermercerbros.gameengine.animation.Movement;
 import com.supermercerbros.gameengine.engine.Engine;
 
 /**
  * Represents a 3D mesh object.
  */
-public class GameObject {
+public class GameObject implements Movable{
 	public static final String TAG = "com.supermercerbros.gameengine.objects.GameObject";
 
 	/**
@@ -24,7 +25,7 @@ public class GameObject {
 	 * Contains the current object-space coordinates of the vertices used in
 	 * this </code>GameObject</code>. Every three values represent one vertex.
 	 */
-	protected float[] verts;
+	public float[] verts;
 
 	/**
 	 * Contains either the UV coordinates (float pairs) or colors (three floats
@@ -95,10 +96,19 @@ public class GameObject {
 	private GameObject(float[] verts, short[] indices, float[] uvs,
 			float[] normals, int[] instanceLoaded, Material mtl) {
 		new GameObject(verts, indices, uvs, normals, mtl);
-		
+
 		this.instanceLoaded = instanceLoaded;
 	}
 
+	/**
+	 * Returns an ArrayList of <code>quantity</code> instances of this
+	 * GameObject.
+	 * 
+	 * @param quantity
+	 *            The number of duplicates to make.
+	 * @return an ArrayList of GameObjects, or null if
+	 *         <code>quantity <= 0</code>.
+	 */
 	public ArrayList<GameObject> instance(int quantity) {
 		if (quantity <= 0)
 			return null;
@@ -111,19 +121,10 @@ public class GameObject {
 	}
 
 	/**
-	 * @return the number of verts in this GameObject
-	 */
-	public int count() {
-		return verts.length / 3;
-	}
-
-	/**
 	 * This method is called to tell the object to recalculate it's vertices
 	 * and/or transformation matrix for the given point in time, in
-	 * milliseconds. If one wishes to do something with the object-space (local)
-	 * vertices every frame, one should override this method in one's
-	 * <code>GameObject
-	 * </code> subclass.
+	 * milliseconds. To do something with the object-space (local) vertices
+	 * every frame, override this method in a <code>GameObject</code> subclass.
 	 * 
 	 * @param time
 	 *            The (estimated) time of the frame currently being calculated,
@@ -132,12 +133,9 @@ public class GameObject {
 	 * @see AnimatedMeshObject#draw(long)
 	 */
 	public void draw(long time) {
-		if (stationary || motion == null) {
-			lastDrawTime = time;
-			return;
+		if (!stationary || motion != null) {
+			motion.getFrame(modelMatrix, 0, time);
 		}
-		motion.getFrame(modelMatrix, 0, time);
-
 		lastDrawTime = time;
 	}
 
@@ -160,36 +158,6 @@ public class GameObject {
 	 */
 	protected long getLastDrawTime() {
 		return lastDrawTime;
-	}
-
-	/**
-	 * @return the vector describing this object's direction. Changes in the
-	 *         array obtained from this call will be reflected in the array
-	 *         stored in this GameObject.
-	 */
-	public Movement getMotion() {
-		return motion;
-	}
-
-	/**
-	 * @return the normals
-	 */
-	public float[] getNormals() {
-		return normals;
-	}
-
-	/**
-	 * @return the mtl
-	 */
-	public float[] getUvs() {
-		return mtl;
-	}
-
-	/**
-	 * @return the verts
-	 */
-	public float[] getVerts() {
-		return verts;
 	}
 
 	/**
@@ -216,14 +184,6 @@ public class GameObject {
 	 */
 	public void markForDeletion() {
 		info.delete = true;
-	}
-
-	/**
-	 * @param info
-	 *            the info to set
-	 */
-	public void setInfo(Metadata info) {
-		this.info = info;
 	}
 
 	/**
