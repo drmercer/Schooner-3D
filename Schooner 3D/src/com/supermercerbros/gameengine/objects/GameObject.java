@@ -1,6 +1,7 @@
 package com.supermercerbros.gameengine.objects;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import android.opengl.Matrix;
 import android.util.Log;
@@ -109,10 +110,10 @@ public class GameObject implements Movable{
 	 * @return an ArrayList of GameObjects, or null if
 	 *         <code>quantity <= 0</code>.
 	 */
-	public ArrayList<GameObject> instance(int quantity) {
+	public List<GameObject> instance(int quantity) {
 		if (quantity <= 0)
 			return null;
-		ArrayList<GameObject> instances = new ArrayList<GameObject>(quantity);
+		LinkedList<GameObject> instances = new LinkedList<GameObject>();
 		for (int i = 0; i < quantity; i++) {
 			instances.add(new GameObject(verts, indices, mtl, normals,
 					instanceLoaded, info.mtl));
@@ -133,7 +134,7 @@ public class GameObject implements Movable{
 	 * @see AnimatedMeshObject#draw(long)
 	 */
 	public void draw(long time) {
-		if (!stationary || motion != null) {
+		if (motion != null) {
 			motion.getFrame(modelMatrix, 0, time);
 		}
 		lastDrawTime = time;
