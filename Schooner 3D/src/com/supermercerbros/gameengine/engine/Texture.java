@@ -46,6 +46,7 @@ public abstract class Texture {
 		
 		int samplerLoc = GLES20.glGetUniformLocation(programHandle,
 				samplerName);
+		GameRenderer.logError("Texture.java: GetUniformLocation");
 
 		GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + glTexture);
 		GameRenderer.logError("ActiveTexture(GL_TEXTURE" + glTexture + ")");

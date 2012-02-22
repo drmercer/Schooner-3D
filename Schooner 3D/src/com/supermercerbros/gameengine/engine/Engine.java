@@ -1,7 +1,8 @@
 package com.supermercerbros.gameengine.engine;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Collection;
+import java.util.List;
 
 import android.util.Log;
 
@@ -15,8 +16,8 @@ import com.supermercerbros.gameengine.util.DelayedRunnable;
  * 
  * @version 1.0
  */
-public class Engine implements Runnable {
-	private static final String TAG = Engine.class.getName();
+public class Engine extends Thread {
+	private static final String TAG = "Engine";
 	private DataPipe pipe;
 	private RenderData out = new RenderData();
 	private Camera cam;
@@ -39,12 +40,12 @@ public class Engine implements Runnable {
 	 * To be used by subclasses of Engine. Contains the GameObjects currently in
 	 * the Engine.
 	 */
-	protected ArrayList<GameObject> objects;
+	protected List<GameObject> objects;
 	private long time;
 
 	// Be careful to always synchronize access of these fields:
-	private volatile Boolean paused = false, ending = false, flush = false;
-	private volatile boolean started = false; 
+	private volatile Boolean flush = false, paused = false;
+	private volatile boolean started = false, ending = false;
 	private boolean lightsChanged = false;
 
 	/**
@@ -56,10 +57,11 @@ public class Engine implements Runnable {
 	 *            Engine.
 	 */
 	public Engine(DataPipe pipe, Camera cam) {
+		super("Schooner3D Engine thread");
 		Log.d(TAG, "Constructing Engine...");
 		this.pipe = pipe;
 		this.cam = cam;
-		this.objects = new ArrayList<GameObject>();
+		this.objects = new LinkedList<GameObject>();
 		this.vboA = new int[pipe.VBO_capacity / 4];
 		this.vboB = new int[pipe.VBO_capacity / 4];
 		this.iboA = new short[pipe.IBO_capacity / 2];
@@ -70,6 +72,7 @@ public class Engine implements Runnable {
 		this.lightB = new float[3];
 		this.colorA = new float[3];
 		this.colorB = new float[3];
+		this.setDaemon(true);
 		Log.d(TAG, "Engine constructed.");
 	}
 
@@ -110,6 +113,10 @@ public class Engine implements Runnable {
 		}
 	}
 
+	/**
+	 * TODO Javadoc
+	 * @param object
+	 */
 	public void addObject(GameObject object) {
 		if (!started) {
 			objects.add(object);
@@ -117,20 +124,28 @@ public class Engine implements Runnable {
 			pipe.newObjects.add(object);
 		}
 	}
-	
-	public void addAllObjects(Collection<GameObject> objects){
+
+	/**
+	 * TODO Javadoc
+	 * @param objects
+	 */
+	public void addAllObjects(Collection<GameObject> objects) {
 		if (!started) {
 			this.objects.addAll(objects);
 		} else {
 			pipe.newObjects.addAll(objects);
 		}
 	}
-	
+
+	/**
+	 * Removes the given GameObject from the Engine.
+	 * @param object
+	 */
 	public void removeObject(GameObject object) {
 		if (!started) {
 			objects.remove(object);
 		} else {
-			pipe.newObjects.add(object);
+			pipe.delObjects.add(object);
 		}
 	}
 
@@ -142,9 +157,8 @@ public class Engine implements Runnable {
 				object.draw(time);
 			}
 		}
-		
+
 		cam.update(time);
-		// Do I need anything else here?
 	}
 
 	/**
@@ -163,9 +177,11 @@ public class Engine implements Runnable {
 	 * Terminates this Engine.
 	 */
 	public void end() {
-		synchronized (ending) {
-			ending = true;
-		}
+		Log.d(TAG, "Engine state before end():" + getState().toString());
+		ending = true;
+		interrupt();
+		Log.d(TAG, "Engine state after end():" + getState().toString());
+		
 	}
 
 	private void flush() {
@@ -187,29 +203,17 @@ public class Engine implements Runnable {
 		}
 	}
 
-	private boolean isEnding() {
-		synchronized (ending) {
-			return ending;
-		}
-	}
-
-	private boolean isPaused() {
-		synchronized (paused) {
-			return paused;
-		}
-	}
-
 	private int loadToIBO(short[] ibo, GameObject object, int offset,
 			int vertexOffset) {
 		object.iOffset = offset;
 		if (object.isMarkedForDeletion())
 			return 0;
 		System.arraycopy(object.getIndices(), 0, ibo, offset, object.info.size);
-//		int length = object.getIndices().length;
-//		short[] indices = object.getIndices();
-//		for (int i = 0; i < length; i++){
-//			ibo[i + offset] = (short) (indices[i] + vertexOffset); 
-//		}
+		// int length = object.getIndices().length;
+		// short[] indices = object.getIndices();
+		// for (int i = 0; i < length; i++){
+		// ibo[i + offset] = (short) (indices[i] + vertexOffset);
+		// }
 		return object.info.size;
 	}
 
@@ -219,6 +223,16 @@ public class Engine implements Runnable {
 	public void pause() {
 		synchronized (paused) {
 			paused = true;
+		}
+	}
+
+	/**
+	 * Tells this Engine to resume processing.
+	 */
+	public void resumeEngine() {
+		synchronized (paused) {
+			paused = false;
+			paused.notify();
 		}
 	}
 
@@ -236,18 +250,9 @@ public class Engine implements Runnable {
 		}
 	}
 
-	/**
-	 * Tells this Engine to resume processing.
-	 */
-	public void resume() {
-		synchronized (paused) {
-			paused = false;
-		}
-	}
-
 	@Override
 	public synchronized void run() {
-		while (!isEnding()) {
+		while (!ending) {
 			// Check for new GameObjects, GameObjects to delete, and actions to
 			// perform.
 			while (!pipe.actions.isEmpty())
@@ -256,36 +261,47 @@ public class Engine implements Runnable {
 				objects.add(pipe.newObjects.poll());
 			while (!pipe.delObjects.isEmpty())
 				delObject(pipe.delObjects.poll());
-			
+
 			DelayedRunnable r = pipe.delayedActions.poll();
-			while (r != null){
+			while (r != null) {
 				r.run();
 				r = pipe.delayedActions.poll();
 			}
 
 			synchronized (flush) {
-				if (flush)
+				if (flush) {
 					flush();
+				}
 			}
 
-			if (!isPaused()) {
-				doSpecialStuff(time);
-				computeFrame();
-				updatePipe();
-				aBufs = !aBufs; // Swap aBufs
+			doSpecialStuff(time);
+			computeFrame();
+			updatePipe();
+			aBufs = !aBufs; // Swap aBufs
+
+			synchronized (paused) {
+				while (paused) {
+					try {
+						Log.d(TAG, "Waiting to unpause...");
+						paused.wait();
+					} catch (InterruptedException e) {
+						Log.w(TAG, "Interrupted while waiting to unpause.");
+						break;
+					}
+				}
 			}
 		}
 
-		// Add any termination code here
+		Log.d(TAG, "end Engine");
+		// TODO add any necessary closing code
 	}
 
 	/**
-	 * Use this method (<b>not</b> {@link #run()}) to start the Engine. Starts
-	 * in a new Thread.
+	 * Use this method (<b>not</b> {@link #run()}) to start the Engine.
 	 */
 	public void start() {
 		started = true;
-		new Thread(this).start();
+		super.start();
 	}
 
 	private void updatePipe() {
@@ -302,7 +318,8 @@ public class Engine implements Runnable {
 
 		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixIndex = 0, i = 0;
 		for (GameObject object : objects) {
-			int bufferSize = object.info.mtl.loadObjectToVBO(object, out.vbo, vOffset);
+			int bufferSize = object.info.mtl.loadObjectToVBO(object, out.vbo,
+					vOffset);
 			vOffset += bufferSize;
 
 			iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
@@ -311,12 +328,10 @@ public class Engine implements Runnable {
 
 			System.arraycopy(object.modelMatrix, 0, out.modelMatrices,
 					matrixIndex++ * 16, 16);
-			
+
 			out.primitives[i++] = object.info;
 		}
 
-			
-		
 		cam.copyToArray(out.viewMatrix, 0);
 		if (out.viewMatrix == null) {
 			Log.e(TAG, "viewMatrix == null");

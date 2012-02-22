@@ -23,8 +23,8 @@ public class TextureLib {
 	private static BitmapFactory.Options opts;
 
 	private static HashMap<String, Texture> textures;
-
-	static Texture[] boundTextures;
+	
+	private TextureLib(){} //This class should never be instantiated
 
 	/**
 	 * Initializes the Texture Library
@@ -32,7 +32,10 @@ public class TextureLib {
 	 * @param context
 	 *            The Activity context.
 	 */
-	static void init(Context context) {
+	static synchronized void init(Context context) {
+		if (initialized){
+			return;
+		}
 		initialized = true;
 		res = context.getResources();
 		am = context.getAssets();
@@ -40,6 +43,18 @@ public class TextureLib {
 		opts = new BitmapFactory.Options();
 		opts.inScaled = false;
 		opts.inPreferredConfig = Bitmap.Config.RGB_565;
+	}
+	
+	static synchronized void close(){
+		if (!initialized){
+			return;
+		}
+		initialized = false;
+		res = null;
+		am = null;
+		textures.clear();
+		textures = null;
+		opts = null;
 	}
 
 	/**
@@ -60,7 +75,7 @@ public class TextureLib {
 		}
 
 		String name = res.getResourceEntryName(id);
-		textures.put(name, new BitmapTexture(bmp));
+		textures.put(name, new BitmapTexture(bmp, false));
 		return name;
 	}
 

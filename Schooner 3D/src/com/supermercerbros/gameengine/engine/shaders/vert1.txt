@@ -1,8 +1,14 @@
 precision mediump float;
+
+uniform mat4 u_viewProj;
+
+attribute mat4 a_model;
 attribute vec4 a_pos;
 attribute vec3 a_mtl;
+
 varying vec3 v_color;
+
 void main() {
-	gl_Position = a_pos;
+	gl_Position = (u_viewProj * a_model) * a_pos;
 	v_color = a_mtl;
 }

@@ -17,6 +17,7 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.Metadata;
+import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
 	private static final String TAG = GameRenderer.class.getName();
@@ -81,7 +82,6 @@ public class GameRenderer implements Renderer {
 
 	@Override
 	public void onDrawFrame(GL10 unused) {
-		Log.d("draw", "New Frame");
 		drawFrameCount++;
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 		logError("Clear");
@@ -93,7 +93,7 @@ public class GameRenderer implements Renderer {
 			return;
 		}
 
-		long startFrame = System.nanoTime();
+//		long startFrame = System.nanoTime();
 
 		// Load VBO data
 		vbo.clear();
@@ -111,38 +111,36 @@ public class GameRenderer implements Renderer {
 		GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, in.vbo.length * 4,
 				vbo);
 		logError("BufferSubData (vbo)");
-		Log.d(TAG, "IBO load time: " + (System.nanoTime() - startFrame));
 
 		// Render each primitive
 		int matrixNumber = 0, iboOffset = 0, vboOffset = 0;
-		for (Metadata primitive : in.primitives) {
+		for (int i = 0; i < in.primitives.length; i++) {
+			Metadata primitive = in.primitives[i];
+			
 			useProgram(primitive.mtl.getProgramName());
 			loadUniforms(in.viewMatrix, in.light, in.color);
-
+			
 			vboOffset += primitive.mtl.attachAttribs(primitive, vboOffset,
 					in.modelMatrices, matrixNumber);
-			Log.d(TAG, "attachAttribs (" + primitive.mtl.getClass().getSimpleName() + ")");
+			
 
 			// Render primitive!
 			GLES20.glDrawElements(primitive.mtl.getGeometryType(),
 					primitive.size, GLES20.GL_UNSIGNED_SHORT, iboOffset);
 			logError("DrawElements");
-			Log.d("draw", "GL_TRIANGLES, " + primitive.size
-					+ ", GL_UNSIGNED_SHORT, " + iboOffset);
 
 			iboOffset += primitive.size * 2;
 			matrixNumber++;
 		}
 
-		Log.d(TAG, "Frame draw time: " + (System.nanoTime() - startFrame));
 	}
 
 	@Override
 	public void onSurfaceChanged(GL10 unused, int width, int height) {
 		Log.d(TAG, "onSurfaceChanged()");
 		GLES20.glViewport(0, 0, width, height);
-		// float aspect = width / (float) height;
-		// Utils.perspectiveM(projMatrix, 0, 50, aspect, 3.0f, 7.0f);
+		float aspect = width / (float) height;
+		Utils.perspectiveM(projMatrix, 0, 45, aspect, 0.5f, 5.f);
 	}
 
 	@Override
@@ -166,15 +164,9 @@ public class GameRenderer implements Renderer {
 				Schooner3D.backgroundColor[2],
 				Schooner3D.backgroundColor[3]);
 		// GLES20.glEnable(GLES20.GL_CULL_FACE);
-		// GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
 		Matrix.setIdentityM(projMatrix, 0);
-
-		int[] params = { 0 };
-		GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS, params, 0);
-		TextureLib.boundTextures = new Texture[params[0]];
-		Log.i(TAG, "Max number of texture units: " + params[0]);
-
 	}
 
 	/**
@@ -192,7 +184,7 @@ public class GameRenderer implements Renderer {
 			try {
 				program.load();
 			} catch (GLException e) {
-				e.printStackTrace();
+				Log.e(TAG, "Program Could not be loaded.", e);
 				if (activeProgram != null)
 					activeProgram.load();
 				success = false;
@@ -216,12 +208,9 @@ public class GameRenderer implements Renderer {
 		GLES20.glGetError();
 		// Load World View-Projection matrix
 		Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, viewMatrix, 0);
+		
 		GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
 		logError("glUniformMatrix4fv (wvpMatrix)");
-		
-		if (drawFrameCount <= framesToDebug) {
-			Log.d(TAG, "wvp: " + Arrays.toString(wvpMatrix));
-		}
 
 		// Load directional light
 		if (u_lightVec != -1) {

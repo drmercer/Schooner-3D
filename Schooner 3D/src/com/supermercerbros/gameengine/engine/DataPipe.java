@@ -1,6 +1,5 @@
 package com.supermercerbros.gameengine.engine;
 
-import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.DelayQueue;
 
@@ -48,22 +47,24 @@ public class DataPipe {
 	private RenderData data;
 	private long lastReadTime;
 	private boolean isRead = false;
-	
+
 	/**
-	 * @param context 
-	 * @param mtl The material to render GameObjects with.
+	 * Constructs a new DataPipe. This also initializes <code>ShaderLib</code>
+	 * and <code>TextureLib</code>
+	 * 
+	 * @param context
+	 *            The app Context
+	 * @param mtl
+	 *            The material to render GameObjects with.
 	 */
-	public DataPipe(Context context){
+	public DataPipe(Context context) {
 		ShaderLib.init(context);
 		TextureLib.init(context);
 	}
-	
-	public void addAllObjects(Collection<GameObject> objects) {
-		newObjects.addAll(objects);
-	}
 
-	public void addObject(GameObject object) {
-		newObjects.add(object);
+	public void close() {
+		TextureLib.close();
+		ShaderLib.close();
 	}
 
 	/**
@@ -79,32 +80,36 @@ public class DataPipe {
 	 * @return The time of the next frame that the Engine should calculate
 	 */
 	public synchronized long putData(long frameTime, RenderData data) {
-		if (!isRead)
-			while (!isRead) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
+		while (!isRead) {
+			try {
+				wait(1000 / 30);
+				if (isRead){
+					break;
+				} else {
+					return lastReadTime + 3*(1000 / 30);
 				}
+			} catch (InterruptedException e) {
+				return lastReadTime + 3*(1000 / 30);
 			}
+		}
 		this.data = data;
 
 		isRead = false;
 		notify();
-		return lastReadTime + 1000 / 30;
+		return lastReadTime + 2*(1000/30);
 	}
-	
+
 	public void removeObject(GameObject object) {
 		delObjects.add(object);
 	}
 
 	public synchronized RenderData retrieveData() {
-		if (isRead)
-			while (isRead) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-				}
+		while (isRead) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
 			}
+		}
 
 		lastReadTime = System.currentTimeMillis();
 		isRead = true;
