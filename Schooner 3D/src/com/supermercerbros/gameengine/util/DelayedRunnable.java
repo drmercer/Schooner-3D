@@ -3,8 +3,11 @@ package com.supermercerbros.gameengine.util;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
-public class DelayedRunnable implements Delayed, Runnable {
-	private Runnable r;
+public class DelayedRunnable implements Delayed {
+	/**
+	 * The Runnable wrapped in this DelayedRunnable
+	 */
+	public Runnable r;
 	private long endTime;
 	private TimeUnit tu = TimeUnit.NANOSECONDS;
 
@@ -34,11 +37,6 @@ public class DelayedRunnable implements Delayed, Runnable {
 		else
 			return 0;
 
-	}
-
-	@Override
-	public void run() {
-		r.run();
 	}
 
 }

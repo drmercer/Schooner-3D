@@ -20,7 +20,7 @@ public class GameObject implements Movable{
 	 * Contains the indices of the vertices for the elements (i.e. triangles) in
 	 * this object.
 	 */
-	protected short[] indices;
+	public short[] indices;
 
 	/**
 	 * Contains the current object-space coordinates of the vertices used in
@@ -138,20 +138,6 @@ public class GameObject implements Movable{
 			motion.getFrame(modelMatrix, 0, time);
 		}
 		lastDrawTime = time;
-	}
-
-	/**
-	 * @return the indices
-	 */
-	public short[] getIndices() {
-		return indices;
-	}
-
-	/**
-	 * @return the info
-	 */
-	public Metadata getInfo() {
-		return info;
 	}
 
 	/**

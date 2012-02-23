@@ -3,7 +3,9 @@ package com.supermercerbros.gameengine.engine;
 import android.opengl.ETC1Util.ETC1Texture;
 
 public class ETC1CompressedTexture extends Texture {
+	@SuppressWarnings("unused")
 	private ETC1Texture tex;
+	@SuppressWarnings("unused")
 	private boolean mipmaps;
 
 	/**
@@ -33,7 +35,7 @@ public class ETC1CompressedTexture extends Texture {
 
 	@Override
 	protected void load() {
-		//TODO write ETC1 loading code
+		//TODO write ETC1 loading code and remove @SuppressWarnings
 	}
 
 }
