@@ -102,39 +102,14 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Sets the directional light of the scene
-	 * 
-	 * @param x
-	 *            The x-coordinate of the light vector
-	 * @param y
-	 *            The x-coordinate of the light vector
-	 * @param z
-	 *            The x-coordinate of the light vector
-	 * @param r
-	 *            The red value of the light's color
-	 * @param g
-	 *            The green value of the light's color
-	 * @param b
-	 *            The blue value of the light's color
+	 * TODO Javadoc
+	 * @param objects
 	 */
-	public void setLight(float x, float y, float z, float r, float g, float b) {
-		synchronized (lightA) {
-			if (aBufs) {
-				lightA[0] = x;
-				lightA[1] = y;
-				lightA[2] = z;
-				colorA[0] = r;
-				colorA[1] = g;
-				colorA[2] = b;
-			} else {
-				lightB[0] = x;
-				lightB[1] = y;
-				lightB[2] = z;
-				colorB[0] = r;
-				colorB[1] = g;
-				colorB[2] = b;
-			}
-			lightsChanged = true;
+	public void addAllObjects(Collection<GameObject> objects) {
+		if (!started) {
+			this.objects.addAll(objects);
+		} else {
+			newObjects.addAll(objects);
 		}
 	}
 
@@ -151,14 +126,54 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * TODO Javadoc
-	 * @param objects
+	 * Runs a Runnable on the Engine thread
+	 * 
+	 * @param r
+	 *            The Runnable to run on the Engine thread
 	 */
-	public void addAllObjects(Collection<GameObject> objects) {
-		if (!started) {
-			this.objects.addAll(objects);
-		} else {
-			newObjects.addAll(objects);
+	public void doRunnable(Runnable r) {
+		actions.add(r);
+	}
+
+	/**
+	 * Runs a {@link Runnable} on the Engine thread with a delay.
+	 * 
+	 * @param r
+	 *            The Runnable to run on the Engine thread.
+	 * @param delay
+	 *            The amount by which to delay the run, in milliseconds
+	 */
+	public void doRunnable(Runnable r, long delay) {
+		delayedActions.add(new DelayedRunnable(r, delay));
+	}
+
+	/**
+	 * Terminates this Engine.
+	 */
+	public void end() {
+		Log.d(TAG, "Engine state before end():" + getState().toString());
+		ending = true;
+		interrupt();
+		Log.d(TAG, "Engine state after end():" + getState().toString());
+		
+	}
+
+	/**
+	 * Tells the Engine to actually delete all of its GameObjects that are
+	 * marked for deletion
+	 */
+	public void flushDeletedObjects() {
+		synchronized (flush) {
+			flush = true;
+		}
+	}
+
+	/**
+	 * Tells this Engine to pause processing. Used with {@link #resumeEngine()}.
+	 */
+	public void pause() {
+		synchronized (paused) {
+			paused = true;
 		}
 	}
 
@@ -174,78 +189,6 @@ public class Engine extends Thread {
 		}
 	}
 
-	private void computeFrame() {
-		// Collision detection goes here, whenever I need it.
-
-		for (GameObject object : objects) {
-			if (!object.isMarkedForDeletion()) {
-				object.draw(time);
-			}
-		}
-
-		cam.update(time);
-	}
-
-	/**
-	 * This method is called every frame, before objects are redrawn. The
-	 * default implementation does nothing; subclasses should override this if
-	 * they wish to do anything special each frame.
-	 * 
-	 * @param time
-	 *            The time of the current frame.
-	 */
-	protected void doSpecialStuff(long time) {
-
-	}
-
-	/**
-	 * Terminates this Engine.
-	 */
-	public void end() {
-		Log.d(TAG, "Engine state before end():" + getState().toString());
-		ending = true;
-		interrupt();
-		Log.d(TAG, "Engine state after end():" + getState().toString());
-		
-	}
-
-	private void flush() {
-		for (int i = 0; i < objects.size(); i++) {
-			if (objects.get(i).isMarkedForDeletion()) {
-				objects.remove(i);
-			}
-		}
-		flush = true;
-	}
-
-	/**
-	 * Tells the Engine to actually delete all of its GameObjects that are
-	 * marked for deletion
-	 */
-	public void flushDeletedObjects() {
-		synchronized (flush) {
-			flush = true;
-		}
-	}
-
-	private int loadToIBO(short[] ibo, GameObject object, int offset,
-			int vertexOffset) {
-		object.iOffset = offset;
-		if (object.isMarkedForDeletion())
-			return 0;
-		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
-		return object.info.size;
-	}
-
-	/**
-	 * Tells this Engine to pause processing. Used with {@link #resumeEngine()}.
-	 */
-	public void pause() {
-		synchronized (paused) {
-			paused = true;
-		}
-	}
-
 	/**
 	 * Tells this Engine to resume processing.
 	 */
@@ -257,21 +200,14 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Removes the given GameObject from the Engine. Only call this method from
-	 * the Engine thread (i.e. in a Runnable in given to
-	 * {@link DataPipe#doRunnable(Runnable)}.
-	 * 
-	 * @param object
-	 *            The GameObject to remove from the Engine.
+	 * Do not call this method. Call {@link #start()} to start the Engine.
+	 * @see java.lang.Thread#run()
 	 */
-	private synchronized void delObject(GameObject object) {
-		if (objects.contains(object)) {
-			object.markForDeletion();
-		}
-	}
-
 	@Override
 	public synchronized void run() {
+		if (Thread.currentThread() != this){
+			throw new UnsupportedOperationException("Do not call Engine.run()");
+		}
 		while (!ending) {
 			// Check for new GameObjects, GameObjects to delete, and actions to
 			// perform.
@@ -316,12 +252,105 @@ public class Engine extends Thread {
 	}
 
 	/**
+	 * Sets the directional light of the scene
+	 * 
+	 * @param x
+	 *            The x-coordinate of the light vector
+	 * @param y
+	 *            The x-coordinate of the light vector
+	 * @param z
+	 *            The x-coordinate of the light vector
+	 * @param r
+	 *            The red value of the light's color
+	 * @param g
+	 *            The green value of the light's color
+	 * @param b
+	 *            The blue value of the light's color
+	 */
+	public void setLight(float x, float y, float z, float r, float g, float b) {
+		synchronized (lightA) {
+			if (aBufs) {
+				lightA[0] = x;
+				lightA[1] = y;
+				lightA[2] = z;
+				colorA[0] = r;
+				colorA[1] = g;
+				colorA[2] = b;
+			} else {
+				lightB[0] = x;
+				lightB[1] = y;
+				lightB[2] = z;
+				colorB[0] = r;
+				colorB[1] = g;
+				colorB[2] = b;
+			}
+			lightsChanged = true;
+		}
+	}
+
+	/**
 	 * Use this method (<b>not</b> {@link #run()}) to start the Engine.
 	 */
 	@Override
 	public void start() {
 		started = true;
 		super.start();			
+	}
+
+	/**
+	 * This method is called every frame, before objects are redrawn. The
+	 * default implementation does nothing; subclasses should override this if
+	 * they wish to do anything special each frame.
+	 * 
+	 * @param time
+	 *            The time of the current frame.
+	 */
+	protected void doSpecialStuff(long time) {
+
+	}
+
+	private void computeFrame() {
+		// Collision detection goes here, whenever I need it.
+
+		for (GameObject object : objects) {
+			if (!object.isMarkedForDeletion()) {
+				object.draw(time);
+			}
+		}
+
+		cam.update(time);
+	}
+
+	/**
+	 * Removes the given GameObject from the Engine. Only call this method from
+	 * the Engine thread (i.e. in a Runnable in given to
+	 * {@link DataPipe#doRunnable(Runnable)}.
+	 * 
+	 * @param object
+	 *            The GameObject to remove from the Engine.
+	 */
+	private synchronized void delObject(GameObject object) {
+		if (objects.contains(object)) {
+			object.markForDeletion();
+		}
+	}
+
+	private void flush() {
+		for (int i = 0; i < objects.size(); i++) {
+			if (objects.get(i).isMarkedForDeletion()) {
+				objects.remove(i);
+			}
+		}
+		flush = true;
+	}
+	
+	private int loadToIBO(short[] ibo, GameObject object, int offset,
+			int vertexOffset) {
+		object.iOffset = offset;
+		if (object.isMarkedForDeletion())
+			return 0;
+		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
+		return object.info.size;
 	}
 
 	private void updatePipe() {
@@ -375,27 +404,5 @@ public class Engine extends Thread {
 			}
 		}
 
-	}
-	
-	/**
-	 * Runs a Runnable on the Engine thread
-	 * 
-	 * @param r
-	 *            The Runnable to run on the Engine thread
-	 */
-	public void doRunnable(Runnable r) {
-		actions.add(r);
-	}
-
-	/**
-	 * Runs a {@link Runnable} on the Engine thread with a delay.
-	 * 
-	 * @param r
-	 *            The Runnable to run on the Engine thread.
-	 * @param delay
-	 *            The amount by which to delay the run, in milliseconds
-	 */
-	public void doRunnable(Runnable r, long delay) {
-		delayedActions.add(new DelayedRunnable(r, delay));
 	}
 }
