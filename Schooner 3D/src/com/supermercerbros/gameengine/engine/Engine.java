@@ -3,6 +3,8 @@ package com.supermercerbros.gameengine.engine;
 import java.util.LinkedList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.DelayQueue;
 
 import android.util.Log;
 
@@ -47,6 +49,29 @@ public class Engine extends Thread {
 	private volatile Boolean flush = false, paused = false;
 	private volatile boolean started = false, ending = false;
 	private boolean lightsChanged = false;
+	/**
+	 * Used for passing commands from the UI thread to the {@link Engine}
+	 * thread. This <b>should not</b> be polled by any thread other than the
+	 * Engine thread.
+	 */
+	ConcurrentLinkedQueue<Runnable> actions = new ConcurrentLinkedQueue<Runnable>();
+	/**
+	 * Used for passing delayed commands from the UI thread to the Engine
+	 * thread.
+	 */
+	DelayQueue<DelayedRunnable> delayedActions = new DelayQueue<DelayedRunnable>();
+	/**
+	 * Used for passing new GameObjects from the UI thread to the {@link Engine}
+	 * thread. This <b>should not</b> be polled by any thread other than the
+	 * Engine thread.
+	 */
+	ConcurrentLinkedQueue<GameObject> newObjects = new ConcurrentLinkedQueue<GameObject>();
+	/**
+	 * Used for passing GameObjects to be deleted to the {@link Engine} thread.
+	 * This <b>should not</b> be polled by any thread other than the Engine
+	 * thread.
+	 */
+	ConcurrentLinkedQueue<GameObject> delObjects = new ConcurrentLinkedQueue<GameObject>();
 
 	/**
 	 * @param pipe
@@ -121,7 +146,7 @@ public class Engine extends Thread {
 		if (!started) {
 			objects.add(object);
 		} else {
-			pipe.newObjects.add(object);
+			newObjects.add(object);
 		}
 	}
 
@@ -133,7 +158,7 @@ public class Engine extends Thread {
 		if (!started) {
 			this.objects.addAll(objects);
 		} else {
-			pipe.newObjects.addAll(objects);
+			newObjects.addAll(objects);
 		}
 	}
 
@@ -145,7 +170,7 @@ public class Engine extends Thread {
 		if (!started) {
 			objects.remove(object);
 		} else {
-			pipe.delObjects.add(object);
+			delObjects.add(object);
 		}
 	}
 
@@ -208,17 +233,12 @@ public class Engine extends Thread {
 		object.iOffset = offset;
 		if (object.isMarkedForDeletion())
 			return 0;
-		System.arraycopy(object.getIndices(), 0, ibo, offset, object.info.size);
-		// int length = object.getIndices().length;
-		// short[] indices = object.getIndices();
-		// for (int i = 0; i < length; i++){
-		// ibo[i + offset] = (short) (indices[i] + vertexOffset);
-		// }
+		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
 		return object.info.size;
 	}
 
 	/**
-	 * Tells this Engine to pause processing.
+	 * Tells this Engine to pause processing. Used with {@link #resumeEngine()}.
 	 */
 	public void pause() {
 		synchronized (paused) {
@@ -239,7 +259,7 @@ public class Engine extends Thread {
 	/**
 	 * Removes the given GameObject from the Engine. Only call this method from
 	 * the Engine thread (i.e. in a Runnable in given to
-	 * {@link DataPipe#runOnEngineThread(Runnable)}.
+	 * {@link DataPipe#doRunnable(Runnable)}.
 	 * 
 	 * @param object
 	 *            The GameObject to remove from the Engine.
@@ -255,17 +275,17 @@ public class Engine extends Thread {
 		while (!ending) {
 			// Check for new GameObjects, GameObjects to delete, and actions to
 			// perform.
-			while (!pipe.actions.isEmpty())
-				pipe.actions.poll().run();
-			while (!pipe.newObjects.isEmpty())
-				objects.add(pipe.newObjects.poll());
-			while (!pipe.delObjects.isEmpty())
-				delObject(pipe.delObjects.poll());
+			while (!actions.isEmpty())
+				actions.poll().run();
+			while (!newObjects.isEmpty())
+				objects.add(newObjects.poll());
+			while (!delObjects.isEmpty())
+				delObject(delObjects.poll());
 
-			DelayedRunnable r = pipe.delayedActions.poll();
-			while (r != null) {
-				r.run();
-				r = pipe.delayedActions.poll();
+			DelayedRunnable d = delayedActions.poll();
+			while (d != null) {
+				d.r.run();
+				d = delayedActions.poll();
 			}
 
 			synchronized (flush) {
@@ -286,7 +306,6 @@ public class Engine extends Thread {
 						paused.wait();
 					} catch (InterruptedException e) {
 						Log.w(TAG, "Interrupted while waiting to unpause.");
-						break;
 					}
 				}
 			}
@@ -299,9 +318,10 @@ public class Engine extends Thread {
 	/**
 	 * Use this method (<b>not</b> {@link #run()}) to start the Engine.
 	 */
+	@Override
 	public void start() {
 		started = true;
-		super.start();
+		super.start();			
 	}
 
 	private void updatePipe() {
@@ -355,5 +375,27 @@ public class Engine extends Thread {
 			}
 		}
 
+	}
+	
+	/**
+	 * Runs a Runnable on the Engine thread
+	 * 
+	 * @param r
+	 *            The Runnable to run on the Engine thread
+	 */
+	public void doRunnable(Runnable r) {
+		actions.add(r);
+	}
+
+	/**
+	 * Runs a {@link Runnable} on the Engine thread with a delay.
+	 * 
+	 * @param r
+	 *            The Runnable to run on the Engine thread.
+	 * @param delay
+	 *            The amount by which to delay the run, in milliseconds
+	 */
+	public void doRunnable(Runnable r, long delay) {
+		delayedActions.add(new DelayedRunnable(r, delay));
 	}
 }

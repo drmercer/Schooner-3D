@@ -1,13 +1,9 @@
 package com.supermercerbros.gameengine.engine;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.DelayQueue;
 
 import android.content.Context;
 
 import com.supermercerbros.gameengine.Schooner3D;
-import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.util.DelayedRunnable;
 
 /**
  * Used for communication between the main thread, the Engine thread, and the
@@ -19,30 +15,6 @@ public class DataPipe {
 
 	final int VBO_capacity = Schooner3D.vboSize;
 	final int IBO_capacity = Schooner3D.iboSize;
-
-	/**
-	 * Used for passing commands from the UI thread to the {@link Engine}
-	 * thread. This <b>should not</b> be polled by any thread other than the
-	 * Engine thread.
-	 */
-	ConcurrentLinkedQueue<Runnable> actions = new ConcurrentLinkedQueue<Runnable>();
-	/**
-	 * Used for passing delayed commands from the UI thread to the Engine
-	 * thread.
-	 */
-	DelayQueue<DelayedRunnable> delayedActions = new DelayQueue<DelayedRunnable>();
-	/**
-	 * Used for passing new GameObjects from the UI thread to the {@link Engine}
-	 * thread. This <b>should not</b> be polled by any thread other than the
-	 * Engine thread.
-	 */
-	ConcurrentLinkedQueue<GameObject> newObjects = new ConcurrentLinkedQueue<GameObject>();
-	/**
-	 * Used for passing GameObjects to be deleted to the {@link Engine} thread.
-	 * This <b>should not</b> be polled by any thread other than the Engine
-	 * thread.
-	 */
-	ConcurrentLinkedQueue<GameObject> delObjects = new ConcurrentLinkedQueue<GameObject>();
 
 	private RenderData data;
 	private long lastReadTime;
@@ -99,10 +71,6 @@ public class DataPipe {
 		return lastReadTime + 2*(1000/30);
 	}
 
-	public void removeObject(GameObject object) {
-		delObjects.add(object);
-	}
-
 	public synchronized RenderData retrieveData() {
 		while (isRead) {
 			try {
@@ -116,27 +84,4 @@ public class DataPipe {
 		notify();
 		return data;
 	}
-
-	/**
-	 * Runs a Runnable on the Engine thread
-	 * 
-	 * @param r
-	 *            The Runnable to run on the Engine thread
-	 */
-	public void runOnEngineThread(Runnable r) {
-		actions.add(r);
-	}
-
-	/**
-	 * Runs a {@link Runnable} on the Engine thread with a delay.
-	 * 
-	 * @param r
-	 *            The Runnable to run on the Engine thread.
-	 * @param delay
-	 *            The amount by which to delay the run, in milliseconds
-	 */
-	public void runOnEngineThread(Runnable r, long delay) {
-		delayedActions.add(new DelayedRunnable(r, delay));
-	}
-
 }
