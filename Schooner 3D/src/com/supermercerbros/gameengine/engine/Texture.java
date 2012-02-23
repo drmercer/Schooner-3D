@@ -1,5 +1,7 @@
 package com.supermercerbros.gameengine.engine;
 
+import com.supermercerbros.gameengine.engine.EGLContextLostHandler.EGLContextLostListener;
+
 import android.opengl.GLES20;
 
 /**
@@ -9,11 +11,11 @@ import android.opengl.GLES20;
  * materials, which Schooner does not include at the current time.)
  * 
  */
-public abstract class Texture {
-	private static int newHandle = 1;
-
+public abstract class Texture implements EGLContextLostListener {
 	protected static int genTextureHandle() {
-		return newHandle++;
+		int[] handle = {0};
+		GLES20.glGenTextures(1, handle, 0);
+		return handle[0];
 	}
 
 	/**
@@ -42,6 +44,7 @@ public abstract class Texture {
 		if (!loaded) {
 			load();
 			loaded = true;
+			EGLContextLostHandler.addListener(this);
 		}
 		
 		int samplerLoc = GLES20.glGetUniformLocation(programHandle,
@@ -65,5 +68,13 @@ public abstract class Texture {
 		GLES20.glDeleteTextures(1, tex, 0);
 		loaded = false;
 		handle = -1;
+	}
+	
+	@Override
+	public final void onContextLost(){
+		if (!GLES20.glIsTexture(handle)){ 
+			loaded = false;
+			handle = -1;
+		}
 	}
 }

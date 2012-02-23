@@ -106,6 +106,9 @@ public class TextureLib {
 			textures.put(name, new ETC1CompressedTexture(tex));
 		} else {
 			Bitmap tex = BitmapFactory.decodeStream(is, null, opts);
+			if (tex == null) {
+				throw new IOException(fileName + " could not be decoded.");
+			}
 			textures.put(name, new BitmapTexture(tex));
 		}
 		return name;
