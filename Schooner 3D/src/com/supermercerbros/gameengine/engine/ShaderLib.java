@@ -182,11 +182,7 @@ public class ShaderLib {
 						f = shaders.get(fName);
 					}
 
-					Program p = new Program();
-					p.setVertexShader(v);
-					p.setFragmentShader(f);
-
-					addProgram(name, p);
+					addProgram(name, new Program(v, f));
 				}
 				eventType = xrp.next();
 			}

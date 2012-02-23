@@ -12,6 +12,7 @@ import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
+import com.supermercerbros.gameengine.util.Toggle;
 
 /**
  * Handles the interactions of game elements in the world space.
@@ -46,7 +47,7 @@ public class Engine extends Thread {
 	private long time;
 
 	// Be careful to always synchronize access of these fields:
-	private volatile Boolean flush = false, paused = false;
+	private volatile Toggle flush = new Toggle(false), paused = new Toggle(false);
 	private volatile boolean started = false, ending = false;
 	private boolean lightsChanged = false;
 	/**
@@ -164,7 +165,7 @@ public class Engine extends Thread {
 	 */
 	public void flushDeletedObjects() {
 		synchronized (flush) {
-			flush = true;
+			flush.setState(true);
 		}
 	}
 
@@ -173,7 +174,7 @@ public class Engine extends Thread {
 	 */
 	public void pause() {
 		synchronized (paused) {
-			paused = true;
+			paused.setState(true);
 		}
 	}
 
@@ -194,7 +195,7 @@ public class Engine extends Thread {
 	 */
 	public void resumeEngine() {
 		synchronized (paused) {
-			paused = false;
+			paused.setState(false);
 			paused.notify();
 		}
 	}
@@ -225,7 +226,7 @@ public class Engine extends Thread {
 			}
 
 			synchronized (flush) {
-				if (flush) {
+				if (flush.getState()) {
 					flush();
 				}
 			}
@@ -236,7 +237,7 @@ public class Engine extends Thread {
 			aBufs = !aBufs; // Swap aBufs
 
 			synchronized (paused) {
-				while (paused) {
+				while (paused.getState()) {
 					try {
 						Log.d(TAG, "Waiting to unpause...");
 						paused.wait();
@@ -248,7 +249,6 @@ public class Engine extends Thread {
 		}
 
 		Log.d(TAG, "end Engine");
-		// TODO add any necessary closing code
 	}
 
 	/**
@@ -322,9 +322,7 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Removes the given GameObject from the Engine. Only call this method from
-	 * the Engine thread (i.e. in a Runnable in given to
-	 * {@link DataPipe#doRunnable(Runnable)}.
+	 * Marks the given GameObject for deletion. 
 	 * 
 	 * @param object
 	 *            The GameObject to remove from the Engine.
@@ -341,7 +339,7 @@ public class Engine extends Thread {
 				objects.remove(i);
 			}
 		}
-		flush = true;
+		flush.setState(false);
 	}
 	
 	private int loadToIBO(short[] ibo, GameObject object, int offset,

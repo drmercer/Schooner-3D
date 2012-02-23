@@ -2,6 +2,8 @@ package com.supermercerbros.gameengine.engine;
 
 import java.util.HashMap;
 
+import com.supermercerbros.gameengine.engine.EGLContextLostHandler.EGLContextLostListener;
+
 import android.opengl.GLES20;
 import android.opengl.GLException;
 import android.util.Log;
@@ -10,7 +12,7 @@ import android.util.Log;
  * Represents a GLSL program, consisting of a vertex shader and a fragment
  * shader. Obtained from {@link ShaderLib}.
  */
-public class Program {
+public class Program implements EGLContextLostListener {
 	private static final String TAG = "com.supermercerbros.gameengine.engine.Program";
 	private Shader vertex;
 	private Shader fragment;
@@ -25,24 +27,19 @@ public class Program {
 	private boolean loaded;
 	private HashMap<String, Integer> attribs;
 
-	Program() {
-
-	}
-
-	void setVertexShader(Shader shader) {
-		vertex = shader;
-	}
-
-	void setFragmentShader(Shader shader) {
-		fragment = shader;
+	Program(Shader vertexShader, Shader fragmentShader) {
+		vertex = vertexShader;
+		fragment = fragmentShader;
+		EGLContextLostHandler.addListener(this);
 	}
 
 	public int load() throws GLException {
-		if (loaded)
+		if (loaded) {
 			return handle;
+		}
 
-		vertex.load(GLES20.GL_VERTEX_SHADER);
-		fragment.load(GLES20.GL_FRAGMENT_SHADER);
+		int vHandle = vertex.load(GLES20.GL_VERTEX_SHADER);
+		int fHandle = fragment.load(GLES20.GL_FRAGMENT_SHADER);
 
 		handle = GLES20.glCreateProgram();
 		if (handle == 0) {
@@ -51,9 +48,9 @@ public class Program {
 		}
 
 		// Attach shaders
-		GLES20.glAttachShader(handle, vertex.handle);
+		GLES20.glAttachShader(handle, vHandle);
 		GameRenderer.logError("glAttachShader(handle, vertex.handle)");
-		GLES20.glAttachShader(handle, fragment.handle);
+		GLES20.glAttachShader(handle, fHandle);
 		GameRenderer.logError("glAttachShader(handle, fragment.handle)");
 
 		// Link program
@@ -84,33 +81,33 @@ public class Program {
 		if (!loaded)
 			throw new IllegalStateException("Program is not loaded");
 
-		int location;
 		if (name.equals(ShaderLib.A_POS)) {
-			location = a_pos;
+			return a_pos;
 
 		} else if (name.equals(ShaderLib.A_NORMAL)) {
-			location = a_normal;
+			return a_normal;
 
 		} else if (name.equals(ShaderLib.A_MTL)) {
-			location = a_mtl;
+			return a_mtl;
 
 		} else if (name.equals(ShaderLib.A_MODEL)) {
-			location = a_model;
+			return a_model;
 
 		} else if (attribs.containsKey(name)) {
-			location = attribs.get(name);
+			return attribs.get(name);
 
 		} else {
-			location = GLES20.glGetAttribLocation(handle, name);
+			int location = GLES20.glGetAttribLocation(handle, name);
 			attribs.put(name, location);
+			return location;
 		}
 
-		return location;
 	}
 
 	public int getUniformLocation(String name) {
-		if (!loaded)
+		if (!loaded) {
 			throw new IllegalStateException("Program is not loaded");
+		}
 		return GLES20.glGetUniformLocation(handle, name);
 	}
 
@@ -120,5 +117,19 @@ public class Program {
 
 	public int getHandle() {
 		return handle;
+	}
+
+	@Override
+	public void onContextLost() {
+		Log.d("Program", "received context lost notification");
+		if (!GLES20.glIsProgram(handle)){
+			Log.d("Program", "handle is not a program.");
+			loaded = false;
+			handle = -1;
+			a_model = -1;
+			a_mtl = -1;
+			a_pos = -1;
+			a_normal = -1;
+		}
 	}
 }

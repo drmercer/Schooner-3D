@@ -37,6 +37,7 @@ public class DataPipe {
 	public void close() {
 		TextureLib.close();
 		ShaderLib.close();
+		EGLContextLostHandler.clear();
 	}
 
 	/**

@@ -7,7 +7,7 @@ import android.util.Log;
 public class Shader {
 	private static final String TAG = "com.supermercerbros.gameengine.engine.Shader";
 	private String source;
-	int handle;
+	private int handle;
 	private boolean loaded;
 	
 	
@@ -15,8 +15,10 @@ public class Shader {
 		this.source = source;
 	}
 	
-	public int load(int type) throws GLException {
-		if (loaded) return handle;
+	int load(int type) throws GLException {
+		if (loaded) {
+			return handle;
+		}
 		handle = GLES20.glCreateShader(type);
 		if (handle == 0) {
 			int error = GameRenderer.logError("glCreateShader(" + type + ")");
@@ -40,6 +42,11 @@ public class Shader {
 		Log.d(TAG, "shader successfully compiled!");
 		
 		return handle;
+	}
+	
+	void reset(){
+		loaded = false;
+		handle = -1;
 	}
 
 }

@@ -61,6 +61,7 @@ public class BitmapTexture extends Texture {
 				GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
 		if (useMipmaps)
 			GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+		GameRenderer.logError("BitmapTexture.load()");
 	}
 
 }
