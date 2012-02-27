@@ -7,92 +7,76 @@ import android.util.Log;
 
 public class Camera {
 	private static final String TAG = "com.supermercerbros.gameengine.engine.Camera";
-	private float[] matrix = new float[16];
-	private float[] begin = new float[16];
-	private float[] end = new float[16];
+	private float[] begin = new float[9];
+	private float[] end = new float[9];
 
 	private long startTime;
 	private long duration;
 
-	private float upX;
-	private float upY;
-	private float upZ;
-	private float centerX;
-	private float centerY;
-	private float centerZ;
+	/**
+	 * {eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ}
+	 */
+	private float[] current;
 	private boolean moving;
 
 	/**
-	 * @param eyeX The x-coord of the eye point
-	 * @param eyeY The y-coord of the eye point
-	 * @param eyeZ The z-coord of the eye point
-	 * @param centerX The x-coord of the look-at point
-	 * @param centerY The y-coord of the look-at point
-	 * @param centerZ The z-coord of the look-at point
-	 * @param upX The x-coord of the up vector
-	 * @param upY The y-coord of the up vector
-	 * @param upZ The z-coord of the up vector
+	 * @param eyeX
+	 *            The x-coord of the eye point
+	 * @param eyeY
+	 *            The y-coord of the eye point
+	 * @param eyeZ
+	 *            The z-coord of the eye point
+	 * @param centerX
+	 *            The x-coord of the look-at point
+	 * @param centerY
+	 *            The y-coord of the look-at point
+	 * @param centerZ
+	 *            The z-coord of the look-at point
+	 * @param upX
+	 *            The x-coord of the up vector
+	 * @param upY
+	 *            The y-coord of the up vector
+	 * @param upZ
+	 *            The z-coord of the up vector
 	 */
 	public Camera(float eyeX, float eyeY, float eyeZ, float centerX,
 			float centerY, float centerZ, float upX, float upY, float upZ) {
 		Log.d(TAG, "Constructing Camera...");
 
-		this.upX = upX;
-		this.upY = upY;
-		this.upZ = upZ;
-
-		this.centerX = centerX;
-		this.centerY = centerY;
-		this.centerZ = centerZ;
-
-		Matrix.setLookAtM(matrix, 0, eyeX, eyeY, eyeZ, centerX, centerY,
-				centerZ, upX, upY, upZ);
+		current = new float[] { eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
+				upX, upY, upZ };
 	}
 
 	public Camera(float eyeX, float eyeY, float eyeZ, float centerX,
 			float centerY, float centerZ) {
 		Log.d(TAG, "Constructing Camera...");
-		
-		this.upX = 0.0f;
-		this.upY = 0.0f;
-		this.upZ = 1.0f;
 
-		this.centerX = centerX;
-		this.centerY = centerY;
-		this.centerZ = centerZ;
-
-		Matrix.setLookAtM(matrix, 0, eyeX, eyeY, eyeZ, centerX, centerY,
-				centerZ, upX, upY, upZ);
+		current = new float[] { eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
+				0.0f, 0.0f, 1.0f };
 	}
 
 	public Camera() {
-		this.upX = 0.0f;
-		this.upY = 1.0f;
-		this.upZ = 0.0f;
-
-		this.centerX = 0.0f;
-		this.centerY = 0.0f;
-		this.centerZ = -1.0f;
-		
-		Matrix.setIdentityM(matrix, 0);
+		current = new float[9];
+		current[7] = 1.0f;
+		current[5] = -1.0f;
 	}
 
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			float centerX, float centerY, float centerZ, float upX, float upY,
 			float upZ, long duration) {
 
-		this.upX = upX;
-		this.upY = upY;
-		this.upZ = upZ;
+		System.arraycopy(current, 0, begin, 0, 9);
 
-		this.centerX = centerX;
-		this.centerY = centerY;
-		this.centerZ = centerZ;
+		end[0] = upX;
+		end[1] = upY;
+		end[2] = upZ;
+		end[3] = centerX;
+		end[4] = centerY;
+		end[5] = centerZ;
+		end[6] = eyeX;
+		end[7] = eyeY;
+		end[8] = eyeZ;
 
-		Matrix.transposeM(begin, 0, matrix, 0);
-		Matrix.setLookAtM(end, 0, eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
-				upX, upY, upZ);
-		Matrix.transposeM(end, 0, end, 0);
 		startTime = System.currentTimeMillis();
 		this.duration = duration;
 		moving = true;
@@ -100,50 +84,33 @@ public class Camera {
 
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			float centerX, float centerY, float centerZ, long duration) {
-		this.centerX = centerX;
-		this.centerY = centerY;
-		this.centerZ = centerZ;
-
-		Matrix.transposeM(begin, 0, matrix, 0);
-		Matrix.setLookAtM(end, 0, eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
-				upX, upY, upZ);
-		Matrix.transposeM(end, 0, end, 0);
-		startTime = System.currentTimeMillis();
-		this.duration = duration;
-		moving = true;
+		
+		moveTo(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, current[6],
+				current[7], current[8], duration); 
+		// TODO inline this once sure it works
 	}
 
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			long duration) {
-		
-		Matrix.transposeM(begin, 0, matrix, 0);
-		Matrix.setLookAtM(end, 0, eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
-				upX, upY, upZ);
-		Matrix.transposeM(end, 0, end, 0);
-		startTime = System.currentTimeMillis();
-		this.duration = duration;
-		moving = true;
+
+		moveTo(eyeX, eyeY, eyeZ, current[3], current[4], current[5], current[6],
+				current[7], current[8], duration);
+		// TODO inline this once sure it works
 	}
 
 	synchronized void update(long time) {
 		if (!moving)
 			return;
 		float framePoint = (time - startTime) / duration;
-		IPO.matrix(matrix, 0, begin, 0, end, 0, framePoint);
-		if (matrix == end) {
-			begin = null;
-			end = null;
-		}
-		Matrix.transposeM(matrix, 0, matrix, 0);
-		
+		IPO.mesh(current, begin, end, framePoint);
 	}
-	
-	void copyToArray(float[] a, int offset){
-		if (a == null) {
-			a = new float[16 + offset];
-		}
-		
-		System.arraycopy(matrix, 0, a, offset, 16);
+
+	void copyToArray(float[] a, int offset) {
+		assert a != null : "Cannot copy Camera to null array.";
+
+		Matrix.setLookAtM(a, 0, current[0], current[1], current[2],
+				current[3], current[4], current[5], current[6], current[7],
+				current[8]);
 	}
 
 }

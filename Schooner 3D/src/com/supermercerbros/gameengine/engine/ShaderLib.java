@@ -42,6 +42,12 @@ public class ShaderLib {
 	 * @return The program with the given name.
 	 */
 	public static synchronized Program getProgram(String name) {
+		if (!initialized) {
+			throw new IllegalStateException("ShaderLib has not been initialized.");
+		}
+		if (programs == null) {
+			Log.e("ShaderLib", "ShaderLib is initialized, but ShaderLib.programs == null.");
+		}
 		return programs.get(name);
 	}
 
@@ -52,8 +58,9 @@ public class ShaderLib {
 	 *            The path to the xml file.
 	 */
 	public static void loadPrograms(String filepath) {
-		if (!initialized)
-			return;
+		if (!initialized) {
+			throw new IllegalStateException("ShaderLib has not been initialized.");
+		}
 		XmlResourceParser xrp;
 		try {
 			xrp = am.openXmlResourceParser(filepath);
@@ -66,7 +73,14 @@ public class ShaderLib {
 		parseXml(xrp, true);
 	}
 
+	/**
+	 * Initializes the ShaderLib.
+	 * @param context
+	 */
 	static void init(Context context) {
+		if (initialized){
+			return;
+		}
 		initialized = true;
 		am = context.getAssets();
 		programs = new HashMap<String, Program>();
@@ -168,11 +182,7 @@ public class ShaderLib {
 						f = shaders.get(fName);
 					}
 
-					Program p = new Program();
-					p.setVertexShader(v);
-					p.setFragmentShader(f);
-
-					addProgram(name, p);
+					addProgram(name, new Program(v, f));
 				}
 				eventType = xrp.next();
 			}
@@ -185,6 +195,16 @@ public class ShaderLib {
 			e.printStackTrace();
 			return;
 		}
+	}
+
+	static synchronized void close() {
+		initialized = false;
+		am = null;
+		programs.clear();
+		programs = null;
+		shaders.clear();
+		shaders = null;
+		Log.d("ShaderLib", "ShaderLib is now closed.");
 	}
 
 }

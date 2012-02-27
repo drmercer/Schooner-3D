@@ -1,7 +1,10 @@
 package com.supermercerbros.gameengine.engine;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.DelayQueue;
 
 import android.util.Log;
 
@@ -9,14 +12,15 @@ import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
+import com.supermercerbros.gameengine.util.Toggle;
 
 /**
  * Handles the interactions of game elements in the world space.
  * 
  * @version 1.0
  */
-public class Engine implements Runnable {
-	private static final String TAG = Engine.class.getName();
+public class Engine extends Thread {
+	private static final String TAG = "Engine";
 	private DataPipe pipe;
 	private RenderData out = new RenderData();
 	private Camera cam;
@@ -39,13 +43,36 @@ public class Engine implements Runnable {
 	 * To be used by subclasses of Engine. Contains the GameObjects currently in
 	 * the Engine.
 	 */
-	protected ArrayList<GameObject> objects;
+	protected List<GameObject> objects;
 	private long time;
 
 	// Be careful to always synchronize access of these fields:
-	private volatile Boolean paused = false, ending = false, flush = false;
-	private volatile boolean started = false; 
+	private volatile Toggle flush = new Toggle(false), paused = new Toggle(false);
+	private volatile boolean started = false, ending = false;
 	private boolean lightsChanged = false;
+	/**
+	 * Used for passing commands from the UI thread to the {@link Engine}
+	 * thread. This <b>should not</b> be polled by any thread other than the
+	 * Engine thread.
+	 */
+	ConcurrentLinkedQueue<Runnable> actions = new ConcurrentLinkedQueue<Runnable>();
+	/**
+	 * Used for passing delayed commands from the UI thread to the Engine
+	 * thread.
+	 */
+	DelayQueue<DelayedRunnable> delayedActions = new DelayQueue<DelayedRunnable>();
+	/**
+	 * Used for passing new GameObjects from the UI thread to the {@link Engine}
+	 * thread. This <b>should not</b> be polled by any thread other than the
+	 * Engine thread.
+	 */
+	ConcurrentLinkedQueue<GameObject> newObjects = new ConcurrentLinkedQueue<GameObject>();
+	/**
+	 * Used for passing GameObjects to be deleted to the {@link Engine} thread.
+	 * This <b>should not</b> be polled by any thread other than the Engine
+	 * thread.
+	 */
+	ConcurrentLinkedQueue<GameObject> delObjects = new ConcurrentLinkedQueue<GameObject>();
 
 	/**
 	 * @param pipe
@@ -56,10 +83,11 @@ public class Engine implements Runnable {
 	 *            Engine.
 	 */
 	public Engine(DataPipe pipe, Camera cam) {
+		super("Schooner3D Engine thread");
 		Log.d(TAG, "Constructing Engine...");
 		this.pipe = pipe;
 		this.cam = cam;
-		this.objects = new ArrayList<GameObject>();
+		this.objects = new LinkedList<GameObject>();
 		this.vboA = new int[pipe.VBO_capacity / 4];
 		this.vboB = new int[pipe.VBO_capacity / 4];
 		this.iboA = new short[pipe.IBO_capacity / 2];
@@ -70,7 +98,157 @@ public class Engine implements Runnable {
 		this.lightB = new float[3];
 		this.colorA = new float[3];
 		this.colorB = new float[3];
+		this.setDaemon(true);
 		Log.d(TAG, "Engine constructed.");
+	}
+
+	/**
+	 * TODO Javadoc
+	 * @param objects
+	 */
+	public void addAllObjects(Collection<GameObject> objects) {
+		if (!started) {
+			this.objects.addAll(objects);
+		} else {
+			newObjects.addAll(objects);
+		}
+	}
+
+	/**
+	 * TODO Javadoc
+	 * @param object
+	 */
+	public void addObject(GameObject object) {
+		if (!started) {
+			objects.add(object);
+		} else {
+			newObjects.add(object);
+		}
+	}
+
+	/**
+	 * Runs a Runnable on the Engine thread
+	 * 
+	 * @param r
+	 *            The Runnable to run on the Engine thread
+	 */
+	public void doRunnable(Runnable r) {
+		actions.add(r);
+	}
+
+	/**
+	 * Runs a {@link Runnable} on the Engine thread with a delay.
+	 * 
+	 * @param r
+	 *            The Runnable to run on the Engine thread.
+	 * @param delay
+	 *            The amount by which to delay the run, in milliseconds
+	 */
+	public void doRunnable(Runnable r, long delay) {
+		delayedActions.add(new DelayedRunnable(r, delay));
+	}
+
+	/**
+	 * Terminates this Engine.
+	 */
+	public void end() {
+		Log.d(TAG, "Engine state before end():" + getState().toString());
+		ending = true;
+		interrupt();
+		Log.d(TAG, "Engine state after end():" + getState().toString());
+		
+	}
+
+	/**
+	 * Tells the Engine to actually delete all of its GameObjects that are
+	 * marked for deletion
+	 */
+	public void flushDeletedObjects() {
+		synchronized (flush) {
+			flush.setState(true);
+		}
+	}
+
+	/**
+	 * Tells this Engine to pause processing. Used with {@link #resumeEngine()}.
+	 */
+	public void pause() {
+		synchronized (paused) {
+			paused.setState(true);
+		}
+	}
+
+	/**
+	 * Removes the given GameObject from the Engine.
+	 * @param object
+	 */
+	public void removeObject(GameObject object) {
+		if (!started) {
+			objects.remove(object);
+		} else {
+			delObjects.add(object);
+		}
+	}
+
+	/**
+	 * Tells this Engine to resume processing.
+	 */
+	public void resumeEngine() {
+		synchronized (paused) {
+			paused.setState(false);
+			paused.notify();
+		}
+	}
+
+	/**
+	 * Do not call this method. Call {@link #start()} to start the Engine.
+	 * @see java.lang.Thread#run()
+	 */
+	@Override
+	public synchronized void run() {
+		if (Thread.currentThread() != this){
+			throw new UnsupportedOperationException("Do not call Engine.run()");
+		}
+		while (!ending) {
+			// Check for new GameObjects, GameObjects to delete, and actions to
+			// perform.
+			while (!actions.isEmpty())
+				actions.poll().run();
+			while (!newObjects.isEmpty())
+				objects.add(newObjects.poll());
+			while (!delObjects.isEmpty())
+				delObject(delObjects.poll());
+
+			DelayedRunnable d = delayedActions.poll();
+			while (d != null) {
+				d.r.run();
+				d = delayedActions.poll();
+			}
+
+			synchronized (flush) {
+				if (flush.getState()) {
+					flush();
+				}
+			}
+
+			doSpecialStuff(time);
+			computeFrame();
+			updatePipe();
+			aBufs = !aBufs; // Swap aBufs
+
+			synchronized (paused) {
+				while (paused.getState()) {
+					try {
+						Log.d(TAG, "Waiting to unpause...");
+						paused.wait();
+					} catch (InterruptedException e) {
+						Log.w(TAG, "Interrupted while waiting to unpause.");
+					}
+				}
+			}
+		}
+
+		Log.d(TAG, "end Engine");
 	}
 
 	/**
@@ -110,41 +288,13 @@ public class Engine implements Runnable {
 		}
 	}
 
-	public void addObject(GameObject object) {
-		if (!started) {
-			objects.add(object);
-		} else {
-			pipe.newObjects.add(object);
-		}
-	}
-	
-	public void addAllObjects(Collection<GameObject> objects){
-		if (!started) {
-			this.objects.addAll(objects);
-		} else {
-			pipe.newObjects.addAll(objects);
-		}
-	}
-	
-	public void removeObject(GameObject object) {
-		if (!started) {
-			objects.remove(object);
-		} else {
-			pipe.newObjects.add(object);
-		}
-	}
-
-	private void computeFrame() {
-		// Collision detection goes here, whenever I need it.
-
-		for (GameObject object : objects) {
-			if (!object.isMarkedForDeletion()) {
-				object.draw(time);
-			}
-		}
-		
-		cam.update(time);
-		// Do I need anything else here?
+	/**
+	 * Use this method (<b>not</b> {@link #run()}) to start the Engine.
+	 */
+	@Override
+	public void start() {
+		started = true;
+		super.start();			
 	}
 
 	/**
@@ -159,73 +309,20 @@ public class Engine implements Runnable {
 
 	}
 
-	/**
-	 * Terminates this Engine.
-	 */
-	public void end() {
-		synchronized (ending) {
-			ending = true;
-		}
-	}
+	private void computeFrame() {
+		// Collision detection goes here, whenever I need it.
 
-	private void flush() {
-		for (int i = 0; i < objects.size(); i++) {
-			if (objects.get(i).isMarkedForDeletion()) {
-				objects.remove(i);
+		for (GameObject object : objects) {
+			if (!object.isMarkedForDeletion()) {
+				object.draw(time);
 			}
 		}
-		flush = true;
+
+		cam.update(time);
 	}
 
 	/**
-	 * Tells the Engine to actually delete all of its GameObjects that are
-	 * marked for deletion
-	 */
-	public void flushDeletedObjects() {
-		synchronized (flush) {
-			flush = true;
-		}
-	}
-
-	private boolean isEnding() {
-		synchronized (ending) {
-			return ending;
-		}
-	}
-
-	private boolean isPaused() {
-		synchronized (paused) {
-			return paused;
-		}
-	}
-
-	private int loadToIBO(short[] ibo, GameObject object, int offset,
-			int vertexOffset) {
-		object.iOffset = offset;
-		if (object.isMarkedForDeletion())
-			return 0;
-		System.arraycopy(object.getIndices(), 0, ibo, offset, object.info.size);
-//		int length = object.getIndices().length;
-//		short[] indices = object.getIndices();
-//		for (int i = 0; i < length; i++){
-//			ibo[i + offset] = (short) (indices[i] + vertexOffset); 
-//		}
-		return object.info.size;
-	}
-
-	/**
-	 * Tells this Engine to pause processing.
-	 */
-	public void pause() {
-		synchronized (paused) {
-			paused = true;
-		}
-	}
-
-	/**
-	 * Removes the given GameObject from the Engine. Only call this method from
-	 * the Engine thread (i.e. in a Runnable in given to
-	 * {@link DataPipe#runOnEngineThread(Runnable)}.
+	 * Marks the given GameObject for deletion. 
 	 * 
 	 * @param object
 	 *            The GameObject to remove from the Engine.
@@ -236,56 +333,22 @@ public class Engine implements Runnable {
 		}
 	}
 
-	/**
-	 * Tells this Engine to resume processing.
-	 */
-	public void resume() {
-		synchronized (paused) {
-			paused = false;
-		}
-	}
-
-	@Override
-	public synchronized void run() {
-		while (!isEnding()) {
-			// Check for new GameObjects, GameObjects to delete, and actions to
-			// perform.
-			while (!pipe.actions.isEmpty())
-				pipe.actions.poll().run();
-			while (!pipe.newObjects.isEmpty())
-				objects.add(pipe.newObjects.poll());
-			while (!pipe.delObjects.isEmpty())
-				delObject(pipe.delObjects.poll());
-			
-			DelayedRunnable r = pipe.delayedActions.poll();
-			while (r != null){
-				r.run();
-				r = pipe.delayedActions.poll();
-			}
-
-			synchronized (flush) {
-				if (flush)
-					flush();
-			}
-
-			if (!isPaused()) {
-				doSpecialStuff(time);
-				computeFrame();
-				updatePipe();
-				aBufs = !aBufs; // Swap aBufs
+	private void flush() {
+		for (int i = 0; i < objects.size(); i++) {
+			if (objects.get(i).isMarkedForDeletion()) {
+				objects.remove(i);
 			}
 		}
-
-		// Add any termination code here
+		flush.setState(false);
 	}
-
-	/**
-	 * Use this method (<b>not</b> {@link #run()}) to start the Engine. Starts
-	 * in a new Thread.
-	 */
-	public void start() {
-		started = true;
-		new Thread(this).start();
+	
+	private int loadToIBO(short[] ibo, GameObject object, int offset,
+			int vertexOffset) {
+		object.iOffset = offset;
+		if (object.isMarkedForDeletion())
+			return 0;
+		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
+		return object.info.size;
 	}
 
 	private void updatePipe() {
@@ -302,7 +365,8 @@ public class Engine implements Runnable {
 
 		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixIndex = 0, i = 0;
 		for (GameObject object : objects) {
-			int bufferSize = object.info.mtl.loadObjectToVBO(object, out.vbo, vOffset);
+			int bufferSize = object.info.mtl.loadObjectToVBO(object, out.vbo,
+					vOffset);
 			vOffset += bufferSize;
 
 			iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
@@ -311,12 +375,10 @@ public class Engine implements Runnable {
 
 			System.arraycopy(object.modelMatrix, 0, out.modelMatrices,
 					matrixIndex++ * 16, 16);
-			
+
 			out.primitives[i++] = object.info;
 		}
 
-			
-		
 		cam.copyToArray(out.viewMatrix, 0);
 		if (out.viewMatrix == null) {
 			Log.e(TAG, "viewMatrix == null");
