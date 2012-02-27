@@ -237,4 +237,8 @@ public abstract class Material {
 		default:
 		}
 	}
+	
+	public int getStride(){
+		return stride;
+	}
 }

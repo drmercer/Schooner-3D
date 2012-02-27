@@ -8,10 +8,6 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 
-/**
- * @author Daniel Mercer
- *
- */
 public class Utils {
 	/** Appends multiple arrays onto the end of another array of the same type. I found this code 
 	 * <a href=http://stackoverflow.com/questions/80476/how-to-concatenate-two-arrays-in-java/784842#784842>here</a>, 

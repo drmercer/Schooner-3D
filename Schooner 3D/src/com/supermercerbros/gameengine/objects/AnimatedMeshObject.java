@@ -38,7 +38,6 @@ public class AnimatedMeshObject extends GameObject{
 		
 		this.data.setInitialState(verts);
 		this.data.setCallTime(System.currentTimeMillis());
-		
 	}
 	
 	public void clearAnimation(){

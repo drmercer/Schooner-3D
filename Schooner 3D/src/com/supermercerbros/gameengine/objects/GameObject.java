@@ -1,6 +1,7 @@
 package com.supermercerbros.gameengine.objects;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import android.opengl.Matrix;
 import android.util.Log;
@@ -20,7 +21,7 @@ public class GameObject implements Movable, Collidable{
 	 * Contains the indices of the vertices for the elements (i.e. triangles) in
 	 * this object.
 	 */
-	protected short[] indices;
+	public short[] indices;
 
 	/**
 	 * Contains the current object-space coordinates of the vertices used in
@@ -110,10 +111,10 @@ public class GameObject implements Movable, Collidable{
 	 * @return an ArrayList of GameObjects, or null if
 	 *         <code>quantity <= 0</code>.
 	 */
-	public ArrayList<GameObject> instance(int quantity) {
+	public List<GameObject> instance(int quantity) {
 		if (quantity <= 0)
 			return null;
-		ArrayList<GameObject> instances = new ArrayList<GameObject>(quantity);
+		LinkedList<GameObject> instances = new LinkedList<GameObject>();
 		for (int i = 0; i < quantity; i++) {
 			instances.add(new GameObject(verts, indices, mtl, normals,
 					instanceLoaded, info.mtl));
@@ -134,24 +135,10 @@ public class GameObject implements Movable, Collidable{
 	 * @see AnimatedMeshObject#draw(long)
 	 */
 	public void draw(long time) {
-		if (!stationary || motion != null) {
+		if (motion != null) {
 			motion.getFrame(modelMatrix, 0, time);
 		}
 		lastDrawTime = time;
-	}
-
-	/**
-	 * @return the indices
-	 */
-	public short[] getIndices() {
-		return indices;
-	}
-
-	/**
-	 * @return the info
-	 */
-	public Metadata getInfo() {
-		return info;
 	}
 
 	/**
