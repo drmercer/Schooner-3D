@@ -2,33 +2,36 @@ package com.supermercerbros.gameengine.collision;
 
 import com.supermercerbros.gameengine.util.Utils;
 
+/**
+ * Represents a vector, which is a mathematical quantity with both direction and magnitude (i.e. an arrow).
+ * 
+ * @see <a href=http://www.youtube.com/watch?v=KbrEBpCw3Ag&t=00m05s>"Vector" from Despicable Me</a> :P
+ */
 public class Vector {
 	private float x, y, z;
 
 	public Vector(Point tail, Point head, boolean normalized) {
-		x = head.getX() - tail.getX();
-		y = head.getY() - tail.getY();
-		z = head.getZ() - tail.getZ();
-
+		float length;
 		if (normalized) {
-			float length = Utils.pythagF(x, y, z);
-			x /= length;
-			y /= length;
-			z /= length;
+			length = Utils.pythagF(x, y, z);
+		} else {
+			length = 1.0f;
 		}
+		x = (head.getX() - tail.getX()) / length;
+		y = (head.getY() - tail.getY()) / length;
+		z = (head.getZ() - tail.getZ()) / length;
 	}
 
 	public Vector(float x, float y, float z, boolean normalized) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		
+		float length;
 		if (normalized) {
-			float length = Utils.pythagF(x, y, z);
-			x /= length;
-			y /= length;
-			z /= length;
+			length = Utils.pythagF(x, y, z);
+		} else {
+			length = 1.0f;
 		}
+		this.x = x / length;
+		this.y = y / length;
+		this.z = z / length;
 	}
 
 	/**
