@@ -1,6 +1,6 @@
-This is a 3D game engine for Android. So far it can only render shadeless 
-triangles with vertex colors. I am currently debugging the texturing. I
-have not tested the camera or lights yet. I also have not tried rendering animated 
-meshes, but I have tested them (without rendering).
+Schooner 3D
+===========
 
-I think I'm going to draw up a framework flowchart to show how it all fits together.
+Schooner 3D is an open-source game engine for the Android platform. It is licensed under the [Apache License][]. I have successfully rendered both textured and vertex-colored primitives. I am currently working on animated meshes and collision detection. 
+
+[Apache License]: www.apache.org/licenses/LICENSE-2.0.html "Apache License v2.0"
