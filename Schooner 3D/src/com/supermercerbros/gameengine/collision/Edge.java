@@ -9,6 +9,7 @@ public class Edge extends Feature {
 	 * A Face neighboring the Edge (in the Edge's coboundary)
 	 */
 	private Face right, left;
+	private Vector vector;
 	private boolean locked;
 
 	/**
@@ -24,6 +25,8 @@ public class Edge extends Feature {
 		head.addEdge(this);
 		this.tail = tail;
 		tail.addEdge(this);
+		
+		vector = new Vector(tail, head, true);
 
 	}
 
@@ -40,7 +43,7 @@ public class Edge extends Feature {
 		}
 		
 		Vector v = new Vector(tail, point, true);
-		float dot = asVector().cross(v).dot(face.getNormal());
+		float dot = vector.cross(v).dot(face.getNormal());
 		if (dot > 0) {
 			left = face;
 		} else {
@@ -48,14 +51,6 @@ public class Edge extends Feature {
 		}
 	}
 	
-	/**
-	 * Returns the (non-normalized) vector of the Edge's direction.
-	 * @return The vector of the Edge's direction. 
-	 */
-	protected Vector asVector(){
-		return new Vector(tail, head, false);
-	}
-
 	@Override
 	protected void lock() {
 		// TODO Lock Edge
