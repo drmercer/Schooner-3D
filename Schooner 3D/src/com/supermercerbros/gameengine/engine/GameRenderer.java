@@ -73,8 +73,9 @@ public class GameRenderer implements Renderer {
 	private int u_lightColor = -1;
 
 	private int drawFrameCount = 0;
+	private float near, far;
 
-	public GameRenderer(DataPipe pipe) {
+	public GameRenderer(DataPipe pipe, float near, float far) {
 		Log.d(TAG, "Constructing GameRenderer...");
 		this.pipe = pipe;
 
@@ -89,6 +90,9 @@ public class GameRenderer implements Renderer {
 			ibo = ByteBuffer.allocateDirect(pipe.IBO_capacity).order(
 					ByteOrder.nativeOrder()).asShortBuffer();
 		}
+		
+		this.near = near;
+		this.far = far;
 		Log.d(TAG, "GameRenderer constructed!");
 	}
 
@@ -148,7 +152,7 @@ public class GameRenderer implements Renderer {
 	public void onSurfaceChanged(GL10 unused, int width, int height) {
 		GLES20.glViewport(0, 0, width, height);
 		float aspect = width / (float) height;
-		Utils.perspectiveM(projMatrix, 0, 45, aspect, 0.5f, 5.f);
+		Utils.perspectiveM(projMatrix, 0, 45, aspect, near, far);
 	}
 
 	@Override

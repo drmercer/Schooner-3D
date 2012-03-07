@@ -20,7 +20,7 @@ public class Schooner3D {
 	/**
 	 * The default render backgroundColor color.
 	 */
-	public static final float[] DEFAULT_BACKGROUND_COLOR = { 0.5f, 0.5f, 0.5f,
+	public static final float[] DEFAULT_BACKGROUND_COLOR = { 0.0f, 0.0f, 0.0f,
 			1.0f };
 	/**
 	 * The default maximum number of light.

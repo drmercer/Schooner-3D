@@ -41,7 +41,7 @@ public class MeshAnimation {
 
 	public void getFrame(long frameTime, AnimationData data,
 			AnimatedMeshObject object) { // frameTime is world time
-		Log.d(TAG, "MeshAnimation.getFrame(" + frameTime + ") was called.");
+		Log.d(TAG, "MeshAnimation.getFrame() was called.");
 
 		float framePoint = (frameTime - data.startTime) / data.duration;
 
