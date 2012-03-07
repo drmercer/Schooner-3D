@@ -98,7 +98,6 @@ public class Engine extends Thread {
 		this.lightB = new float[3];
 		this.colorA = new float[3];
 		this.colorB = new float[3];
-		this.setDaemon(true);
 		Log.d(TAG, "Engine constructed.");
 	}
 
