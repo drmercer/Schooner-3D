@@ -41,6 +41,11 @@ public class GameObject implements Movable{
 	 * Contains the normals of the vertices of this <code>GameObject</code>.
 	 */
 	protected float[] normals;
+	
+	/**
+	 * Contains the indices of the vertex pairs that are identical geometrically. Used in normal calculation.
+	 */
+	private short[] doubles;
 
 	/**
 	 * The Metadata about this GameObject.
@@ -79,12 +84,13 @@ public class GameObject implements Movable{
 	 *            A Material object to use when for rendering
 	 */
 	public GameObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, Material mtl) {
+			float[] normals, Material mtl, short[] doubles) {
 		Log.d(TAG, "Constructing GameObject...");
 		this.verts = verts;
 		this.indices = indices;
 		this.mtl = uvs;
 		this.normals = normals;
+		this.doubles = (doubles != null)? doubles : new short[0];
 		info = new Metadata();
 		info.size = indices.length;
 		info.count = verts.length / 3;
@@ -95,8 +101,20 @@ public class GameObject implements Movable{
 	}
 
 	private GameObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, int[] instanceLoaded, Material mtl) {
-		new GameObject(verts, indices, uvs, normals, mtl);
+			float[] normals, int[] instanceLoaded, Material mtl, short[] doubles) {
+		Log.d(TAG, "Constructing GameObject...");
+		this.verts = verts;
+		this.indices = indices;
+		this.mtl = uvs;
+		this.normals = normals;
+		this.doubles = (doubles != null)? doubles : new short[0];
+		info = new Metadata();
+		info.size = indices.length;
+		info.count = verts.length / 3;
+		info.mtl = mtl;
+
+		Matrix.setIdentityM(modelMatrix, 0);
+		stationary = false;
 
 		this.instanceLoaded = instanceLoaded;
 	}
@@ -116,7 +134,7 @@ public class GameObject implements Movable{
 		LinkedList<GameObject> instances = new LinkedList<GameObject>();
 		for (int i = 0; i < quantity; i++) {
 			instances.add(new GameObject(verts, indices, mtl, normals,
-					instanceLoaded, info.mtl));
+					instanceLoaded, info.mtl, doubles));
 		}
 		return instances;
 	}

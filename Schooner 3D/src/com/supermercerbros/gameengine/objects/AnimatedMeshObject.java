@@ -22,8 +22,8 @@ public class AnimatedMeshObject extends GameObject {
 	private MeshAnimation[] anims;
 
 	public AnimatedMeshObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, Material mtl) {
-		super(verts, indices, uvs, normals, mtl);
+			float[] normals, Material mtl, short[] doubles) {
+		super(verts, indices, uvs, normals, mtl, doubles);
 		data = new AnimationData();
 	}
 

@@ -148,11 +148,11 @@ public class Sch3D {
 					anims[i] = new MeshAnimation(keyframes, times, animID);
 				}
 				
-				AnimatedMeshObject object = new AnimatedMeshObject(verts, indices, uvs, new float[vertCount * 3], mtl);
+				AnimatedMeshObject object = new AnimatedMeshObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
 				object.attachAnims(anims);
 				return object;
 			} else {
-				GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl);
+				GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
 				return object;
 			}
 			

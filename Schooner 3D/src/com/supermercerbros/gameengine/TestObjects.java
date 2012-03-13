@@ -35,7 +35,7 @@ public class TestObjects {
 		float[] times = { 0, 3000 };
 		MeshAnimation anim1 = new MeshAnimation(keyframesA, times, null);
 		AnimatedMeshObject tetra = new AnimatedMeshObject(frameA1.clone(),
-				indices, colors, normals, new BasicMaterial());
+				indices, colors, normals, new BasicMaterial(), null);
 		tetra.setAnimation(anim1, System.currentTimeMillis() + 1000, 3000, 1);
 		return tetra;
 	}
@@ -61,7 +61,7 @@ public class TestObjects {
 				-1.0f, -1.0f, -1.0f, };
 
 		GameObject cube = new GameObject(verts, indices, uvs, normals,
-				new TexturedMaterial(texName));
+				new TexturedMaterial(texName), null);
 		return cube;
 	}
 
@@ -83,7 +83,7 @@ public class TestObjects {
 		float[] normals = {};
 
 		GameObject obj = new GameObject(verts, indices, uvs, normals,
-				new TexturedMaterial(texName));
+				new TexturedMaterial(texName), null);
 		return obj;
 	}
 
@@ -99,7 +99,7 @@ public class TestObjects {
 		float[] normals = {};
 
 		GameObject tri = new GameObject(verts, indices, colors, normals,
-				new BasicMaterial());
+				new BasicMaterial(), null);
 		return tri;
 	}
 
