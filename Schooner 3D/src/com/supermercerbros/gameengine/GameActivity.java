@@ -4,22 +4,38 @@ import android.app.Activity;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnTouchListener;
 
 import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.DataPipe;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.GameRenderer;
 
-public class GameActivity extends Activity {
+/**
+ * An Activity that handles much of setting up the Engine and Renderer. At the
+ * end of {@link #onCreate(Bundle)}, subclasses should call
+ * {@link #start(float, float)} like so:
+ * 
+ * <pre>
+ * public void onCreate(Bundle savedInstanceState) {
+ *     super.onCreate(savedInstanceState);
+ *     
+ *     ... // Set Camera, load objects, textures, etc.
+ *     
+ *     start(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
+ * }
+ */
+public abstract class GameActivity extends Activity implements OnTouchListener {
 	private static final String TAG = "com.supermercerbros.gameengine.GameActivity";
 	private GLSurfaceView gameView;
 	private GameLayout content;
 	private DataPipe pipe;
 	private Camera cam;
 	private Engine engine;
-	private boolean started = false, created = false;
+	private boolean created = false;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -32,8 +48,21 @@ public class GameActivity extends Activity {
 		pipe = new DataPipe(this);
 		cam = new Camera();
 		engine = new Engine(pipe, cam);
+
+		gameView = new GLSurfaceView(this);
+		gameView.setEGLContextClientVersion(2);
+		
+		gameView.setOnTouchListener(this);
 	}
 
+	/**
+	 * Sets the content to be displayed. The layout given is superimposed over
+	 * the game.
+	 * 
+	 * @param layoutResID
+	 *            The resource ID of the layout to display over the game.
+	 * @see android.app.Activity#setContentView(int)
+	 */
 	@Override
 	public void setContentView(int layoutResID) {
 		ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
@@ -42,6 +71,15 @@ public class GameActivity extends Activity {
 		setContentView(getLayoutInflater().inflate(layoutResID, null), params);
 	}
 
+	/**
+	 * Sets the content to be displayed. The layout given is superimposed over
+	 * the game.
+	 * 
+	 * @param v
+	 *            The view to display over the game.
+	 * 
+	 * @see android.app.Activity#setContentView(int)
+	 */
 	@Override
 	public void setContentView(View v) {
 		ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
@@ -50,14 +88,26 @@ public class GameActivity extends Activity {
 		setContentView(v, params);
 	}
 
+	/**
+	 * Sets the content to be displayed. The layout given is superimposed over
+	 * the game.
+	 * 
+	 * @param v
+	 *            The view to display over the game.
+	 * @param params
+	 *            The ViewGroup params to use.
+	 * 
+	 * @see android.app.Activity#setContentView(int)
+	 */
 	@Override
 	public void setContentView(View v, ViewGroup.LayoutParams params) {
 		if (content == null) {
-			content = new GameLayout(this);
+			content = new GameLayout(this, gameView);
+		} else {
+			content.removeAllViews();
 		}
-		super.setContentView(content);
-		content.setGameView(gameView);
 		content.addView(v, params);
+		super.setContentView(content);
 	}
 
 	/**
@@ -87,7 +137,12 @@ public class GameActivity extends Activity {
 	}
 
 	/**
-	 * Subclasses must call this at the end of their onCreate() call
+	 * Subclasses must call this at the end of their onCreate() call.
+	 * 
+	 * @param near
+	 *            The near clipping distance.
+	 * @param far
+	 *            The far clipping distance.
 	 */
 	protected void start(float near, float far) {
 		if (!created) {
@@ -95,27 +150,21 @@ public class GameActivity extends Activity {
 					"GameActivity subclass must call super.onCreate() first!");
 		}
 		Log.d(TAG, "GameActivity Start!");
-		started = true;
 		engine.start();
-
-		gameView = new GLSurfaceView(this);
-		gameView.setEGLContextClientVersion(2);
-		gameView.setDebugFlags(GLSurfaceView.DEBUG_CHECK_GL_ERROR
-				| GLSurfaceView.DEBUG_LOG_GL_CALLS);
 		gameView.setRenderer(new GameRenderer(pipe, near, far));
-		super.setContentView(gameView);
+		super.setContentView(gameView); //TODO change to super.setContentView(content);
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
 		Log.d(TAG, "onPause");
-		engine.pause();
 		if (gameView != null) {
 			gameView.onPause();
 		} else {
 			Log.w(TAG, "pausing while gameView is null!");
 		}
+		engine.pause();
 	}
 
 	@Override
@@ -157,4 +206,20 @@ public class GameActivity extends Activity {
 		System.arraycopy(color, 0, Schooner3D.backgroundColor, 0,
 				(color.length < 4) ? color.length : 4);
 	}
+	
+	@Override
+	public final boolean onTouch(View v, MotionEvent e){
+		if (v == gameView){
+			return onTouch(e);
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Called when the background (the rendered scene) receives a touch event.
+	 * @param e The MotionEvent received.
+	 * @return True if the handling has consumed the event, false if otherwise.
+	 */
+	protected abstract boolean onTouch(MotionEvent e);
 }

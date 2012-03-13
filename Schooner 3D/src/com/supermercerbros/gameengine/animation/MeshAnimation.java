@@ -43,7 +43,8 @@ public class MeshAnimation {
 			AnimatedMeshObject object) { // frameTime is world time
 		Log.d(TAG, "MeshAnimation.getFrame() was called.");
 
-		float framePoint = (frameTime - data.startTime) / data.duration;
+		double framePoint = ((float) (frameTime - data.startTime)) / (float) data.duration;
+		Log.d(TAG, framePoint + " = (" + (frameTime - data.startTime) + ") / " + data.duration);
 
 		if (framePoint < 0.0) {
 			framePoint = (frameTime - data.callTime)

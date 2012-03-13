@@ -1,7 +1,7 @@
 package com.supermercerbros.gameengine.engine;
 
-import java.util.LinkedList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.DelayQueue;
@@ -234,7 +234,10 @@ public class Engine extends Thread {
 			computeFrame();
 			updatePipe();
 			aBufs = !aBufs; // Swap aBufs
-
+			
+			if (ending){
+				break;
+			}
 			synchronized (paused) {
 				while (paused.getState()) {
 					try {
@@ -242,6 +245,9 @@ public class Engine extends Thread {
 						paused.wait();
 					} catch (InterruptedException e) {
 						Log.w(TAG, "Interrupted while waiting to unpause.");
+						if (ending) {
+							break;
+						}
 					}
 				}
 			}
@@ -378,7 +384,7 @@ public class Engine extends Thread {
 			out.primitives[i++] = object.info;
 		}
 
-		cam.copyToArray(out.viewMatrix, 0);
+		cam.writeToArray(out.viewMatrix, 0);
 		if (out.viewMatrix == null) {
 			Log.e(TAG, "viewMatrix == null");
 		}

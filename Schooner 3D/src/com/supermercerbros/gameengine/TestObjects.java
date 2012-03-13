@@ -20,23 +20,23 @@ public class TestObjects {
 	 */
 	public static GameObject tetra() {
 		ArrayList<Keyframe> keyframesA = new ArrayList<Keyframe>();
-		short[] indices = { 1, 2, 3, 1, 2, 4, 1, 3, 4, 2, 3, 4, };
+		short[] indices = { 0, 1, 2, 0, 1, 3, 0, 2, 3, 1, 2, 3, };
 		float[] colors = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-				1.0f, 0.0f, 0.0f, 0.0f, };
+				1.0f, 1.0f, 1.0f, 1.0f, };
 		float[] normals = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, 0.0f, };
 
 		float[] frameA1 = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
 				1.0f, 0.0f, 0.0f, 0.0f, };
 		keyframesA.add(new Keyframe(frameA1));
-		float[] frameA2 = { 2.0f, 0.0f, 0.0f, 0.0f, 2.0f, 0.0f, 0.0f, 0.0f,
-				2.0f, 0.0f, 0.0f, 0.0f, };
+		float[] frameA2 = { 3.0f, 0.0f, 0.0f, 0.0f, 3.0f, 0.0f, 0.0f, 0.0f,
+				3.0f, 0.0f, 0.0f, 0.0f, };
 		keyframesA.add(new Keyframe(frameA2));
-		float[] times = { 0, 1000 };
+		float[] times = { 0, 3000 };
 		MeshAnimation anim1 = new MeshAnimation(keyframesA, times);
 		AnimatedMeshObject tetra = new AnimatedMeshObject(frameA1.clone(),
 				indices, colors, normals, new BasicMaterial());
-		tetra.setAnimation(anim1, System.currentTimeMillis() + 1000, 5000, 1);
+		tetra.setAnimation(anim1, System.currentTimeMillis() + 1000, 3000, 1);
 		return tetra;
 	}
 
@@ -49,14 +49,16 @@ public class TestObjects {
 	 * @return A textured cube.
 	 */
 	public static GameObject cube(String texName) {
-		float[] verts = { .5f, .5f, .5f, .5f, -.5f, .5f, -.5f, .5f, .5f, -.5f,
-				-.5f, .5f, .5f, .5f, -.5f, .5f, -.5f, -.5f, -.5f, .5f, -.5f,
-				-.5f, -.5f, -.5f, };
+		float[] verts = { 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
+				-1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
+				-1.0f, -1.0f, -1.0f, };
 		float[] uvs = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
 				0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, };
 		short[] indices = { 0, 1, 2, 1, 2, 3, 0, 1, 5, 0, 4, 5, 1, 5, 7, 1, 3,
 				7, 0, 2, 4, 2, 4, 6, 3, 2, 6, 3, 6, 7, 4, 5, 7, 4, 6, 7, };
-		float[] normals = {};
+		float[] normals = { 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
+				-1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
+				-1.0f, -1.0f, -1.0f, };
 
 		GameObject cube = new GameObject(verts, indices, uvs, normals,
 				new TexturedMaterial(texName));

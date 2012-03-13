@@ -75,6 +75,12 @@ public class GameRenderer implements Renderer {
 	private int drawFrameCount = 0;
 	private float near, far;
 
+	/**
+	 * Constructs a new GameRenderer.
+	 * @param pipe The DataPipe to use to communicate with an Engine
+	 * @param near The near clipping distance
+	 * @param far The far clipping distance
+	 */
 	public GameRenderer(DataPipe pipe, float near, float far) {
 		Log.d(TAG, "Constructing GameRenderer...");
 		this.pipe = pipe;
