@@ -15,7 +15,8 @@ public class MeshAnimation {
 	public static final int STOPPED = 0;
 	public static final int PAUSED = 1;
 	public static final int RUNNING = 2;
-
+	
+	private final String id;
 	private final List<Keyframe> keyframes;
 	private final int numOfKeyframes;
 	private float[] times;
@@ -24,7 +25,8 @@ public class MeshAnimation {
 	 * @param keyframes
 	 * @param ratios
 	 */
-	public MeshAnimation(List<Keyframe> keyframes, float[] ratios) {
+	public MeshAnimation(List<Keyframe> keyframes, float[] ratios, String id) {
+		this.id = id;
 		times = new float[ratios.length];
 		float last = ratios[ratios.length - 1];
 		if (last > 1.0) {

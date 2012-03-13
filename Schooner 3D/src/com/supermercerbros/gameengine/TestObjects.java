@@ -33,7 +33,7 @@ public class TestObjects {
 				3.0f, 0.0f, 0.0f, 0.0f, };
 		keyframesA.add(new Keyframe(frameA2));
 		float[] times = { 0, 3000 };
-		MeshAnimation anim1 = new MeshAnimation(keyframesA, times);
+		MeshAnimation anim1 = new MeshAnimation(keyframesA, times, null);
 		AnimatedMeshObject tetra = new AnimatedMeshObject(frameA1.clone(),
 				indices, colors, normals, new BasicMaterial());
 		tetra.setAnimation(anim1, System.currentTimeMillis() + 1000, 3000, 1);

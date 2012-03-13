@@ -147,4 +147,8 @@ public class Utils {
 		}
 		return sb.toString();
 	}
+
+	public static boolean checkByte(byte flags, int place) {
+		return (flags & (1 << place)) != 0;
+	}
 }
