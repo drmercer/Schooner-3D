@@ -31,7 +31,7 @@ public class IPO {
 	 *             <code>endKeyframe</code> is null.
 	 */
 	public static void mesh(float[] frame, float[] startKeyframe,
-			float[] endKeyframe, float framePoint) {
+			float[] endKeyframe, double framePoint) {
 		
 		int size = frame.length;
 		
@@ -41,8 +41,8 @@ public class IPO {
 			throw new IllegalArgumentException();
 
 		for (int i = 0; i < size; i++) {
-			frame[i] = startKeyframe[i]
-					+ ((endKeyframe[i] - startKeyframe[i]) * framePoint);
+			frame[i] = (float) (startKeyframe[i]
+					+ ((endKeyframe[i] - startKeyframe[i]) * framePoint));
 		}
 	}
 

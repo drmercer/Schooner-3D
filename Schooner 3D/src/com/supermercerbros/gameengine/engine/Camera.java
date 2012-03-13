@@ -5,6 +5,7 @@ import android.opengl.Matrix;
 import com.supermercerbros.gameengine.util.IPO;
 
 public class Camera {
+	private static final String TAG = "Camera";
 	private float[] begin = new float[9];
 	private float[] end = new float[9];
 	private volatile boolean initialized = false;
@@ -36,15 +37,15 @@ public class Camera {
 
 		System.arraycopy(current, 0, begin, 0, 9);
 
-		end[0] = upX;
-		end[1] = upY;
-		end[2] = upZ;
+		end[0] = eyeX;
+		end[1] = eyeY;
+		end[2] = eyeZ;
 		end[3] = centerX;
 		end[4] = centerY;
 		end[5] = centerZ;
-		end[6] = eyeX;
-		end[7] = eyeY;
-		end[8] = eyeZ;
+		end[6] = upX;
+		end[7] = upY;
+		end[8] = upZ;
 
 		startTime = System.currentTimeMillis();
 		this.duration = duration;
@@ -82,11 +83,18 @@ public class Camera {
 			throw new IllegalStateException(
 					"Camera has not been initialized! Use set()");
 		}
-		float framePoint = (time - startTime) / duration;
+		float framePoint = ((float) (time - startTime)) / (float) duration;
+		if (framePoint > 1.0f){
+			System.arraycopy(end, 0, current, 0, 9);
+			moving = false;
+			return;
+		} else if (framePoint < 0.0f){
+			return;
+		}
 		IPO.mesh(current, begin, end, framePoint);
 	}
 
-	void copyToArray(float[] a, int offset) {
+	void writeToArray(float[] a, int offset) {
 		if (a == null) {
 			throw new IllegalStateException("Cannot copy Camera to null array.");
 		}
