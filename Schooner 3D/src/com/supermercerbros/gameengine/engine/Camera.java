@@ -5,6 +5,7 @@ import android.opengl.Matrix;
 import com.supermercerbros.gameengine.util.IPO;
 
 public class Camera {
+	@SuppressWarnings("unused")
 	private static final String TAG = "Camera";
 	private float[] begin = new float[9];
 	private float[] end = new float[9];
@@ -94,7 +95,7 @@ public class Camera {
 		IPO.mesh(current, begin, end, framePoint);
 	}
 
-	void writeToArray(float[] a, int offset) {
+	synchronized void writeToArray(float[] a, int offset) {
 		if (a == null) {
 			throw new IllegalStateException("Cannot copy Camera to null array.");
 		}
@@ -129,7 +130,7 @@ public class Camera {
 	 * @param upZ
 	 *            The z-coord of the up vector
 	 */
-	public void set(float eyeX, float eyeY, float eyeZ, float centerX,
+	public synchronized void set(float eyeX, float eyeY, float eyeZ, float centerX,
 			float centerY, float centerZ, float upX, float upY, float upZ) {
 
 		current = new float[] { eyeX, eyeY, eyeZ, centerX, centerY, centerZ,

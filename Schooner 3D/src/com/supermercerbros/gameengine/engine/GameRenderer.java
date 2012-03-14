@@ -105,6 +105,9 @@ public class GameRenderer implements Renderer {
 	@Override
 	public void onDrawFrame(GL10 unused) {
 		drawFrameCount++;
+		GLES20.glClearColor(Schooner3D.backgroundColor[0],
+				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
+				Schooner3D.backgroundColor[3]);
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
 		in = pipe.retrieveData();

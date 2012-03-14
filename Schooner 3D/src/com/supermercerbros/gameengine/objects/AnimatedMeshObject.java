@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.animation.AnimationData;
 import com.supermercerbros.gameengine.animation.MeshAnimation;
+import com.supermercerbros.gameengine.engine.Normals;
 
 /**
  * Represents an animated 3D mesh object.
@@ -22,7 +23,7 @@ public class AnimatedMeshObject extends GameObject {
 	private MeshAnimation[] anims;
 
 	public AnimatedMeshObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, Material mtl, short[] doubles) {
+			float[] normals, Material mtl, short[][] doubles) {
 		super(verts, indices, uvs, normals, mtl, doubles);
 		data = new AnimationData();
 	}
@@ -33,6 +34,8 @@ public class AnimatedMeshObject extends GameObject {
 		if (anim != null) {
 			anim.getFrame(time, data, this);
 		}
+		
+		Normals.calculate(this);
 		super.draw(time);
 
 	}
