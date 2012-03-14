@@ -74,9 +74,14 @@ class BinFile:
 	def writeString(self, string):
 		self.file.write(bytes(string, "UTF-8"))
 		
-	def writeAllShorts(self, *shorts):
+	def writeAllShorts(self, shorts):
 		for s in shorts:
 			self.file.write(BinFile.shortPack.pack(s))
+	
+	def writeAllShortPairs(self, shorts):
+		for t in shorts:
+			for s in t:
+				self.file.write(BinFile.shortPack.pack(s))
 	
 	def writeAllFloats(self, *floats):
 		for f in floats:
@@ -118,8 +123,7 @@ class Face:
 			if not uvMatch:
 				self.indices[j] = len(verts)
 				if match > -1:
-					duplicates.append(self.indices[j])
-					duplicates.append(match)
+					duplicates.append([self.indices[j], match])
 				verts.append(vert)
 				uvs.extend(uv)
 				if vertexInIndices is not None:
@@ -218,6 +222,9 @@ def exportSchooner3D(opts):
 	
 	#Write duplicate pairs
 	file.writeShort(len(duplicates) / 2)
+	duplicates.sort()
+	for pair in duplicates:
+		pair.sort()
 	file.writeAllShorts(duplicates)
 	
 	if opts.textured: #Write UV coordinates
