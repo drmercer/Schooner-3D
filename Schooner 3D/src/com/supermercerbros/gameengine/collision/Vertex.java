@@ -40,7 +40,7 @@ public class Vertex extends Feature implements Point {
 	 */
 	@Override
 	protected void lock() {
-		// TODO Do locking stuff for coboundary of Vertex
+		// TODO Lock Vertex
 		locked = true;
 	}
 

@@ -35,13 +35,18 @@ public class Face extends Feature {
 		}
 	}
 
+	/* *
+	 * Locks this Face to prevent further modifications.
+	 */
 	@Override
 	protected void lock() {
 		locked = true;
 		// TODO Lock Face
-
 	}
 	
+	/**
+	 * @return The normal vector of this face.
+	 */
 	public Vector getNormal(){
 		return normal;
 	}

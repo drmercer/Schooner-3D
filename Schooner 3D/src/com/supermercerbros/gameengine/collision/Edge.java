@@ -9,7 +9,7 @@ public class Edge extends Feature {
 	 * A Face neighboring the Edge (in the Edge's coboundary)
 	 */
 	private Face right, left;
-	private Vector vector;
+	private final Vector vector;
 	private boolean locked;
 
 	/**
@@ -82,6 +82,37 @@ public class Edge extends Feature {
 	 */
 	public Vertex getHead(){
 		return head;
+	}
+	
+	/**
+	 * Returns the tail of this Edge.
+	 * @return the tail endpoint of this Edge.
+	 */
+	public Vertex getTail(){
+		return tail;
+	}
+
+	/**
+	 * Determines if the Edge is open (has only one neighboring face).
+	 * @return True if this Edge is open.
+	 */
+	public boolean isOpen() {
+		return right == null || left == null;
+	}
+
+	/**
+	 * Gets the right wing of this Edge.
+	 * @return The face on this Edge's right.
+	 */
+	public Face getRight(){
+		return right;
+	}
+	
+	/**
+	 * @return The normalized vector of this Edge's direction
+	 */
+	public Vector asVector(){
+		return vector;
 	}
 
 }
