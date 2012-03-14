@@ -9,13 +9,14 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.animation.Movable;
 import com.supermercerbros.gameengine.animation.Movement;
+import com.supermercerbros.gameengine.collision.Collidable;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.Normals;
 
 /**
  * Represents a 3D mesh object.
  */
-public class GameObject implements Movable {
+public class GameObject implements Movable, Collidable{
 	public static final String TAG = "com.supermercerbros.gameengine.objects.GameObject";
 
 	/**
