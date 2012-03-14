@@ -9,3 +9,9 @@
 	schooner:program-name="texture"
 	schooner:vertex-shader="vert2.txt"
 	schooner:fragment-shader="frag2.txt"/>
+
+<Program
+	schooner:program-name="shaded-texture"
+	schooner:vertex-shader="vert3.txt"
+	schooner:fragment-shader="frag3.txt"/>
+	

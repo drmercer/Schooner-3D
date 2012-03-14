@@ -20,11 +20,11 @@ import com.supermercerbros.gameengine.engine.TextureLib;
  * </pre>
  */
 public class TexturedMaterial extends Material {
-	private final static int STRIDE = 5;
+	private final static int STRIDE = 8;
 	private Texture texture;
 	
 	public TexturedMaterial(String textureName){
-		super("texture", STRIDE);
+		super("shaded-texture", STRIDE);
 		try {
 			texture = TextureLib.getTexture(textureName);
 		} catch (IOException e) {
@@ -37,6 +37,7 @@ public class TexturedMaterial extends Material {
 		int response = super.attachAttribs(primitive, vboOffset, matrix, matrixOffset);
 
 		attachAttrib(a_pos, 3);
+		attachAttrib(a_normal, 3);
 		attachAttrib(a_mtl, 2);
 				
 		texture.use(0, ShaderLib.S_BASEMAP, 
@@ -56,6 +57,7 @@ public class TexturedMaterial extends Material {
 
 		setLoadOffset(vboOffset);
 		loadArrayToVbo(obj.verts, vbo, 3, numOfVerts);
+		loadArrayToVbo(obj.normals, vbo, 3, numOfVerts);
 		loadArrayToVbo(obj.mtl, vbo, 2, numOfVerts);
 		
 		return obj.info.count * STRIDE;
