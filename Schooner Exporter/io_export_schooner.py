@@ -38,10 +38,9 @@ class Options:
 		self.scene = scene
 
 class BinFile:
-	endian = '<'
+	endian = '>'
 	shortPack = Struct(endian + 'H')
 	floatPack = Struct(endian + 'f')
-	stringPack = Struct(endian + 's')
 	
 	def __init__(self, filepath):
 		self.file = open(filepath, 'wb')
@@ -73,7 +72,7 @@ class BinFile:
 		self.file.write(BinFile.floatPack.pack(f))
 		
 	def writeString(self, string):
-		self.file.write(BinFile.stringPack.pack(string))
+		self.file.write(bytes(string, "UTF-8"))
 		
 	def writeAllShorts(self, *shorts):
 		for s in shorts:
@@ -137,15 +136,36 @@ def writeAnimations(file, sceneIndex, mesh, times, names, indices):
 		bpy.ops.screen.keyframe_jump()
 		animBeginFrame = scene.frame_current
 		
+		#Write animation name
+		file.writeString(names[i]);
+		
+		frameCount = 0;
 		while scene.frame_current < times[i + 1]:
-			mesh.update()
+			frameCount += 1
 			currentFrame = scene.frame_current
-			file.writeShort(currentFrame - animBeginFrame)
-			for index in indices:
-				file.writeAllFloats(mesh.vertices[index].co)
 			bpy.ops.screen.keyframe_jump()
 			if currentFrame == scene.frame_current:
 				break
+		
+		#Write keyframe count
+		file.writeShort(frameCount)
+		
+		#reset to start of animation
+		scene.frame_set(animBeginFrame)
+		
+		for j in range(frameCount):
+			mesh.update()
+			
+			#Write keyframe time
+			file.writeShort(scene.frame_current - animBeginFrame)
+			
+			#Write vertex positions
+			for index in indices:
+				file.writeAllFloats(mesh.vertices[index].co)
+				
+			#Next keyframe
+			bpy.ops.screen.keyframe_jump()
+			
 			
 
 def exportSchooner3D(opts):
@@ -209,10 +229,7 @@ def exportSchooner3D(opts):
 		else:
 			file.writeShort(1)
 		
-		#Write length of animation name
-		file.write
-		
-		writeAnimations(file, opts.scene, obj, opts.animations, opts.animName, duplicates)
+		writeAnimations(file, opts.scene, obj, opts.animations, opts.animNames, duplicates)
 
 opts = Options(
 			# v== Modify these. Read the docstring (at head of Options class --^ )

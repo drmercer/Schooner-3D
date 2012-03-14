@@ -1,141 +1,87 @@
 package com.supermercerbros.gameengine;
 
 import java.io.IOException;
+import java.util.Random;
 
-import android.app.Activity;
-import android.opengl.GLSurfaceView;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 
 import com.supermercerbros.gameengine.engine.Camera;
-import com.supermercerbros.gameengine.engine.DataPipe;
 import com.supermercerbros.gameengine.engine.Engine;
-import com.supermercerbros.gameengine.engine.GameRenderer;
 import com.supermercerbros.gameengine.engine.TextureLib;
-import com.supermercerbros.gameengine.objects.BasicMaterial;
-import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
-public class TestActivity extends Activity {
-	private static final String TAG = "com.supermercerbros.gameengine.TestActivity";
-	private GLSurfaceView view;
-	private DataPipe pipe;
-	private Camera cam;
+public class TestActivity extends GameActivity {
+	@SuppressWarnings("unused")
+	private static String TAG = "GameActivity";
+	private static final float NEAR_CLIP_DISTANCE = 0.1f;
+	private static final float FAR_CLIP_DISTANCE = 10.0f;
+	private static final int CAMERA_MOVE_DURATION = 1500;
 	private Engine engine;
-
-	/** Called when the activity is first created. */
+	private Camera cam;
+	private boolean iso = true;
+	private int bg;
+	
+	/**
+	 * This provides an example of a subclass of GameActivity
+	 */
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState){
 		super.onCreate(savedInstanceState);
-		Log.d(TAG, "onCreate");
-
-		float[] bg = { .5f, .5f, .5f, 0.0f };
-		Schooner3D.backgroundColor = bg;
-
-		pipe = new DataPipe(this);
-
-		String texName = "";
+		bg = Color.argb(255, 128, 255, 255);
+		setBackgroundColor(bg);
+		engine = getEngine();
+		cam = getCamera();
+		
+		String testTexture2 = "";
 		try {
-			texName = TextureLib.loadTexture(R.drawable.test_texture2);
+			testTexture2 = TextureLib.loadTexture(R.drawable.test_texture2);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		cam.set(5.0f, 5.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f );
+		
+		engine.setLight(0.0f, 0.0f, 1.0f, ((float) Color.red(bg) / 256 + 1.0f) / 2.0f, ((float) Color.green(bg) / 256 + 1.0f) / 2.0f, ((float) Color.blue(bg) / 256 + 1.0f) / 2.0f);
+//		engine.addObject(TestObjects.tetra());
+		engine.addObject(TestObjects.cube(testTexture2));
+		start(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
+		
+	}
 
-		cam = new Camera(1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-		// cam = new Camera();
-		if (engine != null) {
-			Log.w(TAG, "Engine is not null...");
-			if (engine.isAlive()) {
-				Log.w(TAG, "and Engine is still alive!");
-			}
+	@Override
+	public boolean onTouch(MotionEvent event) {
+		if (event.getAction() != MotionEvent.ACTION_DOWN) return false;
+		switchCamPosition();
+		Random rand = new Random();
+		setBG(event.getX() / getWidth(), event.getY(0) / getHeight(), rand.nextFloat());
+		Log.d("onTouch", "x: " + event.getX() + " y: " + event.getY());
+		return true;
+	}
+	
+	private void switchCamPosition(){
+		if (iso) {
+			cam.moveTo(1.0f, -5.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, CAMERA_MOVE_DURATION);
+			iso = false;
 		} else {
-			engine = new Engine(pipe, cam);
-			engine.addObject(cube(texName));
-			engine.setLight(0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f);
-			engine.start();
+			cam.moveTo(5.0f, 5.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, CAMERA_MOVE_DURATION);
+			iso = true;
 		}
-
-		view = new GameView(this);
-
-		view.setDebugFlags(GLSurfaceView.DEBUG_CHECK_GL_ERROR
-				| GLSurfaceView.DEBUG_LOG_GL_CALLS);
-		setContentView(view);
-		view.setRenderer(new GameRenderer(pipe));
+	}
+	
+	private void setBG(float r, float g, float b){
+		bg = Color.argb(255, (int) (255 * r), (int) (255 * g), (int) (255 * b));
+		engine.setLight(0.0f, 0.0f, 1.0f, ((float) Color.red(bg) / 256 + 1.0f) / 2.0f, ((float) Color.green(bg) / 256 + 1.0f) / 2.0f, ((float) Color.blue(bg) / 256 + 1.0f) / 2.0f);
+		setBackgroundColor(bg);
+	}
+	
+	private int getWidth(){
+		return getWindowManager().getDefaultDisplay().getWidth(); 
+	}
+	
+	private int getHeight(){
+		return getWindowManager().getDefaultDisplay().getHeight();
 	}
 
-	private GameObject quad(String texName) {
-		float depth = -2.84f;
-		float[] verts = { .5f, .5f, depth, .5f, -.5f, depth, -.5f, .5f, depth,
-				-.5f, -.5f, depth, };
-		float[] uvs = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f };
-
-		short[] indices = { 0, 1, 2, 1, 2, 3 };
-		float[] normals = {};
-
-		GameObject obj = new GameObject(verts, indices, uvs, normals,
-				new TexturedMaterial(texName));
-		return obj;
-	}
-
-	private GameObject tri() {
-		float[] verts = { 0.0f, 0.0f, 0.0f, -0.6f, -0.6f, 0.0f, -0.6f, 0.6f,
-				0.0f };
-		float[] colors = { 1, 1, 0, 0, 1, 1, 1, 0, 1 };
-		short[] indices = { 0, 1, 2 };
-		float[] normals = {};
-
-		GameObject tri = new GameObject(verts, indices, colors, normals,
-				new BasicMaterial());
-		return tri;
-	}
-
-	private GameObject cube(String texName) {
-		float[] verts = { .5f, .5f, .5f, .5f, -.5f, .5f, -.5f, .5f, .5f, -.5f,
-				-.5f, .5f, .5f, .5f, -.5f, .5f, -.5f, -.5f, -.5f, .5f, -.5f,
-				-.5f, -.5f, -.5f, };
-		float[] uvs = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-				0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, };
-		float[] colors = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, };
-		short[] indices = { 0, 1, 2, 1, 2, 3, 0, 1, 5, 0, 4, 5, 1, 5, 7, 1, 3,
-				7, 0, 2, 4, 2, 4, 6, 3, 2, 6, 3, 6, 7, 4, 5, 7, 4, 6, 7, };
-		float[] normals = {};
-
-		GameObject cube = new GameObject(verts, indices, uvs, normals,
-				new TexturedMaterial(texName));
-		return cube;
-	}
-
-	@Override
-	public void onPause() {
-		super.onPause();
-		Log.d(TAG, "onPause");
-		engine.pause();
-		view.onPause();
-	}
-
-	@Override
-	public void onResume() {
-		super.onResume();
-		Log.d(TAG, "onResume");
-		engine.resumeEngine();
-		view.onResume();
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		Log.d(TAG, "onDestroy");
-		engine.end();
-
-		if (engine.isAlive()) {
-			Log.w(TAG, "Engine is still alive!");
-		} else {
-			Log.i(TAG, "Engine is dead.");
-			engine = null;
-		}
-		pipe.close();
-		pipe = null;
-	}
 }

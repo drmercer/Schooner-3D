@@ -15,7 +15,11 @@ public class MeshAnimation {
 	public static final int STOPPED = 0;
 	public static final int PAUSED = 1;
 	public static final int RUNNING = 2;
-
+	
+	/**
+	 * Contains the unique identifier for this Animation
+	 */
+	private final String id; 
 	private final List<Keyframe> keyframes;
 	private final int numOfKeyframes;
 	private float[] times;
@@ -24,7 +28,8 @@ public class MeshAnimation {
 	 * @param keyframes
 	 * @param ratios
 	 */
-	public MeshAnimation(List<Keyframe> keyframes, float[] ratios) {
+	public MeshAnimation(List<Keyframe> keyframes, float[] ratios, String id) {
+		this.id = id;
 		times = new float[ratios.length];
 		float last = ratios[ratios.length - 1];
 		if (last > 1.0) {
@@ -41,9 +46,10 @@ public class MeshAnimation {
 
 	public void getFrame(long frameTime, AnimationData data,
 			AnimatedMeshObject object) { // frameTime is world time
-		Log.d(TAG, "MeshAnimation.getFrame(" + frameTime + ") was called.");
+		Log.d(TAG, "MeshAnimation.getFrame() was called.");
 
-		float framePoint = (frameTime - data.startTime) / data.duration;
+		double framePoint = ((float) (frameTime - data.startTime)) / (float) data.duration;
+		Log.d(TAG, framePoint + " = (" + (frameTime - data.startTime) + ") / " + data.duration);
 
 		if (framePoint < 0.0) {
 			framePoint = (frameTime - data.callTime)

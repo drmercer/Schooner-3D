@@ -1,0 +1,10 @@
+precision highp float;
+
+varying vec2 v_tc;
+varying vec3 v_lightColor;
+
+uniform sampler2D s_baseMap;
+
+void main() {
+	gl_FragColor = texture2D(s_baseMap, v_tc) * vec4(v_lightColor, 1.0);
+}

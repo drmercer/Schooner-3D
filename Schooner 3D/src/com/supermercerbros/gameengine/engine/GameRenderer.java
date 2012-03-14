@@ -73,8 +73,15 @@ public class GameRenderer implements Renderer {
 	private int u_lightColor = -1;
 
 	private int drawFrameCount = 0;
+	private float near, far;
 
-	public GameRenderer(DataPipe pipe) {
+	/**
+	 * Constructs a new GameRenderer.
+	 * @param pipe The DataPipe to use to communicate with an Engine
+	 * @param near The near clipping distance
+	 * @param far The far clipping distance
+	 */
+	public GameRenderer(DataPipe pipe, float near, float far) {
 		Log.d(TAG, "Constructing GameRenderer...");
 		this.pipe = pipe;
 
@@ -89,12 +96,18 @@ public class GameRenderer implements Renderer {
 			ibo = ByteBuffer.allocateDirect(pipe.IBO_capacity).order(
 					ByteOrder.nativeOrder()).asShortBuffer();
 		}
+		
+		this.near = near;
+		this.far = far;
 		Log.d(TAG, "GameRenderer constructed!");
 	}
 
 	@Override
 	public void onDrawFrame(GL10 unused) {
 		drawFrameCount++;
+		GLES20.glClearColor(Schooner3D.backgroundColor[0],
+				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
+				Schooner3D.backgroundColor[3]);
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
 		in = pipe.retrieveData();
@@ -148,7 +161,7 @@ public class GameRenderer implements Renderer {
 	public void onSurfaceChanged(GL10 unused, int width, int height) {
 		GLES20.glViewport(0, 0, width, height);
 		float aspect = width / (float) height;
-		Utils.perspectiveM(projMatrix, 0, 45, aspect, 0.5f, 5.f);
+		Utils.perspectiveM(projMatrix, 0, 45, aspect, near, far);
 	}
 
 	@Override
