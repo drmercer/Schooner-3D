@@ -116,8 +116,11 @@ public class Sch3D {
 			final float[] verts = new float[vertCount * 3];
 			data.readFloatArray(verts, 0, vertCount * 3);
 			
-			final short[] doubles = new short[data.readShort() * 2];
-			data.readShortArray(doubles, 0, doubles.length);
+			final short[][] doubles = new short[2][data.readShort() * 2];
+			for (int i = 0; i < doubles[0].length; i++){
+				doubles[0][i] = data.readShort();
+				doubles[1][i] = data.readShort();
+			}
 			
 			final float[] uvs;
 			if (textured) {
@@ -155,7 +158,6 @@ public class Sch3D {
 				GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
 				return object;
 			}
-			
 		} else {
 			throw new IOException("Version is invalid.");
 		}

@@ -1,5 +1,6 @@
 package com.supermercerbros.gameengine.objects;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,11 +10,12 @@ import android.util.Log;
 import com.supermercerbros.gameengine.animation.Movable;
 import com.supermercerbros.gameengine.animation.Movement;
 import com.supermercerbros.gameengine.engine.Engine;
+import com.supermercerbros.gameengine.engine.Normals;
 
 /**
  * Represents a 3D mesh object.
  */
-public class GameObject implements Movable{
+public class GameObject implements Movable {
 	public static final String TAG = "com.supermercerbros.gameengine.objects.GameObject";
 
 	/**
@@ -40,12 +42,13 @@ public class GameObject implements Movable{
 	/**
 	 * Contains the normals of the vertices of this <code>GameObject</code>.
 	 */
-	protected float[] normals;
-	
+	public float[] normals;
+
 	/**
-	 * Contains the indices of the vertex pairs that are identical geometrically. Used in normal calculation.
+	 * Contains the indices of the vertex pairs that are identical
+	 * geometrically. Used in normal calculation.
 	 */
-	private short[] doubles;
+	public short[][] doubles;
 
 	/**
 	 * The Metadata about this GameObject.
@@ -69,6 +72,8 @@ public class GameObject implements Movable{
 	public int iOffset = -1;
 	private boolean stationary;
 
+	private boolean debug = false;
+
 	/**
 	 * 
 	 * @param verts
@@ -84,13 +89,13 @@ public class GameObject implements Movable{
 	 *            A Material object to use when for rendering
 	 */
 	public GameObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, Material mtl, short[] doubles) {
+			float[] normals, Material mtl, short[][] doubles2) {
 		Log.d(TAG, "Constructing GameObject...");
 		this.verts = verts;
 		this.indices = indices;
 		this.mtl = uvs;
 		this.normals = normals;
-		this.doubles = (doubles != null)? doubles : new short[0];
+		this.doubles = (doubles2 != null) ? doubles2 : new short[2][0];
 		info = new Metadata();
 		info.size = indices.length;
 		info.count = verts.length / 3;
@@ -98,16 +103,22 @@ public class GameObject implements Movable{
 
 		Matrix.setIdentityM(modelMatrix, 0);
 		stationary = false;
+		
+		Log.d(TAG, Arrays.toString(normals));
+		if (normals == null) {
+			Normals.calculate(this);
+		}
 	}
 
 	private GameObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, int[] instanceLoaded, Material mtl, short[] doubles) {
+			float[] normals, int[] instanceLoaded, Material mtl,
+			short[][] doubles) {
 		Log.d(TAG, "Constructing GameObject...");
 		this.verts = verts;
 		this.indices = indices;
 		this.mtl = uvs;
 		this.normals = normals;
-		this.doubles = (doubles != null)? doubles : new short[0];
+		this.doubles = (doubles != null) ? doubles : new short[2][0];
 		info = new Metadata();
 		info.size = indices.length;
 		info.count = verts.length / 3;
@@ -115,6 +126,10 @@ public class GameObject implements Movable{
 
 		Matrix.setIdentityM(modelMatrix, 0);
 		stationary = false;
+
+		if (normals == null) {
+			Normals.calculate(this);
+		}
 
 		this.instanceLoaded = instanceLoaded;
 	}
@@ -156,6 +171,10 @@ public class GameObject implements Movable{
 			motion.getFrame(modelMatrix, 0, time);
 		}
 		lastDrawTime = time;
+		
+		if (debug) {
+			Log.d(TAG, Arrays.toString(normals));
+		}
 	}
 
 	/**
@@ -216,6 +235,10 @@ public class GameObject implements Movable{
 	public void startMotion(Movement motion, long time, float speed) {
 		this.motion = motion;
 		motion.start(time, modelMatrix, speed);
+	}
+	
+	public void setDebug(boolean debug){
+		this.debug  = debug;
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.supermercerbros.gameengine;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
@@ -200,11 +201,13 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 	 * Sets the render background color.
 	 * 
 	 * @param color
-	 *            The RGB color to use as the render background.
+	 *            The RGB color-int to use on the render background.
 	 */
-	public static void setBackgroundColor(float... color) {
-		System.arraycopy(color, 0, Schooner3D.backgroundColor, 0,
-				(color.length < 4) ? color.length : 4);
+	public static void setBackgroundColor(int color) {
+		Schooner3D.backgroundColor[0] = (float) Color.red(color) / 256;
+		Schooner3D.backgroundColor[1] = (float) Color.green(color) / 256;
+		Schooner3D.backgroundColor[2] = (float) Color.blue(color) / 256;
+		Schooner3D.backgroundColor[3] = (float) Color.alpha(color) / 256;
 	}
 	
 	@Override

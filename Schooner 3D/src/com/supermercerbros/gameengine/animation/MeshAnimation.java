@@ -16,7 +16,10 @@ public class MeshAnimation {
 	public static final int PAUSED = 1;
 	public static final int RUNNING = 2;
 	
-	private final String id;
+	/**
+	 * Contains the unique identifier for this Animation
+	 */
+	private final String id; 
 	private final List<Keyframe> keyframes;
 	private final int numOfKeyframes;
 	private float[] times;

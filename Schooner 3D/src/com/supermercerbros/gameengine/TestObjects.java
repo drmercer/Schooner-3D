@@ -49,19 +49,34 @@ public class TestObjects {
 	 * @return A textured cube.
 	 */
 	public static GameObject cube(String texName) {
-		float[] verts = { 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
-				-1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
+		float[] verts = { 1.0f, 1.0f, 1.0f, 
+				1.0f, -1.0f, 1.0f, 
+				-1.0f, 1.0f, 1.0f, 
+				-1.0f, -1.0f, 1.0f, 
+				1.0f, 1.0f, -1.0f, 
+				1.0f, -1.0f, -1.0f, 
+				-1.0f, 1.0f, -1.0f,
 				-1.0f, -1.0f, -1.0f, };
 		float[] uvs = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
 				0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, };
-		short[] indices = { 0, 1, 2, 1, 2, 3, 0, 1, 5, 0, 4, 5, 1, 5, 7, 1, 3,
-				7, 0, 2, 4, 2, 4, 6, 3, 2, 6, 3, 6, 7, 4, 5, 7, 4, 6, 7, };
-		float[] normals = { 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f,
-				-1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f,
-				-1.0f, -1.0f, -1.0f, };
+		short[] indices = { 
+				3, 1, 0, 
+				2, 3, 0, 
+				0, 1, 5,
+				0, 5, 4, 
+				2, 0, 6, 
+				6, 0, 4, 
+				1, 3, 5, 
+				3, 7, 5, 
+				3, 2, 6, 
+				3, 6, 7, 
+				4, 5, 6, 
+				5, 7, 6, };
+		float[] normals = null;
 
 		GameObject cube = new GameObject(verts, indices, uvs, normals,
 				new TexturedMaterial(texName), null);
+		cube.setDebug(true);
 		return cube;
 	}
 
