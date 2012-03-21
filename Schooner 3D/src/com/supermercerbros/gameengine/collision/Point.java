@@ -16,4 +16,5 @@ public interface Point {
 	 * @return this Point's z-coordinate.
 	 */
 	public float getZ();
+	public float distanceTo(Point other);
 }
