@@ -25,32 +25,33 @@ public class Edge extends Feature {
 		head.addEdge(this);
 		this.tail = tail;
 		tail.addEdge(this);
-		
+
 		vector = new Vector(tail, head, true);
 
 	}
 
 	/**
 	 * Adds a Face to this Edge's coboundary
+	 * 
 	 * @param face
 	 *            The Face to add
 	 * @param point
 	 *            A point on the face
 	 */
 	protected void addFace(Face face, Point point) {
-		if(locked){
+		if (locked) {
 			throw new IllegalStateException("Edge is locked. Cannot add face.");
 		}
-		
+
 		Vector v = new Vector(tail, point, true);
-		float dot = vector.cross(v).dot(face.getNormal());
+		float dot = vector.cross(v).dot(face.getNormal(), true);
 		if (dot > 0) {
 			left = face;
 		} else {
 			right = face;
 		}
 	}
-	
+
 	@Override
 	protected void lock() {
 		// TODO Lock Edge
@@ -75,25 +76,28 @@ public class Edge extends Feature {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * Returns the head of this Edge.
+	 * 
 	 * @return the head endpoint of this Edge.
 	 */
-	public Vertex getHead(){
+	public Vertex getHead() {
 		return head;
 	}
-	
+
 	/**
 	 * Returns the tail of this Edge.
+	 * 
 	 * @return the tail endpoint of this Edge.
 	 */
-	public Vertex getTail(){
+	public Vertex getTail() {
 		return tail;
 	}
 
 	/**
 	 * Determines if the Edge is open (has only one neighboring face).
+	 * 
 	 * @return True if this Edge is open.
 	 */
 	public boolean isOpen() {
@@ -102,17 +106,41 @@ public class Edge extends Feature {
 
 	/**
 	 * Gets the right wing of this Edge.
+	 * 
 	 * @return The face on this Edge's right.
 	 */
-	public Face getRight(){
+	public Face getRight() {
 		return right;
 	}
-	
+
 	/**
 	 * @return The normalized vector of this Edge's direction
 	 */
-	public Vector asVector(){
+	public Vector asVector() {
 		return vector;
+	}
+
+	/**
+	 * Returns the opposite endpoint of the edge given one endpoint.
+	 * 
+	 * @param endpoint
+	 *            The endpoint to retrieve the opposite endpoint of.
+	 * @return The opposite endpoint.
+	 */
+	public Vertex getOpposite(Vertex endpoint) {
+		if (endpoint == head) {
+			return tail;
+		} else if (endpoint == tail) {
+			return head;
+		} else {
+			throw new IllegalArgumentException(
+					"The given Vertex is not an endpoint of this Edge.");
+		}
+	}
+
+	public boolean contains(Point p) {
+		// TODO Edge.contains(Point)
+		return false;
 	}
 
 }

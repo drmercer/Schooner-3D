@@ -12,6 +12,7 @@ import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
+import com.supermercerbros.gameengine.util.LoopingThread;
 import com.supermercerbros.gameengine.util.Toggle;
 
 /**
@@ -19,8 +20,8 @@ import com.supermercerbros.gameengine.util.Toggle;
  * 
  * @version 1.0
  */
-public class Engine extends Thread {
-	private static final String TAG = "Engine";
+public class Engine extends LoopingThread {
+	static final String TAG = "Engine";
 	private DataPipe pipe;
 	private RenderData out = new RenderData();
 	private Camera cam;
@@ -47,8 +48,7 @@ public class Engine extends Thread {
 	private long time;
 
 	// Be careful to always synchronize access of these fields:
-	private volatile Toggle flush = new Toggle(false), paused = new Toggle(false);
-	private volatile boolean started = false, ending = false;
+	private volatile Toggle flush = new Toggle(false);
 	private boolean lightsChanged = false;
 	/**
 	 * Used for passing commands from the UI thread to the {@link Engine}
@@ -102,7 +102,7 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * TODO Javadoc
+	 * Adds the collection of GameObjects to the Engine
 	 * @param objects
 	 */
 	public void addAllObjects(Collection<GameObject> objects) {
@@ -114,7 +114,7 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * TODO Javadoc
+	 * Adds the given GameObject to the Engine
 	 * @param object
 	 */
 	public void addObject(GameObject object) {
@@ -148,32 +148,12 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Terminates this Engine.
-	 */
-	public void end() {
-		Log.d(TAG, "Engine state before end():" + getState().toString());
-		ending = true;
-		interrupt();
-		Log.d(TAG, "Engine state after end():" + getState().toString());
-		
-	}
-
-	/**
 	 * Tells the Engine to actually delete all of its GameObjects that are
 	 * marked for deletion
 	 */
 	public void flushDeletedObjects() {
 		synchronized (flush) {
 			flush.setState(true);
-		}
-	}
-
-	/**
-	 * Tells this Engine to pause processing. Used with {@link #resumeEngine()}.
-	 */
-	public void pause() {
-		synchronized (paused) {
-			paused.setState(true);
 		}
 	}
 
@@ -189,71 +169,32 @@ public class Engine extends Thread {
 		}
 	}
 
-	/**
-	 * Tells this Engine to resume processing.
-	 */
-	public void resumeEngine() {
-		synchronized (paused) {
-			paused.setState(false);
-			paused.notify();
+	protected void loop() {
+		// Check for new GameObjects, GameObjects to delete, and actions to
+		// perform.
+		while (!actions.isEmpty())
+			actions.poll().run();
+		while (!newObjects.isEmpty())
+			objects.add(newObjects.poll());
+		while (!delObjects.isEmpty())
+			delObject(delObjects.poll());
+
+		DelayedRunnable d = delayedActions.poll();
+		while (d != null) {
+			d.r.run();
+			d = delayedActions.poll();
 		}
-	}
 
-	/**
-	 * Do not call this method. Call {@link #start()} to start the Engine.
-	 * @see java.lang.Thread#run()
-	 */
-	@Override
-	public synchronized void run() {
-		if (Thread.currentThread() != this){
-			throw new UnsupportedOperationException("Do not call Engine.run()");
-		}
-		while (!ending) {
-			// Check for new GameObjects, GameObjects to delete, and actions to
-			// perform.
-			while (!actions.isEmpty())
-				actions.poll().run();
-			while (!newObjects.isEmpty())
-				objects.add(newObjects.poll());
-			while (!delObjects.isEmpty())
-				delObject(delObjects.poll());
-
-			DelayedRunnable d = delayedActions.poll();
-			while (d != null) {
-				d.r.run();
-				d = delayedActions.poll();
-			}
-
-			synchronized (flush) {
-				if (flush.getState()) {
-					flush();
-				}
-			}
-
-			doSpecialStuff(time);
-			computeFrame();
-			updatePipe();
-			aBufs = !aBufs; // Swap aBufs
-			
-			if (ending){
-				break;
-			}
-			synchronized (paused) {
-				while (paused.getState()) {
-					try {
-						Log.d(TAG, "Waiting to unpause...");
-						paused.wait();
-					} catch (InterruptedException e) {
-						Log.w(TAG, "Interrupted while waiting to unpause.");
-						if (ending) {
-							break;
-						}
-					}
-				}
+		synchronized (flush) {
+			if (flush.getState()) {
+				flush();
 			}
 		}
 
-		Log.d(TAG, "end Engine");
+		doSpecialStuff(time);
+		computeFrame();
+		updatePipe();
+		aBufs = !aBufs; // Swap aBufs
 	}
 
 	/**
@@ -291,15 +232,6 @@ public class Engine extends Thread {
 			}
 			lightsChanged = true;
 		}
-	}
-
-	/**
-	 * Use this method (<b>not</b> {@link #run()}) to start the Engine.
-	 */
-	@Override
-	public void start() {
-		started = true;
-		super.start();			
 	}
 
 	/**

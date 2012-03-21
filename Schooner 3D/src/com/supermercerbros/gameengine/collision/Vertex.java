@@ -1,7 +1,10 @@
 package com.supermercerbros.gameengine.collision;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.supermercerbros.gameengine.util.Utils;
 
 public class Vertex extends Feature implements Point {
 	/**
@@ -71,5 +74,14 @@ public class Vertex extends Feature implements Point {
 	@Override
 	public float getZ() {
 		return z;
+	}
+
+	public List<Edge> getEdges() {
+		return Collections.unmodifiableList(coboundary);
+	}
+
+	@Override
+	public float distanceTo(Point other) {
+		return Utils.pythagF(x-other.getX(), y-other.getY(), z-other.getZ());
 	}
 }

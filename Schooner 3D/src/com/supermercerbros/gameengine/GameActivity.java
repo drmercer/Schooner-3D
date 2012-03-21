@@ -173,7 +173,7 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		super.onResume();
 		Log.d(TAG, "onResume");
 		if (engine.isAlive()) {
-			engine.resumeEngine();
+			engine.resumeLooping();
 		}
 		if (gameView != null) {
 			gameView.onResume();

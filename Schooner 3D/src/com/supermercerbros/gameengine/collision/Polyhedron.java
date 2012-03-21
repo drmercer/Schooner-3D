@@ -12,7 +12,7 @@ import com.supermercerbros.gameengine.util.Utils;
  * href=http://en.wikipedia.org/wiki/Convex_polyhedra>convex</a> polyhedra.
  */
 public class Polyhedron {
-	private static final float PLANE_CHECK_TOLERANCE = .001f;
+	public static final float PLANE_CHECK_TOLERANCE = .001f;
 
 	/**
 	 * Partitions a closed mesh of quads into convex subparts.
@@ -154,52 +154,189 @@ public class Polyhedron {
 	 */
 	private static ArrayList<Feature> makeClosed(ArrayList<Feature> features) {
 		LinkedList<ArrayList<Edge>> holes = new LinkedList<ArrayList<Edge>>();
+
+		// Find and trace all holes in mesh
 		for (Feature feature : features) {
-			if (feature instanceof Edge) {
-				Edge edge = (Edge) feature;
-				if (edge.isOpen()) {
-					ArrayList<Edge> neighbors = new ArrayList<Edge>();
-					//TODO continue hole-closing code.
+			if (!(feature instanceof Edge)) {
+				continue;
+			}
+			Edge edge = (Edge) feature;
+
+			// For every edge in features...
+
+			boolean isNewHole = true;
+			for (ArrayList<Edge> hole : holes) {
+				// Make sure that the edge's hole has not already been traced.
+				if (hole.contains(edge)) {
+					isNewHole = false;
+					break;
 				}
 			}
+
+			if (isNewHole && edge.isOpen()) {
+				// If this is a new hole, trace it and add it to our list of
+				// holes
+				holes.add(traceHole(edge));
+			}
+		}
+
+		// Close the holes
+		for (ArrayList<Edge> hole : holes) {
+			while (hole.size() > 3) {
+				Edge a = hole.remove(0);
+				Edge b = hole.remove(1);
+				Edge newEdge = web(a, b, features);
+				hole.add(0, newEdge);
+
+				if (hole.size() > 3) {
+					int size = hole.size();
+					Edge c = hole.remove(size - 1);
+					Edge d = hole.remove(size - 2);
+					Edge newEdge2 = web(c, d, features);
+					hole.add(0, newEdge2);
+				}
+			}
+
+			// Close last three edges of hole
+			Edge a = hole.remove(0);
+			Edge b = hole.remove(1);
+			Edge c = hole.remove(2);
+			Vector normal;
+			if (a.getHead() == b.getHead() || a.getHead() == b.getTail()) {
+				if (a.getRight() != null) {
+					// A is on left of new triangle from top.
+					normal = b.asVector().cross(a.asVector()).normalize();
+				} else {
+					// A is on right of new triangle from top.
+					normal = a.asVector().cross(b.asVector()).normalize();
+				}
+			} else {
+				if (a.getRight() != null) {
+					// A is on right of new triangle from top.
+					normal = a.asVector().cross(b.asVector()).normalize();
+				} else {
+					// A is on left of new triangle from top.
+					normal = b.asVector().cross(a.asVector()).normalize();
+				}
+			}
+			features.add(new Face(normal, a, b, c));
 		}
 		return features;
 	}
-	
-	private static Edge web(Edge a, Edge b, List<Feature> features){
-		final Vertex aHead = a.getHead(), aTail = a.getTail(), bHead = b.getHead(), bTail = b.getTail();
-		Vertex vA, vB, vC;
+
+	/**
+	 * Traces the border of a hole in a mesh.
+	 * 
+	 * @param edge
+	 *            An edge in the border of the hole
+	 * @return An ArrayList of the Edges that form the hole's boundary
+	 */
+	private static ArrayList<Edge> traceHole(Edge edge) {
+		if (!edge.isOpen()) {
+			throw new IllegalArgumentException(
+					"Given edge does not border a hole.");
+		}
+		ArrayList<Edge> holeEdges = new ArrayList<Edge>();
+
+		Vertex head = edge.getHead(), next = head;
+
+		for (int i = 0; i < next.getEdges().size(); i++) {
+			Edge e = next.getEdges().get(i);
+
+			boolean thisEdgeFound = false;
+			if (e.isOpen()) {
+
+				if (!holeEdges.contains(e)) {
+					holeEdges.add(e);
+					next = e.getOpposite(next);
+					i = -1; // Reset counter
+					continue;
+				} else {
+					// If this block is reached twice, both open edges of next
+					// have already been traced, so we're done tracing the hole
+					if (thisEdgeFound) {
+						break;
+					} else {
+						thisEdgeFound = true;
+					}
+				}
+
+			} else if (i + 1 == next.getEdges().size()) {
+				throw new IllegalArgumentException(
+						"Hole border could not be traced: dead end reached.");
+			}
+		}
+
+		return holeEdges;
+	}
+
+	/**
+	 * Puts a triangle between the two edges.
+	 * 
+	 * @param a
+	 *            Edge A
+	 * @param b
+	 *            Edge B
+	 * @param features
+	 *            The new face and edge are added to this List.
+	 * @return The new edge that was created between the separate endpoints of
+	 *         the edges.
+	 */
+	private static Edge web(Edge a, Edge b, List<Feature> features) {
+		final Vertex aHead = a.getHead(), aTail = a.getTail(), bHead = b
+				.getHead(), bTail = b.getTail();
+		Vertex vA, vB;
 		Vector normal;
-		
+
 		if (aHead == bHead) {
 			vA = aTail;
 			vB = bTail;
-			vC = aHead;
 			if (a.getRight() != null) {
-				// A is on left of new triangle from top. TODO left off here. <----
-				normal = b.asVector().cross(a.asVector());
+				// A is on left of new triangle from top.
+				normal = b.asVector().cross(a.asVector()).normalize();
 			} else {
-				// A is on right of new triangle from top. 
+				// A is on right of new triangle from top.
+				normal = a.asVector().cross(b.asVector()).normalize();
 			}
-		} else if (aHead == bTail){
+		} else if (aHead == bTail) {
 			vA = aTail;
 			vB = bHead;
-			vC = aHead;
+			if (a.getRight() != null) {
+				// A is on left of new triangle from top.
+				normal = b.asVector().cross(a.asVector()).normalize();
+			} else {
+				// A is on right of new triangle from top.
+				normal = a.asVector().cross(b.asVector()).normalize();
+			}
 		} else if (aTail == bHead) {
 			vA = aHead;
 			vB = bTail;
-			vC = aTail;
+			if (a.getRight() != null) {
+				// A is on right of new triangle from top.
+				normal = a.asVector().cross(b.asVector()).normalize();
+			} else {
+				// A is on left of new triangle from top.
+				normal = b.asVector().cross(a.asVector()).normalize();
+			}
 		} else if (aTail == bTail) {
 			vA = aHead;
 			vB = bHead;
-			vC = aTail;
+			if (a.getRight() != null) {
+				// A is on right of new triangle from top.
+				normal = a.asVector().cross(b.asVector()).normalize();
+			} else {
+				// A is on left of new triangle from top.
+				normal = b.asVector().cross(a.asVector()).normalize();
+			}
 		} else {
 			throw new IllegalArgumentException("Edges are not neighboring.");
 		}
-		
-		
-		
-		return null;
+
+		Edge newEdge = new Edge(vA, vB);
+		features.add(newEdge);
+		Face newFace = new Face(normal, a, b, newEdge);
+		features.add(newFace);
+		return newEdge;
 	}
 
 	/**
