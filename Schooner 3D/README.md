@@ -9,14 +9,18 @@ Things left to do:
 
 *  Patch GLES20 with NDK
 *  Test the Blender exporter and the parsing code ([Sch3D][])
-*  Rewrite Movements (use Euler Angles, coordinates, and maybe scale)
+*  Rewrite Movements (use Axis-Angle, coordinates, and scale)
+*  Write movement exporter
 *  Finish making GameObjects instanceable
 *  Finish Android UI mod
 
 Things to do after first stable release:
 ---------------------------------------
 
-*  Collision detection (in progress: see collision branch)
+*  Incorporate collision detection
+*  Point sprites
+*  Modular shaders
+*  Collision response
 *  Add support for quads?
 
 [Apache License]: www.apache.org/licenses/LICENSE-2.0.html "Apache License v2.0"
