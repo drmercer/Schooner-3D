@@ -4,18 +4,17 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import android.opengl.Matrix;
 import android.util.Log;
 
-import com.supermercerbros.gameengine.animation.Movable;
-import com.supermercerbros.gameengine.animation.Movement;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.Normals;
+import com.supermercerbros.gameengine.motion.Movement;
+import com.supermercerbros.gameengine.motion.MovementData;
 
 /**
  * Represents a 3D mesh object.
  */
-public class GameObject implements Movable {
+public class GameObject {
 	public static final String TAG = "com.supermercerbros.gameengine.objects.GameObject";
 
 	/**
@@ -53,12 +52,11 @@ public class GameObject implements Movable {
 	/**
 	 * The Metadata about this GameObject.
 	 */
-	public Metadata info;
-	/**
-	 * The model transformation matrix for this GameObject
-	 */
-	public float[] modelMatrix = new float[16];
+	public final Metadata info;
+	public final float[] modelMatrix;
 	protected Movement motion;
+	private final MovementData motionData;
+
 	/**
 	 * Contains the VBO offset at which this GameObject's data is loaded. This
 	 * is used for multiple instances of the same primitive.
@@ -70,7 +68,6 @@ public class GameObject implements Movable {
 	 * Used by the Engine class when loading the GameObject into buffers.
 	 */
 	public int iOffset = -1;
-	private boolean stationary;
 
 	private boolean debug = false;
 
@@ -100,10 +97,10 @@ public class GameObject implements Movable {
 		info.size = indices.length;
 		info.count = verts.length / 3;
 		info.mtl = mtl;
-
-		Matrix.setIdentityM(modelMatrix, 0);
-		stationary = false;
 		
+		modelMatrix = new float[16];
+		motionData = new MovementData();
+
 		Log.d(TAG, Arrays.toString(normals));
 		if (normals == null) {
 			Normals.calculate(this);
@@ -123,9 +120,9 @@ public class GameObject implements Movable {
 		info.size = indices.length;
 		info.count = verts.length / 3;
 		info.mtl = mtl;
-
-		Matrix.setIdentityM(modelMatrix, 0);
-		stationary = false;
+		
+		modelMatrix = new float[16];
+		motionData = new MovementData();
 
 		if (normals == null) {
 			Normals.calculate(this);
@@ -168,10 +165,10 @@ public class GameObject implements Movable {
 	 */
 	public void draw(long time) {
 		if (motion != null) {
-			motion.getFrame(modelMatrix, 0, time);
+			motion.getFrame(this, motionData, time);
 		}
 		lastDrawTime = time;
-		
+
 		if (debug) {
 			Log.d(TAG, Arrays.toString(normals));
 		}
@@ -194,13 +191,6 @@ public class GameObject implements Movable {
 	}
 
 	/**
-	 * @return true if this object is stationary.
-	 */
-	public boolean isStationary() {
-		return stationary;
-	}
-
-	/**
 	 * Marks this GameObject for deletion. The Engine doesn't update this
 	 * GameObject for rendering anymore, but it is not actually deleted from the
 	 * Engine until {@link Engine#flushDeletedObjects()} is called. Should only
@@ -211,34 +201,26 @@ public class GameObject implements Movable {
 	}
 
 	/**
-	 * @param stationary
-	 *            <code>true</code> if this <code>GameObject</code> has no
-	 *            motion. Note that <code>modelMatrix</code> can still be
-	 *            modified, and will still affect the <code>GameObject</code>'s
-	 *            position, but the object will not be translated or rotated
-	 *            when <code>draw()</code> is called.
-	 */
-	public void setStationary(boolean stationary) {
-		this.stationary = stationary;
-	}
-
-	/**
 	 * Sets and starts the Movement that is used to animate this GameObject's
 	 * location.
 	 * 
-	 * @param speed
-	 *            the speed of the Movement
+	 * @param motion
+	 *            The Movement to start
 	 * @param time
-	 *            the current time
+	 *            The current time in milliseconds.
+	 * @param duration
+	 *            The duration of the Movement, in milliseconds.
 	 * 
 	 */
-	public void startMotion(Movement motion, long time, float speed) {
+	public void startMotion(Movement motion, long time, long duration) {
 		this.motion = motion;
-		motion.start(time, modelMatrix, speed);
+		motionData.startTime = time;
+		motionData.duration = duration;
+		System.arraycopy(modelMatrix, 0, motionData.matrix, 0, 16);
 	}
-	
-	public void setDebug(boolean debug){
-		this.debug  = debug;
+
+	public void setDebug(boolean debug) {
+		this.debug = debug;
 	}
 
 }

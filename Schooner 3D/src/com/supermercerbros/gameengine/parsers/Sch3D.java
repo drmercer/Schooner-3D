@@ -20,7 +20,9 @@ public class Sch3D {
 	private static class V1 {
 		final static int TEXTURED = 0;
 		final static int ANIMATED = 1;
+		public static final int TRIS = 2;
 	}
+
 	private static Resources res;
 	private static AssetManager am;
 
@@ -97,66 +99,83 @@ public class Sch3D {
 		}
 	}
 
-	private static GameObject parseInputStream(InputStream is, Material mtl, String idStem)
-			throws IOException {
+	/**
+	 * Parses a GameObject from an InputStream
+	 * @param is
+	 * @param mtl
+	 * @param idStem
+	 * @return
+	 * @throws IOException
+	 */
+	private static GameObject parseInputStream(InputStream is, Material mtl,
+			String idStem) throws IOException {
 		BetterDataInputStream data = new BetterDataInputStream(is);
-		
+
 		short version = data.readShort();
 		if (version == 1) {
 			byte flags = data.readByte();
-			final boolean textured = Utils.checkByte(flags, V1.TEXTURED);
-			final boolean animated = Utils.checkByte(flags, V1.ANIMATED);
-			
+			final boolean textured = Utils.checkBit(flags, V1.TEXTURED);
+			final boolean animated = Utils.checkBit(flags, V1.ANIMATED);
+			final boolean tris = Utils.checkBit(flags, V1.TRIS);
+
 			final short triCount = data.readShort();
 			final short vertCount = data.readShort();
-			
+
 			final short[] indices = new short[triCount * 3];
 			data.readShortArray(indices, 0, triCount * 3);
-			
+
 			final float[] verts = new float[vertCount * 3];
 			data.readFloatArray(verts, 0, vertCount * 3);
-			
-			final short[][] doubles = new short[2][data.readShort() * 2];
-			for (int i = 0; i < doubles[0].length; i++){
-				doubles[0][i] = data.readShort();
-				doubles[1][i] = data.readShort();
-			}
-			
+
+			final short[][] doubles;
 			final float[] uvs;
-			if (textured) {
-				uvs = new float[vertCount*2];
-				data.readFloatArray(uvs, 0, vertCount*2);
-			} else {
-				uvs = new float[0];
-			}
-			
-			if (animated) {
-				final byte n = data.readByte();
-				MeshAnimation[] anims = new MeshAnimation[n];
-				
-				for (int i = 0; i < n; i++) {
-					String animID = idStem + "." + data.readUTF();
-					short keyframeCount = data.readShort();
-					
-					ArrayList<Keyframe> keyframes = new ArrayList<Keyframe>();
-					float[] times = new float[keyframeCount];
-					
-					for (int j = 0; j < keyframeCount; j++) {
-						times[j] = data.readShort();
-						float[] frame = new float[vertCount * 3];
-						data.readFloatArray(frame, 0, vertCount * 3);
-						keyframes.add(new Keyframe(frame));
-					}
-					
-					anims[i] = new MeshAnimation(keyframes, times, animID);
+			if (tris) {
+				doubles = new short[2][data.readShort() * 2];
+				for (int i = 0; i < doubles[0].length; i++) {
+					doubles[0][i] = data.readShort();
+					doubles[1][i] = data.readShort();
 				}
-				
-				AnimatedMeshObject object = new AnimatedMeshObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
-				object.attachAnims(anims);
-				return object;
+
+				if (textured) {
+					uvs = new float[vertCount * 2];
+					data.readFloatArray(uvs, 0, vertCount * 2);
+				} else {
+					uvs = new float[0];
+				}
+
+				if (animated) {
+					final byte n = data.readByte();
+					MeshAnimation[] anims = new MeshAnimation[n];
+
+					for (int i = 0; i < n; i++) {
+						String animID = idStem + ".anim." + data.readUTF();
+						short keyframeCount = data.readShort();
+
+						ArrayList<Keyframe> keyframes = new ArrayList<Keyframe>();
+						float[] times = new float[keyframeCount];
+
+						for (int j = 0; j < keyframeCount; j++) {
+							times[j] = data.readShort();
+							float[] frame = new float[vertCount * 3];
+							data.readFloatArray(frame, 0, vertCount * 3);
+							keyframes.add(new Keyframe(frame));
+						}
+
+						anims[i] = new MeshAnimation(keyframes, times, animID);
+					}
+
+					AnimatedMeshObject object = new AnimatedMeshObject(verts,
+							indices, uvs, new float[vertCount * 3], mtl,
+							doubles);
+					object.attachAnims(anims);
+					return object;
+				} else {
+					GameObject object = new GameObject(verts, indices, uvs,
+							new float[vertCount * 3], mtl, doubles);
+					return object;
+				}
 			} else {
-				GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
-				return object;
+				return new GameObject(verts, indices, null, null, null, null);
 			}
 		} else {
 			throw new IOException("Version is invalid.");
