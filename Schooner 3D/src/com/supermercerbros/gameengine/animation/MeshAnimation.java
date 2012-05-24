@@ -59,7 +59,7 @@ public class MeshAnimation {
 
 		} else if (framePoint >= data.loop && data.loop > 0) {
 			keyframes.get(numOfKeyframes - 1).loadTo(object.verts);
-			object.clearAnimation();
+			object.clearAnimation(id);
 
 		} else {
 			framePoint %= 1.0;
