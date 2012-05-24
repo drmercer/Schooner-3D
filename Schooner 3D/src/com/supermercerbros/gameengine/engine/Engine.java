@@ -377,9 +377,8 @@ public class Engine extends Thread {
 			iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
 
 			vertexOffset += object.info.count;
-
-			System.arraycopy(object.modelMatrix, 0, out.modelMatrices,
-					matrixIndex++ * 16, 16);
+			
+			System.arraycopy(object.modelMatrix, 0, out.modelMatrices, matrixIndex++ * 16, 16);
 
 			out.primitives[i++] = object.info;
 		}
