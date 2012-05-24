@@ -5,6 +5,8 @@ import android.util.Log;
 import com.supermercerbros.gameengine.animation.AnimationData;
 import com.supermercerbros.gameengine.animation.MeshAnimation;
 import com.supermercerbros.gameengine.engine.Normals;
+import com.supermercerbros.gameengine.handlers.OnAnimationCompleteDispatcher;
+import com.supermercerbros.gameengine.handlers.OnAnimationCompleteListener;
 
 /**
  * Represents an animated 3D mesh object.
@@ -14,6 +16,7 @@ public class AnimatedMeshObject extends GameObject {
 
 	private MeshAnimation anim;
 	private AnimationData data;
+	private OnAnimationCompleteDispatcher dispatcher;
 
 	/**
 	 * Contains {@link MeshAnimation}s associated with this GameObject. The
@@ -26,6 +29,7 @@ public class AnimatedMeshObject extends GameObject {
 			float[] normals, Material mtl, short[][] doubles) {
 		super(verts, indices, uvs, normals, mtl, doubles);
 		data = new AnimationData();
+		dispatcher = new OnAnimationCompleteDispatcher();
 	}
 
 	@Override
@@ -52,8 +56,9 @@ public class AnimatedMeshObject extends GameObject {
 		this.data.setCallTime(System.currentTimeMillis());
 	}
 
-	public void clearAnimation() {
+	public void clearAnimation(String id) {
 		this.anim = null;
+		dispatcher.fire(id);
 	}
 
 	/**
@@ -76,5 +81,9 @@ public class AnimatedMeshObject extends GameObject {
 	 */
 	public MeshAnimation[] getAnims() {
 		return this.anims;
+	}
+	
+	public void addAnimationCompleteListener(OnAnimationCompleteListener listener) {
+		dispatcher.addListener(listener);
 	}
 }
