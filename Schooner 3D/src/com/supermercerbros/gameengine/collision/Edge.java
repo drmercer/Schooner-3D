@@ -1,16 +1,37 @@
 package com.supermercerbros.gameengine.collision;
 
-public class Edge extends Feature {
+public class Edge extends Line implements Feature {
 	/**
 	 * An endpoint of the Edge (in the Edge's boundary)
 	 */
-	private final Vertex head, tail;
+	public final Vertex head, tail;
 	/**
 	 * A Face neighboring the Edge (in the Edge's coboundary)
 	 */
 	private Face right, left;
-	private final Vector vector;
-	private boolean locked;
+
+	/**
+	 * Constraint planes <b>always</b> face away from edges, toward faces and
+	 * vertices.
+	 */
+	private Plane rConstraint, lConstraint;
+	/**
+	 * Constraint planes <b>always</b> face away from edges, toward faces and
+	 * vertices.
+	 */
+	private final Plane hConstraint, tConstraint;
+
+	private final String debugID;
+	private static int nextID = 0;
+	
+	@Override
+	public String toString() {
+		return debugID;
+	}
+	
+	public static void resetIdCounter() {
+		nextID = 0;
+	}
 
 	/**
 	 * Creates a new Edge between the given vertices.
@@ -21,13 +42,17 @@ public class Edge extends Feature {
 	 *            The tail endpoint of the Edge.
 	 */
 	public Edge(Vertex head, Vertex tail) {
+		super(head, tail);
 		this.head = head;
-		head.addEdge(this);
 		this.tail = tail;
-		tail.addEdge(this);
 
-		vector = new Vector(tail, head, true);
+		hConstraint = new Plane(head, vector);
+		head.addEdge(this, hConstraint);
 
+		tConstraint = new Plane(tail, new Vector(head, tail, 1.0f));
+		tail.addEdge(this, tConstraint);
+		
+		this.debugID = "Edge " + nextID++;
 	}
 
 	/**
@@ -37,25 +62,23 @@ public class Edge extends Feature {
 	 *            The Face to add
 	 * @param point
 	 *            A point on the face
+	 * @return
 	 */
-	protected void addFace(Face face, Point point) {
-		if (locked) {
-			throw new IllegalStateException("Edge is locked. Cannot add face.");
-		}
+	protected Plane addFace(Face face, Point point) {
+		Vector v = new Vector(tail, point, 1.0f);
+		Vector cDirection = vector.cross(v);
+		Vector normal = cDirection.cross(vector);
 
-		Vector v = new Vector(tail, point, true);
-		float dot = vector.cross(v).dot(face.getNormal(), true);
+		float dot = cDirection.cos(face.normal);
 		if (dot > 0) {
 			left = face;
+			lConstraint = new Plane(head, normal);
+			return lConstraint;
 		} else {
 			right = face;
+			rConstraint = new Plane(head, normal);
+			return rConstraint;
 		}
-	}
-
-	@Override
-	protected void lock() {
-		// TODO Lock Edge
-		locked = true;
 	}
 
 	/**
@@ -76,23 +99,12 @@ public class Edge extends Feature {
 			return false;
 		}
 	}
-
-	/**
-	 * Returns the head of this Edge.
-	 * 
-	 * @return the head endpoint of this Edge.
-	 */
-	public Vertex getHead() {
-		return head;
-	}
-
-	/**
-	 * Returns the tail of this Edge.
-	 * 
-	 * @return the tail endpoint of this Edge.
-	 */
-	public Vertex getTail() {
-		return tail;
+	
+	public boolean matches(Vertex a, Vertex b) {
+		final boolean matches = a == head && b == tail;
+		final boolean opposite = b == head && a == tail;
+		final boolean result = matches || opposite;
+		return result;
 	}
 
 	/**
@@ -112,12 +124,14 @@ public class Edge extends Feature {
 	public Face getRight() {
 		return right;
 	}
-
+	
 	/**
-	 * @return The normalized vector of this Edge's direction
+	 * Gets the left wing of this Edge.
+	 * 
+	 * @return The face on this Edge's left.
 	 */
-	public Vector asVector() {
-		return vector;
+	public Face getLeft() {
+		return left;
 	}
 
 	/**
@@ -138,9 +152,121 @@ public class Edge extends Feature {
 		}
 	}
 
-	public boolean contains(Point p) {
-		// TODO Edge.contains(Point)
-		return false;
+	public Line transform(Matrix matrix) {
+		return new Line(head.transform(matrix), tail.transform(matrix));
 	}
 
+	@Override
+	public Feature test(final Feature other, final Matrix matrix)
+			throws Intersection {
+		if (other instanceof Face) {
+			return testF((Face) other, matrix);
+		} else if (other instanceof Edge) {
+			return testE((Edge) other, matrix);
+		} else if (other instanceof Vertex) {
+			return testV((Vertex) other, matrix);
+		} else {
+			throw new IllegalArgumentException(
+					"other is not a Face, Edge, or Vertex");
+		}
+	}
+
+	private Feature testV(final Vertex vertex, final Matrix matrix) {
+		final Point tVertex = vertex.transform(matrix);
+		return checkPoint(tVertex);
+	}
+
+	private Feature testE(final Edge edge, final Matrix matrix) {
+		final Line tEdge = edge.transform(matrix);
+		final Vector a = this.asVector(), b = tEdge.asVector(), h = new Vector(
+				tEdge.head, head, 0.0f);
+		final float dotAA = a.dot(a);
+		final float dotAB = a.dot(b);
+		final float dotBB = b.dot(b);
+		final float dotHA = h.dot(a);
+		final float dotHB = h.dot(b);
+		
+		final float det = dotAB * dotAB - dotAA * dotBB;
+		
+		final float u;
+		if (det == 0.0f) {
+			u = .5f; // May be a problem
+		} else {
+			u = 1 - (dotAA * dotHB - dotAB * dotHA) / det;
+		}
+
+		final Point closestPoint;
+		if (u > 1.0f) {
+			closestPoint = tEdge.head;
+		} else if (u < 0.0f) {
+			closestPoint = tEdge.tail;
+		} else {
+			closestPoint = new Point(tEdge.head.x - u * b.x, tEdge.head.y - u
+					* b.y, tEdge.head.z - u * b.z);
+		}
+		
+		return checkPoint(closestPoint);
+	}
+
+	private Feature testF(final Face face, final Matrix matrix) {
+		final Plane tFace = face.transform(matrix);
+
+		final double headDistance = tFace.distanceTo(head);
+		final double tailDistance = tFace.distanceTo(tail);
+
+		if (headDistance < tailDistance) {
+			return head;
+		} else if (tailDistance < headDistance) {
+			return tail;
+		} else if (left.normal.cross(vector).dot(tFace.normal) < CollisionDetector.CONSTRAINT_CHECK_TOLERANCE) {
+			return left;
+		} else if (vector.cross(right.normal).dot(tFace.normal) < CollisionDetector.CONSTRAINT_CHECK_TOLERANCE) {
+			return right;
+		} else {
+			CollisionDetector.setClosestPoint(tFace.projectPointOnto(Point.average(tail, head)));
+			return null;
+		}
+
+	}
+
+	private Feature checkPoint(Point p) {
+		double distance = CollisionDetector.CONSTRAINT_CHECK_TOLERANCE;
+		Feature infringed = null;
+
+		// Check head and tail constraints
+		double d;
+		if ((d = -hConstraint.distanceTo(p)) < distance) {
+			distance = d;
+			infringed = head;
+		} else if ((d = -tConstraint.distanceTo(p)) < distance) {
+			// Use else here because the head and tail planes are parallel, so
+			// if the head constraint fails, the tail will always pass.
+			distance = d;
+			infringed = tail;
+		}
+		
+		// Check left and right wing constraints
+		
+		if (lConstraint != null) {
+			final double lDistance = -lConstraint.distanceTo(p);
+			if (lDistance < distance) {
+				infringed = left;
+			}			
+		}
+
+		if (rConstraint != null) {
+			final double rDistance = -rConstraint.distanceTo(p);
+			if (rDistance < distance) {
+				infringed = right;
+			}	
+		}
+
+		if (infringed == null) {
+			CollisionDetector.setClosestPoint(p);
+			return null;
+		} else {
+			return infringed;
+		}
+		
+	}
 }

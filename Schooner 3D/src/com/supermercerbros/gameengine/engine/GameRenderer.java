@@ -17,6 +17,7 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.objects.Metadata;
+import com.supermercerbros.gameengine.util.GLES2;
 import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
@@ -55,7 +56,6 @@ public class GameRenderer implements Renderer {
 	}
 
 	private DataPipe pipe;
-	private RenderData in;
 	private IntBuffer vbo; // Vertex Buffer Object to hold dynamic data
 	private ShortBuffer ibo; // Index Buffer Object
 	/**
@@ -74,6 +74,7 @@ public class GameRenderer implements Renderer {
 
 	private int drawFrameCount = 0;
 	private float near, far;
+	private float aspect;
 
 	/**
 	 * Constructs a new GameRenderer.
@@ -110,12 +111,15 @@ public class GameRenderer implements Renderer {
 				Schooner3D.backgroundColor[3]);
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-		in = pipe.retrieveData();
+		final RenderData in = pipe.retrieveData();
 		if (in == null) {
 			Log.w(TAG, "in == null");
 			drawFrameCount--;
 			return;
 		}
+		
+		Log.d("CT", "vbo = " + Arrays.toString(Arrays.copyOfRange(in.vbo, 0, 75)) + "...");
+		Log.d("CT", "ibo = " + Arrays.toString(Arrays.copyOfRange(in.ibo, 0, 75)) + "...");
 
 		// long startFrame = System.nanoTime();
 
@@ -136,20 +140,29 @@ public class GameRenderer implements Renderer {
 
 		// Render each primitive
 		int matrixNumber = 0, iboOffset = 0, vboOffset = 0;
-		for (int i = 0; i < in.primitives.length; i++) {
-			Metadata primitive = in.primitives[i];
+		for (final Metadata primitive : in.primitives) {
+			if (primitive == null) {
+				Log.e(TAG, "primitive == null");
+			} else if (primitive.mtl == null){
+				Log.e(TAG, "primitive.mtl == null");
+			}
 
 			useProgram(primitive.mtl.getProgramName());
-			loadUniforms(in.viewMatrix, in.light, in.color);
+			loadUniforms(in.viewMatrix, in.light);
 
-			vboOffset += primitive.mtl.attachAttribs(primitive, vboOffset,
-					in.modelMatrices, matrixNumber);
-			logError("attachAttribs");
+			int size = primitive.mtl.attachAttribs(primitive, vboOffset,
+					in.modelMatrices.get(matrixNumber), 0); //TODO
+			vboOffset += size;
+			Log.d("CT", "object size = " + size + " bytes");
 
 			// Render primitive!
 			GLES20.glDrawElements(primitive.mtl.getGeometryType(),
 					primitive.size, GLES20.GL_UNSIGNED_SHORT, iboOffset);
 			logError("DrawElements");
+			
+			if (!GLES20.glIsEnabled(GLES2.GL_DEPTH_TEST)){
+				GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+			}
 
 			iboOffset += primitive.size * 2;
 			matrixNumber++;
@@ -160,8 +173,15 @@ public class GameRenderer implements Renderer {
 	@Override
 	public void onSurfaceChanged(GL10 unused, int width, int height) {
 		GLES20.glViewport(0, 0, width, height);
-		float aspect = width / (float) height;
-		Utils.perspectiveM(projMatrix, 0, 45, aspect, near, far);
+		aspect = width / (float) height;
+		projMatrix(projMatrix);
+	}
+
+	/**
+	 * Writes this GameRenderer's projection matrix to the given float array.
+	 */
+	public void projMatrix(float[] matrix) {
+		Utils.perspectiveM(matrix, 0, 45, aspect, near, far);
 	}
 
 	@Override
@@ -219,7 +239,7 @@ public class GameRenderer implements Renderer {
 		return false;
 	}
 
-	private void loadUniforms(float[] viewMatrix, float[] light, float[] color) {
+	private void loadUniforms(float[] viewMatrix, Light light) {
 		// Load World View-Projection matrix
 		Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, viewMatrix, 0);
 
@@ -228,21 +248,12 @@ public class GameRenderer implements Renderer {
 
 		// Load directional light
 		if (u_lightVec != -1) {
-			GLES20.glUniform3fv(u_lightVec, 1, light, 0);
+			GLES20.glUniform3f(u_lightVec, light.x, light.y, light.z);
 			logError("glUniform3fv (light vector)");
-			if (drawFrameCount <= framesToDebug) {
-				Log.d(TAG, "Uniform3fv(u_lightVec, 1, "
-						+ Arrays.toString(light) + ", 0)");
-			}
 		}
 		if (u_lightColor != -1) {
-			GLES20.glUniform3fv(u_lightColor, 1, color, 0);
+			GLES20.glUniform3f(u_lightColor, light.r, light.g, light.b);
 			logError("glUniform3fv (light color)");
-			if (drawFrameCount <= framesToDebug) {
-				Log.d(TAG, "Uniform3fv(" + u_lightColor
-						+ " (u_lightColor), 1, " + Arrays.toString(color)
-						+ ", 0)");
-			}
 		}
 	}
 }

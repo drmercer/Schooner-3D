@@ -1,23 +1,24 @@
 package com.supermercerbros.gameengine.objects;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
 import android.opengl.Matrix;
-import android.util.Log;
 
 import com.supermercerbros.gameengine.animation.Movable;
 import com.supermercerbros.gameengine.animation.Movement;
-import com.supermercerbros.gameengine.collision.Collidable;
+import com.supermercerbros.gameengine.collision.Bounds;
+import com.supermercerbros.gameengine.collision.Collider;
+import com.supermercerbros.gameengine.collision.Collision;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.Normals;
 
 /**
  * Represents a 3D mesh object.
  */
-public class GameObject implements Movable, Collidable{
-	public static final String TAG = "com.supermercerbros.gameengine.objects.GameObject";
+public class GameObject implements Movable, Collider {
+	public static final String TAG = "GameObject";
 
 	/**
 	 * Contains the indices of the vertices for the elements (i.e. triangles) in
@@ -54,7 +55,7 @@ public class GameObject implements Movable, Collidable{
 	/**
 	 * The Metadata about this GameObject.
 	 */
-	public Metadata info;
+	public final Metadata info;
 	/**
 	 * The model transformation matrix for this GameObject
 	 */
@@ -74,7 +75,7 @@ public class GameObject implements Movable, Collidable{
 	private boolean stationary;
 
 	private boolean debug = false;
-
+	
 	/**
 	 * 
 	 * @param verts
@@ -91,7 +92,6 @@ public class GameObject implements Movable, Collidable{
 	 */
 	public GameObject(float[] verts, short[] indices, float[] uvs,
 			float[] normals, Material mtl, short[][] doubles2) {
-		Log.d(TAG, "Constructing GameObject...");
 		this.verts = verts;
 		this.indices = indices;
 		this.mtl = uvs;
@@ -102,10 +102,11 @@ public class GameObject implements Movable, Collidable{
 		info.count = verts.length / 3;
 		info.mtl = mtl;
 
+		collisions = new HashMap<Collision, Collider>();
+
 		Matrix.setIdentityM(modelMatrix, 0);
 		stationary = false;
 		
-		Log.d(TAG, Arrays.toString(normals));
 		if (normals == null) {
 			Normals.calculate(this);
 		}
@@ -114,7 +115,6 @@ public class GameObject implements Movable, Collidable{
 	private GameObject(float[] verts, short[] indices, float[] uvs,
 			float[] normals, int[] instanceLoaded, Material mtl,
 			short[][] doubles) {
-		Log.d(TAG, "Constructing GameObject...");
 		this.verts = verts;
 		this.indices = indices;
 		this.mtl = uvs;
@@ -124,6 +124,8 @@ public class GameObject implements Movable, Collidable{
 		info.size = indices.length;
 		info.count = verts.length / 3;
 		info.mtl = mtl;
+
+		collisions = new HashMap<Collision, Collider>();
 
 		Matrix.setIdentityM(modelMatrix, 0);
 		stationary = false;
@@ -172,10 +174,7 @@ public class GameObject implements Movable, Collidable{
 			motion.getFrame(modelMatrix, 0, time);
 		}
 		lastDrawTime = time;
-		
-		if (debug) {
-			Log.d(TAG, Arrays.toString(normals));
-		}
+
 	}
 
 	/**
@@ -237,9 +236,36 @@ public class GameObject implements Movable, Collidable{
 		this.motion = motion;
 		motion.start(time, modelMatrix, speed);
 	}
-	
-	public void setDebug(boolean debug){
-		this.debug  = debug;
+
+	public void setDebug(boolean debug) {
+		this.debug = debug;
+	}
+
+	private final HashMap<Collision, Collider> collisions;
+	private Bounds bounds;
+
+	@Override
+	public Bounds getBounds() {
+		return bounds;
+	}
+
+	public void setBounds(Bounds bounds) {
+		this.bounds = bounds;
+	}
+
+	@Override
+	public float[] getMatrix() {
+		return modelMatrix;
+	}
+
+	@Override
+	public void clearCollisions() {
+		collisions.clear();
+	}
+
+	@Override
+	public void addCollision(Collider other, Collision collision) {
+		collisions.put(collision, other);
 	}
 
 }

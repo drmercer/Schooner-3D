@@ -1,58 +1,62 @@
 package com.supermercerbros.gameengine.util;
 
-import android.util.Log;
-
-import com.supermercerbros.gameengine.util.Toggle;
-
+/**
+ * This is a Thread subclass that provides looping functionality. The
+ * {@link #loop()} method is called repeatedly until {@link #end()} is called. A
+ * LoopingThread can also be paused with {@link #pause()} and
+ * {@link #resumeLooping()}.
+ */
 public abstract class LoopingThread extends Thread {
-	private static final String TAG = "LoopingThread";
 	private volatile Toggle paused = new Toggle(false);
 	protected volatile boolean started = false;
 	private volatile boolean ending = false;
 	private boolean intermittent;
 
+	// Constructors (these just go through to Thread's constructors):
+
 	public LoopingThread() {
 		super();
 	}
-
 	public LoopingThread(Runnable runnable) {
 		super(runnable);
 	}
-
 	public LoopingThread(String threadName) {
 		super(threadName);
 	}
-
 	public LoopingThread(Runnable runnable, String threadName) {
 		super(runnable, threadName);
 	}
-
 	public LoopingThread(ThreadGroup group, Runnable runnable) {
 		super(group, runnable);
 	}
-
 	public LoopingThread(ThreadGroup group, String threadName) {
 		super(group, threadName);
 	}
-
 	public LoopingThread(ThreadGroup group, Runnable runnable, String threadName) {
 		super(group, runnable, threadName);
 	}
-
 	public LoopingThread(ThreadGroup group, Runnable runnable,
 			String threadName, long stackSize) {
 		super(group, runnable, threadName, stackSize);
 	}
 
+	// Methods:
+
 	/**
 	 * Terminates the LoopingThread.
 	 */
 	public void end() {
-		Log.d(TAG, "LoopingThread state before end():" + getState().toString());
-		ending = true;
-		interrupt();
-		Log.d(TAG, "LoopingThread state after end():" + getState().toString());
+		if (started) {
+			ending = true;
+			interrupt();
+		}
+	}
 
+	/**
+	 * @return true if {@link #end()} has been called.
+	 */
+	public boolean isEnding() {
+		return ending;
 	}
 
 	/**
@@ -82,36 +86,72 @@ public abstract class LoopingThread extends Thread {
 	 * @see java.lang.Thread#run()
 	 */
 	@Override
-	public synchronized void run() {
+	public void run() {
 		if (Thread.currentThread() != this) {
 			throw new UnsupportedOperationException(
 					"Do not call LoopingThread.run()");
 		}
 		while (!ending) {
 			loop();
+			if (intermittent) {
+				pause();
+				afterPause();
+			}
 
 			if (ending) {
 				break;
 			}
-			if (intermittent) {
-				pause();
-			}
-			synchronized (paused) {
-				while (paused.getState()) {
-					try {
-						Log.d(TAG, "Waiting to unpause...");
-						paused.wait();
-					} catch (InterruptedException e) {
-						Log.w(TAG, "Interrupted while waiting to unpause.");
-						if (ending) {
-							break;
-						}
+			waitOnToggle(paused, false);
+		}
+
+		// Thread ends
+
+	}
+
+	/**
+	 * Waits for the given {@link Toggle} to have the desired state. Breaks out
+	 * of the wait if {@link #end()} is called.
+	 */
+	protected void waitOnToggle(final Toggle t, final boolean desired) {
+		synchronized (t) {
+			while (t.getState() != desired) {
+				try {
+					t.wait();
+				} catch (InterruptedException e) {
+					if (ending) {
+						break;
 					}
 				}
 			}
 		}
+	}
 
-		Log.d(TAG, "end LoopingThread");
+	/**
+	 * Waits for the given amount of time
+	 * 
+	 * @param millis
+	 */
+	protected void waitForTime(long millis) {
+		final long destinationTime = System.currentTimeMillis() + millis;
+		synchronized (this) {
+			while (System.currentTimeMillis() < destinationTime) {
+				try {
+					this.wait(destinationTime - System.currentTimeMillis());
+				} catch (InterruptedException e) {
+					if (ending) {
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * This method is called after the Thread pauses if it is intermittent.
+	 * Override it to do something at that point.
+	 */
+	public void afterPause() {
+		// This is overridden by subclasses
 	}
 
 	/**
@@ -135,9 +175,15 @@ public abstract class LoopingThread extends Thread {
 	}
 
 	/**
+	 * @return true if this LoopingThread has been started.
+	 */
+	public boolean hasBeenStarted() {
+		return started;
+	}
+
+	/**
 	 * This method is called repeatedly by {@link #run()} until the Thread is
 	 * paused or ended.
 	 */
 	protected abstract void loop();
-
 }

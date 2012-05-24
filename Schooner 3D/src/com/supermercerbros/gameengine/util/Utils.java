@@ -58,7 +58,7 @@ public class Utils {
 	 * @return The length of the vector.
 	 */
 	public static float pythagF(float x, float y, float z) {
-		return (float) Math.sqrt(x * x + y * y + z * z);
+		return (float) Math.sqrt((x * x) + (y * y) + (z * z));
 	}
 
 	/**

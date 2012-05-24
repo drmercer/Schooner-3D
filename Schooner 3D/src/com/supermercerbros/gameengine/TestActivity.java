@@ -11,6 +11,7 @@ import android.view.MotionEvent;
 import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.TextureLib;
+import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
 public class TestActivity extends GameActivity {
 	@SuppressWarnings("unused")
@@ -45,7 +46,7 @@ public class TestActivity extends GameActivity {
 		
 		engine.setLight(0.0f, 0.0f, 1.0f, ((float) Color.red(bg) / 256 + 1.0f) / 2.0f, ((float) Color.green(bg) / 256 + 1.0f) / 2.0f, ((float) Color.blue(bg) / 256 + 1.0f) / 2.0f);
 //		engine.addObject(TestObjects.tetra());
-		engine.addObject(TestObjects.cube(testTexture2));
+		engine.addObject(TestObjects.cube(new TexturedMaterial(testTexture2)));
 		start(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
 		
 	}
