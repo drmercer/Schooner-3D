@@ -1,5 +1,5 @@
 package com.supermercerbros.gameengine;
-
+// Testing Git diff reporting. This is the only line I changed
 import android.app.Activity;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
