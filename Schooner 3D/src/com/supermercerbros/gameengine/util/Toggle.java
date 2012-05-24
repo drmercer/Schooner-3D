@@ -13,11 +13,11 @@ public class Toggle {
 		state = initialState;
 	}
 
-	public void setState(boolean state) {
+	public synchronized void setState(boolean state) {
 		this.state = state;
 	}
 
-	public boolean getState() {
+	public synchronized boolean getState() {
 		return state;
 	}
 }

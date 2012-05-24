@@ -1,12 +1,16 @@
 package com.supermercerbros.gameengine;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import com.supermercerbros.gameengine.animation.Keyframe;
 import com.supermercerbros.gameengine.animation.MeshAnimation;
+import com.supermercerbros.gameengine.collision.Bounds;
+import com.supermercerbros.gameengine.collision.Polyhedron;
 import com.supermercerbros.gameengine.objects.AnimatedMeshObject;
 import com.supermercerbros.gameengine.objects.BasicMaterial;
 import com.supermercerbros.gameengine.objects.GameObject;
+import com.supermercerbros.gameengine.objects.Material;
 import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
 /**
@@ -48,18 +52,35 @@ public class TestObjects {
 	 *            TextureLib}).
 	 * @return A textured cube.
 	 */
-	public static GameObject cube(String texName) {
-		float[] verts = { 1.0f, 1.0f, 1.0f, 
-				1.0f, -1.0f, 1.0f, 
-				-1.0f, 1.0f, 1.0f, 
-				-1.0f, -1.0f, 1.0f, 
-				1.0f, 1.0f, -1.0f, 
-				1.0f, -1.0f, -1.0f, 
-				-1.0f, 1.0f, -1.0f,
-				-1.0f, -1.0f, -1.0f, };
-		float[] uvs = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-				0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, };
-		short[] indices = { 
+	public static GameObject cube(Material mtl) {
+		final float[] verts = { 
+				1.0f, 1.0f, 1.0f, 
+				1.0f, 0.0f, 1.0f, 
+				0.0f, 1.0f, 1.0f, 
+				0.0f, 0.0f, 1.0f, 
+				1.0f, 1.0f, 0.0f, 
+				1.0f, 0.0f, 0.0f, 
+				0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, };
+		final float[] uvs;
+		if (mtl instanceof TexturedMaterial) {
+			System.out.println(mtl.getClass().getSimpleName() + " instanceof TexturedMaterial");
+			uvs = new float[] { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+					0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, };
+		} else {
+			System.out.println(mtl.getClass().getSimpleName() + " not instanceof TexturedMaterial");
+			uvs = new float[] { 
+					0.0f, 0.0f, 0.0f, 
+					1.0f, 0.0f, 0.0f, 
+					0.0f, 1.0f, 0.0f,
+					0.0f, 0.0f, 1.0f,
+					1.0f, 1.0f, 0.0f, 
+					1.0f, 0.0f, 1.0f, 
+					0.0f, 1.0f, 1.0f,
+					1.0f, 1.0f, 1.0f
+			};
+		}
+		final short[] indices = { 
 				3, 1, 0, 
 				2, 3, 0, 
 				0, 1, 5,
@@ -75,7 +96,7 @@ public class TestObjects {
 		float[] normals = null;
 
 		GameObject cube = new GameObject(verts, indices, uvs, normals,
-				new TexturedMaterial(texName), null);
+				mtl, null);
 		cube.setDebug(true);
 		return cube;
 	}
@@ -116,6 +137,33 @@ public class TestObjects {
 		GameObject tri = new GameObject(verts, indices, colors, normals,
 				new BasicMaterial(), null);
 		return tri;
+	}
+	
+	public static Bounds cubeBounds() {
+		final float[] cubeV = { 
+			0.0f, 0.0f, 0.0f, 
+			1.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 
+			1.0f, 1.0f, 0.0f, 
+			0.0f, 0.0f, 1.0f, 
+			1.0f, 0.0f, 1.0f, 
+			0.0f, 1.0f, 1.0f, 
+			1.0f, 1.0f, 1.0f, };
+		final short[] cubeI = { 
+			0, 2, 3, 1, // Z
+			4, 5, 7, 6, // Z one
+
+			0, 1, 5, 4, // Y
+			2, 6, 7, 3, // Y one
+
+			1, 3, 7, 5, // X
+			2, 0, 4, 6, // X one
+		};
+		
+		final LinkedList<Polyhedron> parts = new LinkedList<Polyhedron>();
+		final Polyhedron poly = new Polyhedron(Polyhedron.featureMesh(cubeV, cubeI));
+		parts.add(poly);
+		return new Bounds(parts, 0.0);
 	}
 
 }

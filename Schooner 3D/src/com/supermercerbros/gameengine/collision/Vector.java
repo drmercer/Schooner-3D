@@ -3,145 +3,180 @@ package com.supermercerbros.gameengine.collision;
 import com.supermercerbros.gameengine.util.Utils;
 
 /**
- * Represents a vector, which is a mathematical quantity with both direction and
- * magnitude (i.e. an arrow).
- * TODO Remove possibility of non-unit vector?
- * 
- * @see <a href=http://www.youtube.com/watch?v=KbrEBpCw3Ag&t=00m05s>"Vector"
- *      from Despicable Me</a> :P
+ * A mathematical quantity with both magnitude and direction.
  */
 public class Vector {
-	private float x, y, z;
-	private boolean unit;
+	public final float x;
+	public final float y;
+	public final float z;
+	public final float length;
 
-	public Vector(Point tail, Point head, boolean normalized) {
-		float length;
-		x = (head.getX() - tail.getX());
-		y = (head.getY() - tail.getY());
-		z = (head.getZ() - tail.getZ());
-
-		unit = normalized;
-		if (normalized) {
-			length = Utils.pythagF(x, y, z);
-			x /= length;
-			y /= length;
-			z /= length;
-		}
-	}
-
-	public Vector(float x, float y, float z, boolean normalized) {
-		float length;
-		if (normalized) {
-			length = Utils.pythagF(x, y, z);
+	/**
+	 * Creates a new Vector in the given direction and with the given length. If
+	 * <code>length = 0.0</code>, the components are unchanged.
+	 * 
+	 * @param x
+	 * @param y
+	 * @param z
+	 * @param length
+	 */
+	Vector(final float x, final float y, final float z, final float length) {
+		if (length == 0.0f) {
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.length = Utils.pythagF(x, y, z);
 		} else {
-			length = 1.0f;
+			final float mag = Utils.pythagF(x, y, z);
+			this.x = (x / mag) * length;
+			this.y = (y / mag) * length;
+			this.z = (z / mag) * length;
+			this.length = length;
 		}
-		this.x = x / length;
-		this.y = y / length;
-		this.z = z / length;
+
 	}
 
 	/**
-	 * Computes the cross product of this Vector and another Vector.
+	 * Creates a new Vector between the given Points and with the given length.
+	 * If <code>length = 0.0f</code>, the components are unchanged.
+	 * 
+	 * @param t
+	 *            The tail Point
+	 * @param h
+	 *            the head Point
+	 * @param length
+	 *            The length of the Vector, or 0.0f if the length should be left
+	 *            as is.
+	 */
+	public Vector(Point t, Point h, final float length) {
+		final float x = h.x - t.x;
+		final float y = h.y - t.y;
+		final float z = h.z - t.z;
+
+		if (length == 0.0f) {
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.length = Utils.pythagF(x, y, z);
+		} else {
+			final float mag = Utils.pythagF(x, y, z);
+			this.x = (x / mag) * length;
+			this.y = (y / mag) * length;
+			this.z = (z / mag) * length;
+			this.length = length;
+		}
+	}
+
+	/**
+	 * Computes the normalized cross product of this FinalVector and another
+	 * Vector. (The vectors are normalized before the operation.)
 	 * 
 	 * @param v
 	 *            The other vector.
 	 * @return The cross product of the two vectors.
 	 */
-	public synchronized Vector cross(Vector v) {
-		Vector result = new Vector(0.0f, 0.0f, 0.0f, false);
+	public Vector cross(Vector v) {
+		//TODO BUGGY?
+		final float vx = v.x / v.length, vy = v.y / v.length, vz = v.z
+				/ v.length;
 
-		result.x = this.y * v.z - this.z * v.y;
-		result.y = this.z * v.x - this.x * v.z;
-		result.z = this.x * v.y - this.y * v.x;
+		final float rx = this.y * vz - this.z * vy;
+		final float ry = this.z * vx - this.x * vz;
+		final float rz = this.x * vy - this.y * vx;
 
-		return result;
+		return new Vector(rx, ry, rz, 0.0f);
 	}
 
 	/**
-	 * Computes the dot product of this Vector and another Vector. The dot
-	 * product of two unit vectors is equal to the cosine of the angle between the two vectors.
+	 * Computes the cosine of the angle between this Vector and another Vector.
+	 * The cosine is equal to the dot product ({@link #dot(Vector)}) divided by
+	 * the product of the vectors' magnitudes.
 	 * 
-	 * @param v
+	 * @param other
 	 *            The other vector.
-	 * @param normalize True if the vectors should be normalized before computing the dot product.
-	 * @return The dot product of the two vectors.
+	 * @return The cosine of the angle between the two vectors.
 	 */
-	public synchronized float dot(Vector v, boolean normalize) {
-		Vector a, b;
-		if (normalize) {
-			a = this.toUnitVector();
-			b = v.toUnitVector();
+	public float cos(Vector other) {
+		if (equals(other)) {
+			return 1.0f;
 		} else {
-			a = this;
-			b = v;
+			return (this.x * other.x + this.y * other.y + this.z * other.z)
+					/ (this.length * other.length);
+		}
+	}
+
+	/**
+	 * Computes the dot product of this Vector and another vector. The
+	 * computation is this:
+	 * 
+	 * <pre>
+	 * this.x * other.x + this.y * other.y + this.z * other.z
+	 * </pre>
+	 * 
+	 * @param other
+	 *            The other Vector.
+	 * @return The dot product of the two vectors.
+	 * @see <a href="http://en.wikipedia.org/wiki/Dot_product">Dot Product
+	 *      (Wikipedia)</a>
+	 */
+	public float dot(Vector other) {
+		if (equals(other)) {
+			return length * length;
+		} else {
+			return this.x * other.x + this.y * other.y + this.z * other.z;
+		}
+	}
+
+	/**
+	 * Normalizes this vector.
+	 * 
+	 * @return A unit vector (length = 1) whose direction is equal to that of
+	 *         this Vector.
+	 */
+	public Vector normalize() {
+		return new Vector(x, y, z, 1.0f);
+	}
+
+	/**
+	 * Transforms this Vector by the given transformation matrix.
+	 * 
+	 * @param matrix
+	 * @return The transformed Vector
+	 */
+	public Vector transform(final Matrix matrix) {
+		// TODO BUGGY?
+		final float tx = matrix.m0 * x + matrix.m4 * y + matrix.m8 * z;
+		final float ty = matrix.m1 * x + matrix.m5 * y + matrix.m9 * z;
+		final float tz = matrix.m2 * x + matrix.m6 * y + matrix.m10 * z;
+		return new Vector(tx, ty, tz, 0.0f);
+	}
+
+	/**
+	 * Flips this Vector.
+	 * 
+	 * @return
+	 */
+	public Vector flip() {
+		return new Vector(-x, -y, -z, 0.0f);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
 		}
 		
-		return a.x * b.x + a.y * b.y + a.z * b.z;
-	}
-
-	/**
-	 * Normalizes this Vector.
-	 * 
-	 * @return this, for chaining.
-	 */
-	public synchronized Vector normalize() {
-		unit = true;
-		float length = Utils.pythagF(x, y, z);
-		x /= length;
-		y /= length;
-		z /= length;
-		return this;
-	}
-
-	/**
-	 * Duplicates this vector and normalizes the duplicate. Identical result to
-	 * <code>duplicate(1.0f)</code>.
-	 * 
-	 * @return The duplicate Vector.
-	 */
-	public synchronized Vector toUnitVector() {
-		if (unit) {
-			return this;
-		} else {
-			return new Vector(x, y, z, true);
+		if (!(o instanceof Vector)){
+			return false;
 		}
+		
+		final Vector v = (Vector) o;
+		
+		return x == v.x && y == v.y && z == v.z;
 	}
-
-	/**
-	 * Checks whether this Vector is normalized.
-	 * 
-	 * @return True if this Vector is a unit vector; that is, it's length is
-	 *         <code>1.0f</code>.
-	 */
-	public synchronized boolean isUnitVector() {
-		return unit;
+	
+	@Override
+	public String toString() {
+		return "Vector[" + x + ", " + y + ", " + z + "]";
 	}
-
-	/**
-	 * Duplicates this Vector and gives the duplicate the given length.
-	 * 
-	 * @param length
-	 *            The length of the duplicate, or <code>0.0f</code> if it should
-	 *            be the same length as this Vector.
-	 * @return The duplicate Vector.
-	 */
-	public synchronized Vector duplicate(float length) {
-		if (length == 1.0f) {
-			return new Vector(x, y, z, true);
-		} else if (length == 0.0f) {
-			return new Vector(x, y, z, false);
-		} else {
-			Vector vec = new Vector(x, y, z, true);
-			vec.scale(length);
-			return vec;
-		}
-	}
-
-	private void scale(float factor) {
-		x *= factor;
-		y *= factor;
-		z *= factor;
-	}
-
 }

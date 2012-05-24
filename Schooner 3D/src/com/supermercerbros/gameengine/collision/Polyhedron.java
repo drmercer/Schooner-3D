@@ -1,6 +1,7 @@
 package com.supermercerbros.gameengine.collision;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,9 +13,9 @@ import com.supermercerbros.gameengine.util.Utils;
  * href=http://en.wikipedia.org/wiki/Convex_polyhedra>convex</a> polyhedra.
  */
 public class Polyhedron {
-	public static final float PLANE_CHECK_TOLERANCE = .001f;
-
+	
 	/**
+	 * FIXME does not work!
 	 * Partitions a closed mesh of quads into convex subparts.
 	 * 
 	 * @param verts
@@ -183,40 +184,36 @@ public class Polyhedron {
 		// Close the holes
 		for (ArrayList<Edge> hole : holes) {
 			while (hole.size() > 3) {
-				Edge a = hole.remove(0);
-				Edge b = hole.remove(1);
-				Edge newEdge = web(a, b, features);
+				final Edge a = hole.remove(0);
+				final Edge b = hole.remove(1);
+				final Edge newEdge = web(a, b, features);
 				hole.add(0, newEdge);
 
 				if (hole.size() > 3) {
 					int size = hole.size();
-					Edge c = hole.remove(size - 1);
-					Edge d = hole.remove(size - 2);
-					Edge newEdge2 = web(c, d, features);
+					final Edge c = hole.remove(size - 1);
+					final Edge d = hole.remove(size - 2);
+					final Edge newEdge2 = web(c, d, features);
 					hole.add(0, newEdge2);
 				}
 			}
 
 			// Close last three edges of hole
-			Edge a = hole.remove(0);
-			Edge b = hole.remove(1);
-			Edge c = hole.remove(2);
+			final Edge a = hole.remove(0);
+			final Edge b = hole.remove(1);
+			final Edge c = hole.remove(2);
 			Vector normal;
-			if (a.getHead() == b.getHead() || a.getHead() == b.getTail()) {
+			if (a.head == b.head || a.tail == b.head) {
 				if (a.getRight() != null) {
-					// A is on left of new triangle from top.
-					normal = b.asVector().cross(a.asVector()).normalize();
+					normal = b.vector.cross(a.vector);
 				} else {
-					// A is on right of new triangle from top.
-					normal = a.asVector().cross(b.asVector()).normalize();
+					normal = a.vector.cross(b.vector);
 				}
 			} else {
 				if (a.getRight() != null) {
-					// A is on right of new triangle from top.
-					normal = a.asVector().cross(b.asVector()).normalize();
+					normal = a.vector.cross(b.vector);
 				} else {
-					// A is on left of new triangle from top.
-					normal = b.asVector().cross(a.asVector()).normalize();
+					normal = b.vector.cross(a.vector);
 				}
 			}
 			features.add(new Face(normal, a, b, c));
@@ -238,7 +235,7 @@ public class Polyhedron {
 		}
 		ArrayList<Edge> holeEdges = new ArrayList<Edge>();
 
-		Vertex head = edge.getHead(), next = head;
+		Vertex head = edge.head, next = head;
 
 		for (int i = 0; i < next.getEdges().size(); i++) {
 			Edge e = next.getEdges().get(i);
@@ -283,50 +280,48 @@ public class Polyhedron {
 	 *         the edges.
 	 */
 	private static Edge web(Edge a, Edge b, List<Feature> features) {
-		final Vertex aHead = a.getHead(), aTail = a.getTail(), bHead = b
-				.getHead(), bTail = b.getTail();
-		Vertex vA, vB;
+		final Vertex vA, vB;
 		Vector normal;
 
-		if (aHead == bHead) {
-			vA = aTail;
-			vB = bTail;
+		if (a.head == b.head) {
+			vA = a.tail;
+			vB = b.tail;
 			if (a.getRight() != null) {
-				// A is on left of new triangle from top.
-				normal = b.asVector().cross(a.asVector()).normalize();
+				// A is on right of new triangle (when new edge is base)
+				normal = b.vector.cross(a.vector);
 			} else {
-				// A is on right of new triangle from top.
-				normal = a.asVector().cross(b.asVector()).normalize();
+				// A is on left of new triangle (when new edge is base)
+				normal = a.vector.cross(b.vector);
 			}
-		} else if (aHead == bTail) {
-			vA = aTail;
-			vB = bHead;
+		} else if (a.head == b.tail) {
+			vA = a.tail;
+			vB = b.head;
 			if (a.getRight() != null) {
-				// A is on left of new triangle from top.
-				normal = b.asVector().cross(a.asVector()).normalize();
+				// A is on right of new triangle (when new edge is base)
+				normal = a.vector.cross(b.vector);
 			} else {
-				// A is on right of new triangle from top.
-				normal = a.asVector().cross(b.asVector()).normalize();
+				// A is on left of new triangle (when new edge is base)
+				normal = b.vector.cross(a.vector);
 			}
-		} else if (aTail == bHead) {
-			vA = aHead;
-			vB = bTail;
+		} else if (a.tail == b.head) {
+			vA = a.head;
+			vB = b.tail;
 			if (a.getRight() != null) {
-				// A is on right of new triangle from top.
-				normal = a.asVector().cross(b.asVector()).normalize();
+				// A is on left of new triangle (when new edge is base)
+				normal = b.vector.cross(a.vector);
 			} else {
-				// A is on left of new triangle from top.
-				normal = b.asVector().cross(a.asVector()).normalize();
+				// A is on right of new triangle (when new edge is base)
+				normal = a.vector.cross(b.vector);
 			}
-		} else if (aTail == bTail) {
-			vA = aHead;
-			vB = bHead;
+		} else if (a.tail == b.tail) {
+			vA = a.head;
+			vB = b.head;
 			if (a.getRight() != null) {
-				// A is on right of new triangle from top.
-				normal = a.asVector().cross(b.asVector()).normalize();
+				// A is on left of new triangle (when new edge is base)
+				normal = a.vector.cross(b.vector);
 			} else {
-				// A is on left of new triangle from top.
-				normal = b.asVector().cross(a.asVector()).normalize();
+				// A is on right of new triangle (when new edge is base)
+				normal = b.vector.cross(a.vector);
 			}
 		} else {
 			throw new IllegalArgumentException("Edges are not neighboring.");
@@ -334,7 +329,7 @@ public class Polyhedron {
 
 		Edge newEdge = new Edge(vA, vB);
 		features.add(newEdge);
-		Face newFace = new Face(normal, a, b, newEdge);
+		Feature newFace = new Face(normal, a, b, newEdge);
 		features.add(newFace);
 		return newEdge;
 	}
@@ -409,27 +404,27 @@ public class Polyhedron {
 				verts[indices[faceB * 4 + 3] * 3 + 1],
 				verts[indices[faceB * 4 + 3] * 3 + 2], };
 
-		Vector normalA = new Vector(a[0] - a[3], a[1] - a[4], a[2] - a[5], true)
-				.cross(new Vector(a[6] - a[3], a[7] - a[4], a[8] - a[5], true));
+		Vector normalA = new Vector(a[0] - a[3], a[1] - a[4], a[2] - a[5], 1.0f)
+				.cross(new Vector(a[6] - a[3], a[7] - a[4], a[8] - a[5], 1.0f));
 
-		Vector normalB = new Vector(b[0] - b[3], b[1] - b[4], b[2] - b[5], true)
-				.cross(new Vector(b[6] - b[3], b[7] - b[4], b[8] - b[5], true));
+		Vector normalB = new Vector(b[0] - b[3], b[1] - b[4], b[2] - b[5], 1.0f)
+				.cross(new Vector(b[6] - b[3], b[7] - b[4], b[8] - b[5], 1.0f));
 
-		Point pointA = new Vertex(a[0], a[1], a[2]);
-		Point pointB = new Vertex(b[0], b[1], b[2]);
+		Point pointA = new Point(a[0], a[1], a[2]);
+		Point pointB = new Point(b[0], b[1], b[2]);
 
 		Plane planeA = new Plane(pointA, normalA);
 		Plane planeB = new Plane(pointB, normalB);
 
 		for (int i = 0; i < 4; i++) {
 			if (!planeB.pointIsInFront(a[i * 3 + 0], a[i * 3 + 1],
-					a[i * 3 + 2], PLANE_CHECK_TOLERANCE)) {
+					a[i * 3 + 2])) {
 				return false;
 			}
 		}
 		for (int i = 0; i < 4; i++) {
 			if (!planeA.pointIsInFront(b[i * 3 + 0], b[i * 3 + 1],
-					b[i * 3 + 2], PLANE_CHECK_TOLERANCE)) {
+					b[i * 3 + 2])) {
 				return false;
 			}
 		}
@@ -485,73 +480,95 @@ public class Polyhedron {
 	 * @return A list containing the features of the mesh.
 	 */
 	public static ArrayList<Feature> featureMesh(float[] verts, short[] indices) {
-		ArrayList<Vertex> vertices = new ArrayList<Vertex>();
-		ArrayList<Feature> features = new ArrayList<Feature>();
-		int count = indices.length;
-		short[] edgeIndices = new short[count];
-
+		final ArrayList<Feature> features = new ArrayList<Feature>();
+		
+		int count = indices.length; // Number of vertex indices
+		
+		// Make vertex coordinates into Vertex objects
 		for (int i = 0; i < verts.length; i += 3) {
 			Vertex vert = new Vertex(verts[i], verts[i + 1], verts[i + 2]);
-			vertices.add(vert);
 			features.add(vert);
 		}
-
+		
+		// Create Edges and Faces
 		for (int i = 0; i < count; i += 4) {
-			Vertex[] faceVert = new Vertex[4];
-			faceVert[0] = vertices.get(indices[i + 0]);
-			faceVert[1] = vertices.get(indices[i + 1]);
-			faceVert[2] = vertices.get(indices[i + 2]);
-			faceVert[3] = vertices.get(indices[i + 3]);
+			final short[] edgeIndices = new short[4];
+			final Vertex[] faceVert = new Vertex[4];
+			faceVert[0] = (Vertex) features.get(indices[i + 0]);
+			faceVert[1] = (Vertex) features.get(indices[i + 1]);
+			faceVert[2] = (Vertex) features.get(indices[i + 2]);
+			faceVert[3] = (Vertex) features.get(indices[i + 3]);
+			
+			//Create the four edges of the face, if they don't already exist.
 			for (int j = 0; j < 4; j++) {
-				Edge edge;
-				if (i < 3) {
-					edge = new Edge(faceVert[j], faceVert[j + 1]);
-				} else {
-					edge = new Edge(faceVert[j], faceVert[0]);
+				
+				final Vertex head = faceVert[j], tail = j < 3 ? faceVert[j + 1] : faceVert[0];
+				
+				// Check if an edge between these two vertices already exists.
+				short edgeIndex = -1;
+				for (short currentIndex = (short) (verts.length/3); currentIndex < features.size(); currentIndex++){
+					final Feature f = features.get(currentIndex);
+					
+					if (!(f instanceof Edge)) {
+						continue;
+					}
+					final Edge e = (Edge) f;
+						
+					if (e.matches(head, tail)){
+						//Already exists, at currentIndex
+						edgeIndex = currentIndex; 
+					}
+					
 				}
-				if (!features.contains(edge)) {
-					edgeIndices[i + j] = (short) features.size();
-					features.add(edge);
+				
+				// If the edge does not already exist, create a new one.
+				if (edgeIndex == -1) {
+					final Edge edge = new Edge(head, tail);
+					edgeIndices[j] = (short) features.size();
+					features.add(edge);					
 				} else {
-					edgeIndices[i + j] = (short) features.indexOf(edge);
+					// If it does already exist, use the existing index.
+					edgeIndices[j] = edgeIndex;
 				}
 			}
-
-		}
-
-		for (int i = 0; i < count; i += 4) {
-			Vertex point0 = new Vertex(verts[indices[i * 3 + 0]],
-					verts[indices[i * 3 + 1]], verts[indices[i * 3 + 2]]);
-			Vertex point1 = new Vertex(verts[indices[(i + 1) * 3]],
-					verts[indices[(i + 1) * 3 + 1]],
-					verts[indices[(i + 1) * 3 + 2]]);
-			Vertex point2 = new Vertex(verts[indices[(i + 3) * 3]],
-					verts[indices[(i + 3) * 3 + 1]],
-					verts[indices[(i + 3) * 3 + 2]]);
-			Vector normal = new Vector(point0, point1, true).cross(new Vector(
-					point0, point2, true));
-			Face face = new Face(normal,
-					(Edge) features.get(edgeIndices[i + 0]),
-					(Edge) features.get(edgeIndices[i + 1]),
-					(Edge) features.get(edgeIndices[i + 2]),
-					(Edge) features.get(edgeIndices[i + 3]));
+			
+			//Calculate normal of face
+			final Vector normal = new Vector(faceVert[0], faceVert[1], 1.0f).cross(new Vector(
+					faceVert[0], faceVert[3], 1.0f));
+			
+			final Feature face = new Face(normal,
+					(Edge) features.get(edgeIndices[0]),
+					(Edge) features.get(edgeIndices[1]),
+					(Edge) features.get(edgeIndices[2]),
+					(Edge) features.get(edgeIndices[3]));
 			features.add(face);
 		}
+		
 		return features;
 	}
 
-	@SuppressWarnings("unused")
-	private List<Feature> features;
+	public final List<Feature> features;
+	private final IdentityHashMap<Polyhedron, Feature> closestFeatures;
 
 	/**
 	 * @param features
-	 *            A {@link List} of the {@link Feature} in this polyhedron.
+	 *            A {@link List} of the {@link Feature}s in this polyhedron.
 	 */
 	public Polyhedron(List<Feature> features) {
 		this.features = features;
-		for (Feature feature : features) {
-			feature.lock();
+		this.closestFeatures = new IdentityHashMap<Polyhedron, Feature>();
+	}
+
+	public Feature getLastClosest(Polyhedron other) {
+		final Feature f = closestFeatures.get(other);
+		if (f != null) {
+			return f;
+		} else {
+			return other.features.get(0);
 		}
 	}
 
+	public void setClosest(Polyhedron other, Feature closestA) {
+		closestFeatures.put(other, closestA);
+	}
 }

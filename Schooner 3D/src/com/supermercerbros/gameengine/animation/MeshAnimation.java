@@ -19,7 +19,7 @@ public class MeshAnimation {
 	/**
 	 * Contains the unique identifier for this Animation
 	 */
-	private final String id; 
+	public final String id; 
 	private final List<Keyframe> keyframes;
 	private final int numOfKeyframes;
 	private float[] times;

@@ -10,7 +10,6 @@ import org.xmlpull.v1.XmlPullParserFactory;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.content.res.XmlResourceParser;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.util.Utils;
@@ -61,16 +60,18 @@ public class ShaderLib {
 		if (!initialized) {
 			throw new IllegalStateException("ShaderLib has not been initialized.");
 		}
-		XmlResourceParser xrp;
+		XmlPullParser xpp;
 		try {
-			xrp = am.openXmlResourceParser(filepath);
-		} catch (IOException e) {
-			Log.e(TAG, "Could not open assets/" + filepath);
+			XmlPullParserFactory xppf = XmlPullParserFactory.newInstance();
+			xpp = xppf.newPullParser();
+			xpp.setInput(am.open(filepath), null);
+			parseXml(xpp, true);
+		} catch (XmlPullParserException e) {
 			e.printStackTrace();
-			return;
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 
-		parseXml(xrp, true);
 	}
 
 	/**
