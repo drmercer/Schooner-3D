@@ -181,7 +181,8 @@ public class Engine extends LoopingThread implements
 			delObjects.add(object);
 		}
 	}
-
+	
+	@Override
 	protected void loop() {
 		// Check for new GameObjects, GameObjects to delete, and actions to
 		// perform.
