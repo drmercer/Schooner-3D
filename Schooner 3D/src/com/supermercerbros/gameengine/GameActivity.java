@@ -53,7 +53,7 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 
 		gameView = new GLSurfaceView(this);
 		gameView.setEGLContextClientVersion(2);
-		
+
 		gameView.setOnTouchListener(this);
 	}
 
@@ -155,7 +155,8 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		engine.start();
 		renderer = new GameRenderer(pipe, near, far);
 		gameView.setRenderer(renderer);
-		super.setContentView(gameView); //TODO change to super.setContentView(content);
+		super.setContentView(gameView); // TODO change to
+										// super.setContentView(content);
 	}
 
 	@Override
@@ -211,10 +212,10 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		Schooner3D.backgroundColor[2] = (float) Color.blue(color) / 256;
 		Schooner3D.backgroundColor[3] = (float) Color.alpha(color) / 256;
 	}
-	
+
 	@Override
-	public final boolean onTouch(View v, MotionEvent e){
-		if (v == gameView){
+	public final boolean onTouch(View v, MotionEvent e) {
+		if (v == gameView) {
 			return onTouch(e);
 		} else {
 			return false;
@@ -223,7 +224,9 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 
 	/**
 	 * Called when the background (the rendered scene) receives a touch event.
-	 * @param e The MotionEvent received.
+	 * 
+	 * @param e
+	 *            The MotionEvent received.
 	 * @return True if the handling has consumed the event, false if otherwise.
 	 */
 	protected abstract boolean onTouch(MotionEvent e);
