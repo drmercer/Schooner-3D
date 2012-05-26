@@ -58,7 +58,7 @@ public class Utils {
 	 * @return The length of the vector.
 	 */
 	public static float pythagF(float x, float y, float z) {
-		return (float) Math.sqrt(x * x + y * y + z * z);
+		return (float) Math.sqrt((x * x) + (y * y) + (z * z));
 	}
 
 	/**
@@ -185,12 +185,26 @@ public class Utils {
 		return sb.toString();
 	}
 
-	/**
-	 * @param flags The <code>byte</code> to examine
-	 * @param place The index of the bit in <code>flags</code> to check
-	 * @return True if the bit is 1, false if it is 0
-	 */
-	public static boolean checkBit(byte flags, int place) {
+	public static boolean checkByte(byte flags, int place) {
 		return (flags & (1 << place)) != 0;
+	}
+
+	public static int search(short[] array, int begin, int end, int value) {
+		if (array[begin] == value) {
+			return begin;
+		} else if (array[end] == value) {
+			return end;
+		} else if (begin + 1 == end) {
+			return -1;
+		} else {
+			int middle = (begin + end) / 2;
+			if (array[middle] > value) {
+				return search(array, begin, middle, value);
+			} else if (array[middle] < value) {
+				return search(array, middle, end, value);
+			} else {
+				return middle;
+			}
+		}
 	}
 }

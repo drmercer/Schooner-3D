@@ -30,6 +30,7 @@ public class Program implements EGLContextLostListener {
 	Program(Shader vertexShader, Shader fragmentShader) {
 		vertex = vertexShader;
 		fragment = fragmentShader;
+		attribs = new HashMap<String, Integer>();
 		EGLContextLostHandler.addListener(this);
 	}
 
@@ -96,7 +97,7 @@ public class Program implements EGLContextLostListener {
 		} else if (attribs.containsKey(name)) {
 			return attribs.get(name);
 
-		} else {
+			} else {
 			int location = GLES20.glGetAttribLocation(handle, name);
 			attribs.put(name, location);
 			return location;

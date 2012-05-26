@@ -1,6 +1,5 @@
 package com.supermercerbros.gameengine;
 
-// Testing Git diff reporting. Changed this line again.
 import android.app.Activity;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
@@ -33,6 +32,7 @@ import com.supermercerbros.gameengine.engine.GameRenderer;
 public abstract class GameActivity extends Activity implements OnTouchListener {
 	private static final String TAG = "com.supermercerbros.gameengine.GameActivity";
 	private GLSurfaceView gameView;
+	private GameRenderer renderer;
 	private GameLayout content;
 	private DataPipe pipe;
 	private Camera cam;
@@ -153,7 +153,8 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		}
 		Log.d(TAG, "GameActivity Start!");
 		engine.start();
-		gameView.setRenderer(new GameRenderer(pipe, near, far));
+		renderer = new GameRenderer(pipe, near, far);
+		gameView.setRenderer(renderer);
 		super.setContentView(gameView); // TODO change to
 										// super.setContentView(content);
 	}
@@ -175,7 +176,7 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		super.onResume();
 		Log.d(TAG, "onResume");
 		if (engine.isAlive()) {
-			engine.resumeEngine();
+			engine.resumeLooping();
 		}
 		if (gameView != null) {
 			gameView.onResume();

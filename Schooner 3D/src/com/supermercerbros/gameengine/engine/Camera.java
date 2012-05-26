@@ -9,15 +9,13 @@ public class Camera {
 	private static final String TAG = "Camera";
 	private float[] begin = new float[9];
 	private float[] end = new float[9];
-	private volatile boolean initialized = false;
-
 	private long startTime;
 	private long duration;
 
 	/**
 	 * {eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ}
 	 */
-	private float[] current;
+	private final float[] current;
 	private boolean moving;
 
 	/**
@@ -26,15 +24,12 @@ public class Camera {
 	 * ;
 	 */
 	public Camera() {
+		current = new float[9];
 	}
 
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			float centerX, float centerY, float centerZ, float upX, float upY,
 			float upZ, long duration) {
-		if (!initialized) {
-			throw new IllegalStateException(
-					"Camera has not been initialized! Use set()");
-		}
 
 		System.arraycopy(current, 0, begin, 0, 9);
 
@@ -55,10 +50,6 @@ public class Camera {
 
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			float centerX, float centerY, float centerZ, long duration) {
-		if (!initialized) {
-			throw new IllegalStateException(
-					"Camera has not been initialized! Use set()");
-		}
 
 		moveTo(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, current[6],
 				current[7], current[8], duration);
@@ -67,10 +58,6 @@ public class Camera {
 
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			long duration) {
-		if (!initialized) {
-			throw new IllegalStateException(
-					"Camera has not been initialized! Use set()");
-		}
 
 		moveTo(eyeX, eyeY, eyeZ, current[3], current[4], current[5],
 				current[6], current[7], current[8], duration);
@@ -78,11 +65,8 @@ public class Camera {
 	}
 
 	synchronized void update(long time) {
-		if (!moving)
+		if (!moving) {
 			return;
-		if (!initialized) {
-			throw new IllegalStateException(
-					"Camera has not been initialized! Use set()");
 		}
 		float framePoint = ((float) (time - startTime)) / (float) duration;
 		if (framePoint > 1.0f){
@@ -98,10 +82,6 @@ public class Camera {
 	synchronized void writeToArray(float[] a, int offset) {
 		if (a == null) {
 			throw new IllegalStateException("Cannot copy Camera to null array.");
-		}
-		if (!initialized) {
-			throw new IllegalStateException(
-					"Camera has not been initialized! Use set()");
 		}
 
 		Matrix.setLookAtM(a, 0, current[0], current[1], current[2], current[3],
@@ -132,10 +112,21 @@ public class Camera {
 	 */
 	public synchronized void set(float eyeX, float eyeY, float eyeZ, float centerX,
 			float centerY, float centerZ, float upX, float upY, float upZ) {
-
-		current = new float[] { eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
-				upX, upY, upZ };
-		initialized = true;
+		current[0] = eyeX;
+		current[1] = eyeY;
+		current[2] = eyeZ;
+		current[3] = centerX;
+		current[4] = centerY;
+		current[5] = centerZ;
+		current[6] = upX;
+		current[7] = upY;
+		current[8] = upZ;
+	}
+	
+	public synchronized void set(float eyeX, float eyeY, float eyeZ){
+		current[0] = eyeX;
+		current[1] = eyeY;
+		current[2] = eyeZ;
 	}
 
 }

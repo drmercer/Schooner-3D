@@ -2,16 +2,16 @@ package com.supermercerbros.gameengine.engine;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.DelayQueue;
 
 import android.util.Log;
 
-import com.supermercerbros.gameengine.Schooner3D;
+import com.supermercerbros.gameengine.collision.CollisionDetector;
+import com.supermercerbros.gameengine.collision.OnCollisionCheckFinishedListener;
 import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
+import com.supermercerbros.gameengine.util.LoopingThread;
 import com.supermercerbros.gameengine.util.Toggle;
 
 /**
@@ -19,37 +19,30 @@ import com.supermercerbros.gameengine.util.Toggle;
  * 
  * @version 1.0
  */
-public class Engine extends Thread {
-	private static final String TAG = "Engine";
-	private DataPipe pipe;
-	private RenderData out = new RenderData();
-	private Camera cam;
+public class Engine extends LoopingThread implements
+		OnCollisionCheckFinishedListener {
+	static final String TAG = "Engine";
+	private final DataPipe pipe;
+	private final RenderData outA;
+	private final RenderData outB;
+	private final Camera cam;
 
-	private int[] vboA;
-	private short[] iboA;
-	private float[] mmA;
-	private float[] lightA;
-	private float[] colorA;
+	public final CollisionDetector cd; // TODO after debug, revert to private
+	private final Toggle cdIsFinished = new Toggle(false);
 
 	private boolean aBufs = true;
-
-	private int[] vboB;
-	private short[] iboB;
-	private float[] mmB;
-	private float[] lightB;
-	private float[] colorB;
 
 	/**
 	 * To be used by subclasses of Engine. Contains the GameObjects currently in
 	 * the Engine.
 	 */
-	protected List<GameObject> objects;
+	protected LinkedList<GameObject> objects;
 	private long time;
 
 	// Be careful to always synchronize access of these fields:
-	private volatile Toggle flush = new Toggle(false), paused = new Toggle(false);
-	private volatile boolean started = false, ending = false;
-	private boolean lightsChanged = false;
+	private volatile Toggle flush = new Toggle(false);
+	private final Light light = new Light();
+
 	/**
 	 * Used for passing commands from the UI thread to the {@link Engine}
 	 * thread. This <b>should not</b> be polled by any thread other than the
@@ -88,38 +81,54 @@ public class Engine extends Thread {
 		this.pipe = pipe;
 		this.cam = cam;
 		this.objects = new LinkedList<GameObject>();
-		this.vboA = new int[pipe.VBO_capacity / 4];
-		this.vboB = new int[pipe.VBO_capacity / 4];
-		this.iboA = new short[pipe.IBO_capacity / 2];
-		this.iboB = new short[pipe.IBO_capacity / 2];
-		this.mmA = new float[Schooner3D.maxObjects];
-		this.mmB = new float[Schooner3D.maxObjects];
-		this.lightA = new float[3];
-		this.lightB = new float[3];
-		this.colorA = new float[3];
-		this.colorB = new float[3];
+
+		this.cd = new CollisionDetector(this);
+
+		this.outA = new RenderData(pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
+		this.outB = new RenderData(pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
+
 		Log.d(TAG, "Engine constructed.");
 	}
 
 	/**
-	 * TODO Javadoc
+	 * Adds the collection of GameObjects to the Engine
+	 * 
 	 * @param objects
 	 */
 	public void addAllObjects(Collection<GameObject> objects) {
 		if (!started) {
 			this.objects.addAll(objects);
+			for (final GameObject object : objects) {
+				if (object.getBounds() != null) {
+					cd.addCollider(object);
+				}
+				outA.modelMatrices.add(new float[16]);
+				outB.modelMatrices.add(new float[16]);
+			}
 		} else {
 			newObjects.addAll(objects);
 		}
 	}
 
+	@Override
+	public void end() {
+		super.end();
+		cd.end();
+	}
+
 	/**
-	 * TODO Javadoc
+	 * Adds the given GameObject to the Engine
+	 * 
 	 * @param object
 	 */
 	public void addObject(GameObject object) {
 		if (!started) {
 			objects.add(object);
+			if (object.getBounds() != null) {
+				cd.addCollider(object);
+			}
+			outA.modelMatrices.add(new float[16]);
+			outB.modelMatrices.add(new float[16]);
 		} else {
 			newObjects.add(object);
 		}
@@ -148,17 +157,6 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Terminates this Engine.
-	 */
-	public void end() {
-		Log.d(TAG, "Engine state before end():" + getState().toString());
-		ending = true;
-		interrupt();
-		Log.d(TAG, "Engine state after end():" + getState().toString());
-		
-	}
-
-	/**
 	 * Tells the Engine to actually delete all of its GameObjects that are
 	 * marked for deletion
 	 */
@@ -169,91 +167,56 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Tells this Engine to pause processing. Used with {@link #resumeEngine()}.
-	 */
-	public void pause() {
-		synchronized (paused) {
-			paused.setState(true);
-		}
-	}
-
-	/**
 	 * Removes the given GameObject from the Engine.
+	 * 
 	 * @param object
 	 */
 	public void removeObject(GameObject object) {
 		if (!started) {
+			final int index = objects.indexOf(object);
 			objects.remove(object);
+			outA.modelMatrices.remove(index);
+			outB.modelMatrices.remove(index);
 		} else {
 			delObjects.add(object);
 		}
 	}
-
-	/**
-	 * Tells this Engine to resume processing.
-	 */
-	public void resumeEngine() {
-		synchronized (paused) {
-			paused.setState(false);
-			paused.notify();
-		}
-	}
-
-	/**
-	 * Do not call this method. Call {@link #start()} to start the Engine.
-	 * @see java.lang.Thread#run()
-	 */
+	
 	@Override
-	public synchronized void run() {
-		if (Thread.currentThread() != this){
-			throw new UnsupportedOperationException("Do not call Engine.run()");
+	protected void loop() {
+		// Check for new GameObjects, GameObjects to delete, and actions to
+		// perform.
+		while (!actions.isEmpty()) {
+			actions.poll().run();
 		}
-		while (!ending) {
-			// Check for new GameObjects, GameObjects to delete, and actions to
-			// perform.
-			while (!actions.isEmpty())
-				actions.poll().run();
-			while (!newObjects.isEmpty())
-				objects.add(newObjects.poll());
-			while (!delObjects.isEmpty())
-				delObject(delObjects.poll());
-
-			DelayedRunnable d = delayedActions.poll();
-			while (d != null) {
-				d.r.run();
-				d = delayedActions.poll();
+		while (!newObjects.isEmpty()) {
+			final GameObject newObject = newObjects.poll();
+			objects.add(newObject);
+			outA.modelMatrices.add(new float[16]);
+			outB.modelMatrices.add(new float[16]);
+			if (newObject.getBounds() != null) {
+				cd.addCollider(newObject);
 			}
+		}
+		while (!delObjects.isEmpty()) {
+			delObject(delObjects.poll());
+		}
+		DelayedRunnable d = delayedActions.poll();
+		while (d != null) {
+			d.r.run();
+			d = delayedActions.poll();
+		}
 
-			synchronized (flush) {
-				if (flush.getState()) {
-					flush();
-				}
-			}
-
-			doSpecialStuff(time);
-			computeFrame();
-			updatePipe();
-			aBufs = !aBufs; // Swap aBufs
-			
-			if (ending){
-				break;
-			}
-			synchronized (paused) {
-				while (paused.getState()) {
-					try {
-						Log.d(TAG, "Waiting to unpause...");
-						paused.wait();
-					} catch (InterruptedException e) {
-						Log.w(TAG, "Interrupted while waiting to unpause.");
-						if (ending) {
-							break;
-						}
-					}
-				}
+		synchronized (flush) {
+			if (flush.getState()) {
+				flush();
 			}
 		}
 
-		Log.d(TAG, "end Engine");
+		doSpecialStuff(time);
+		computeFrame();
+		updatePipe();
+		aBufs = !aBufs; // Swap aBufs
 	}
 
 	/**
@@ -273,33 +236,14 @@ public class Engine extends Thread {
 	 *            The blue value of the light's color
 	 */
 	public void setLight(float x, float y, float z, float r, float g, float b) {
-		synchronized (lightA) {
-			if (aBufs) {
-				lightA[0] = x;
-				lightA[1] = y;
-				lightA[2] = z;
-				colorA[0] = r;
-				colorA[1] = g;
-				colorA[2] = b;
-			} else {
-				lightB[0] = x;
-				lightB[1] = y;
-				lightB[2] = z;
-				colorB[0] = r;
-				colorB[1] = g;
-				colorB[2] = b;
-			}
-			lightsChanged = true;
+		synchronized (light) {
+			light.x = x;
+			light.y = y;
+			light.z = z;
+			light.r = r;
+			light.g = g;
+			light.b = b;
 		}
-	}
-
-	/**
-	 * Use this method (<b>not</b> {@link #run()}) to start the Engine.
-	 */
-	@Override
-	public void start() {
-		started = true;
-		super.start();			
 	}
 
 	/**
@@ -315,7 +259,8 @@ public class Engine extends Thread {
 	}
 
 	private void computeFrame() {
-		// Collision detection goes here, whenever I need it.
+		cd.go();
+		waitOnToggle(cdIsFinished, true); // TODO put this somewhere else.
 
 		for (GameObject object : objects) {
 			if (!object.isMarkedForDeletion()) {
@@ -327,7 +272,7 @@ public class Engine extends Thread {
 	}
 
 	/**
-	 * Marks the given GameObject for deletion. 
+	 * Marks the given GameObject for deletion.
 	 * 
 	 * @param object
 	 *            The GameObject to remove from the Engine.
@@ -342,11 +287,13 @@ public class Engine extends Thread {
 		for (int i = 0; i < objects.size(); i++) {
 			if (objects.get(i).isMarkedForDeletion()) {
 				objects.remove(i);
+				outA.modelMatrices.remove(i);
+				outB.modelMatrices.remove(i);
 			}
 		}
 		flush.setState(false);
 	}
-	
+
 	private int loadToIBO(short[] ibo, GameObject object, int offset,
 			int vertexOffset) {
 		object.iOffset = offset;
@@ -357,54 +304,42 @@ public class Engine extends Thread {
 	}
 
 	private void updatePipe() {
-		if (vboA == null)
-			Log.e(TAG, "vboA == null");
-		if (vboB == null)
-			Log.e(TAG, "vboB == null");
+		final RenderData out = aBufs ? outA : outB;
+		out.ibo_updatePos = out.ibo.length;
+		out.primitives.clear();
 
-		out.vbo = aBufs ? vboA : vboB;
-		out.ibo = aBufs ? iboA : iboB;
-		out.modelMatrices = aBufs ? mmA : mmB;
-		out.ibo_updatePos = iboA.length;
-		out.primitives = new Metadata[objects.size()];
-
-		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixIndex = 0, i = 0;
+		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixIndex = 0;
 		for (GameObject object : objects) {
-			int bufferSize = object.info.mtl.loadObjectToVBO(object, out.vbo,
-					vOffset);
-			vOffset += bufferSize;
+			synchronized (object) {
+				int bufferSize = object.info.mtl.loadObjectToVBO(object,
+						out.vbo, vOffset);
+				vOffset += bufferSize;
 
-			iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
+				iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
 
-			vertexOffset += object.info.count;
-			
-			System.arraycopy(object.modelMatrix, 0, out.modelMatrices, matrixIndex++ * 16, 16);
+				vertexOffset += object.info.count;
 
-			out.primitives[i++] = object.info;
+				System.arraycopy(object.modelMatrix, 0,
+						out.modelMatrices.get(matrixIndex++), 0, 16);
+
+				out.primitives.add(object.info);
+			}
 		}
 
 		cam.writeToArray(out.viewMatrix, 0);
-		if (out.viewMatrix == null) {
-			Log.e(TAG, "viewMatrix == null");
-		}
 
-		if (lightsChanged) {
-			synchronized (lightA) {
-				out.light = aBufs ? lightA : lightB;
-				out.color = aBufs ? colorA : colorB;
-			}
+		synchronized (light) {
+			light.copyTo(out.light);
 		}
 
 		time = pipe.putData(time, out);
-		synchronized (lightA) {
-			if (aBufs) {
-				System.arraycopy(lightA, 0, lightB, 0, 3);
-				System.arraycopy(colorA, 0, colorB, 0, 3);
-			} else {
-				System.arraycopy(lightB, 0, lightA, 0, 3);
-				System.arraycopy(colorB, 0, colorA, 0, 3);
-			}
-		}
+	}
 
+	@Override
+	public void onCollisionCheckFinished() {
+		synchronized (cdIsFinished) {
+			cdIsFinished.setState(true);
+			cdIsFinished.notify();
+		}
 	}
 }

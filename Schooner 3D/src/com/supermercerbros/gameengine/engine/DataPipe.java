@@ -47,9 +47,7 @@ public class DataPipe {
 	 * @param frameTime
 	 *            the time of the frame represented by the data
 	 * @param data
-	 *            a RenderData object containing the data to be rendered. This
-	 *            is cloned in this method, so changes made to the original are
-	 *            not automatically reflected in this DataPipe
+	 *            a RenderData object containing the data to be rendered.
 	 * @return The time of the next frame that the Engine should calculate
 	 */
 	public synchronized long putData(long frameTime, RenderData data) {

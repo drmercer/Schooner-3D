@@ -2,17 +2,13 @@ package com.supermercerbros.gameengine.engine;
 
 import java.util.Arrays;
 
-import android.util.Log;
-
 import com.supermercerbros.gameengine.math.Vector;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.util.Utils;
 
 public class Normals {
-	private static final String TAG = "Normals";
 
 	public static void calculate(GameObject object) {
-		Log.d(TAG, "Normals.calculate() called");
 		if (object.normals == null || object.normals.length != object.verts.length) {
 			object.normals = new float[object.verts.length];
 		} else {
@@ -39,14 +35,11 @@ public class Normals {
 
 			Vector.cross(normal, 0, vecA, 0, vecB, 0, true);
 			
-			Log.d(TAG, "normal of face " + faceIndex + ": " + Arrays.toString(normal));
-
 			for (int index = 0; index < 3; index++) {
-				int vertex = indices[faceIndex * 3 + index];
-				Log.d(TAG, "Adding normal to vertex " + vertex);
-				normals[indices[faceIndex * 3 + index] * 3 + 0] += normal[0];
-				normals[indices[faceIndex * 3 + index] * 3 + 1] += normal[1];
-				normals[indices[faceIndex * 3 + index] * 3 + 2] += normal[2];
+				int offset = indices[faceIndex * 3 + index] * 3;
+				normals[offset + 0] += normal[0];
+				normals[offset + 1] += normal[1];
+				normals[offset + 2] += normal[2];
 			}
 		}
 
@@ -61,8 +54,6 @@ public class Normals {
 			normals[indexB * 3 + 2] = (normals[indexA * 3 + 2] = nZ);
 		}
 		
-		Log.d(TAG, "Non-unit Normals: " + Arrays.toString(normals));
-
 		for (int i = 0; i < normals.length / 3; i++) {
 			float length = Utils.pythagF(normals[i * 3 + 0],
 					normals[i * 3 + 1], normals[i * 3 + 2]);
@@ -72,7 +63,5 @@ public class Normals {
 			normals[i * 3 + 1] /= length;
 			normals[i * 3 + 2] /= length;
 		}
-		
-		Log.d(TAG, "Unit Normals: " + Arrays.toString(normals));
 	}
 }

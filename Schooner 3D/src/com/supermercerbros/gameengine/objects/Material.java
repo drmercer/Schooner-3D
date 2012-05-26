@@ -69,6 +69,10 @@ public abstract class Material {
 	private final String programName;
 	private final int stride;
 
+	/**
+	 * @param programName The name of the program in ShaderLib
+	 * @param stride The number of floats per vert
+	 */
 	protected Material(String programName, int stride) {
 		this.programName = programName;
 		this.stride = stride;
@@ -83,6 +87,8 @@ public abstract class Material {
 	 * 
 	 * 	attachAttrib(a_pos, 3); // Attach attributes
 	 * 	... 
+	 *  
+	 * 	return response;
 	 * }
 	 * </pre>
 	 * 
@@ -236,6 +242,24 @@ public abstract class Material {
 			break;
 		default:
 		}
+	}
+	
+	protected void setUniform(int location, float... args){
+		if (args.length == 1) {
+			GLES2.glUniform1fv(location, 1, args, 0);
+		} else if (args.length == 2) {
+			GLES2.glUniform2fv(location, 1, args, 0);
+		} else if (args.length == 3) {
+			GLES2.glUniform3fv(location, 1, args, 0);
+		} else if (args.length == 4) {
+			GLES2.glUniform4fv(location, 1, args, 0);
+		} else {
+			throw new UnsupportedOperationException("args must have 1 to 4 elements.");
+		}
+	}
+	
+	protected void setUniform(String name, float... args) {
+		setUniform(program.getUniformLocation(name), args);
 	}
 	
 	public int getStride(){
