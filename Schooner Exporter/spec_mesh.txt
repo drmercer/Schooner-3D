@@ -1,25 +1,20 @@
-[short: 0x0001 (version short)] 
-[byte: flags {textured, animated }]
-[short: i (number of tris)]
-[short: v (number of vertices)]
+short: 0x0001 (version short)
+byte: flags {textured, armature-indexed}
+short: i (number of tris)
+short: v (number of vertices)
 
-[short[i *3]: indices] 
+short[i *3]: indices
 
-[float[v *3]: vertex positions]
+float[v *3]: vertex positions
 
-[short: d (number of double pairs)]
-[short[d*2]: doubles (vertex indices that are the same geometrically)] 
+short: d (number of double pairs)
+short[d*2]: doubles (indices of vertices that are the same geometrically)
 
 if textured
-	[float[v *2]: uv coordinates]
-
-if animated
-	[byte: n (number of animations)]
-	n { 
-		[UTF string: animationName]
-		[short: k (number of keyframes)]
-		k {
-			[byte: frame number. 1st is always zero]
-			[float[v *3]: vertex positions]
-		}
-	}
+	float[v *2]: uv coordinates
+	
+if armature-indexed
+	for each vertex (v)
+		byte: b (number of bones with nonzero weights)
+		byte[b]: indices of bones with nonzero weights
+		float[b]: weight for each bone
