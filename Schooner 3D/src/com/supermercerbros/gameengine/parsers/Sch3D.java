@@ -58,11 +58,7 @@ public class Sch3D {
 			throw new IllegalStateException("Resources have not been set.");
 		}
 		InputStream is = r.openRawResource(id);
-		try {
-			return parseInputStream(is, mtl, "r@" + res.getResourceName(id));
-		} catch (IOException e) {
-			throw new IOException("File is corrupt.", e);
-		}
+		return parseInputStream(is, mtl, "r@" + res.getResourceName(id));
 	}
 
 	/**
@@ -90,11 +86,7 @@ public class Sch3D {
 			throw new IllegalStateException("AssetManager has not been set.");
 		}
 		InputStream is = a.open(fileName);
-		try {
-			return parseInputStream(is, mtl, "a@" + fileName);
-		} catch (IOException e) {
-			throw new IOException("File is corrupt.", e);
-		}
+		return parseInputStream(is, mtl, "a@" + fileName);
 	}
 
 	private static GameObject parseInputStream(InputStream is, Material mtl, String idStem)

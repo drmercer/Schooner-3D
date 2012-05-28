@@ -153,7 +153,7 @@ public class GameRenderer implements Renderer {
 			Log.d("CT", "object size = " + size + " bytes");
 
 			// Render primitive!
-			GLES20.glDrawElements(primitive.mtl.getGeometryType(),
+			GLES2.glDrawElements(primitive.mtl.getGeometryType(),
 					primitive.size, GLES20.GL_UNSIGNED_SHORT, iboOffset);
 			logError("DrawElements");
 			
