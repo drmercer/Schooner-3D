@@ -2,15 +2,11 @@ package com.supermercerbros.gameengine.parsers;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 
-import com.supermercerbros.gameengine.animation.Keyframe;
-import com.supermercerbros.gameengine.animation.MeshAnimation;
-import com.supermercerbros.gameengine.objects.AnimatedMeshObject;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Material;
 import com.supermercerbros.gameengine.util.BetterDataInputStream;
@@ -19,8 +15,9 @@ import com.supermercerbros.gameengine.util.Utils;
 public class Sch3D {
 	private static class V1 {
 		final static int TEXTURED = 0;
-		final static int ANIMATED = 1;
+		final static int ARMATURE_INDEXED = 1;
 	}
+	
 	private static Resources res;
 	private static AssetManager am;
 
@@ -97,7 +94,7 @@ public class Sch3D {
 		if (version == 1) {
 			byte flags = data.readByte();
 			final boolean textured = Utils.checkByte(flags, V1.TEXTURED);
-			final boolean animated = Utils.checkByte(flags, V1.ANIMATED);
+			final boolean armatureIndexed = Utils.checkByte(flags, V1.ARMATURE_INDEXED);
 			
 			final short triCount = data.readShort();
 			final short vertCount = data.readShort();
@@ -108,10 +105,16 @@ public class Sch3D {
 			final float[] verts = new float[vertCount * 3];
 			data.readFloatArray(verts, 0, vertCount * 3);
 			
-			final short[][] doubles = new short[2][data.readShort() * 2];
-			for (int i = 0; i < doubles[0].length; i++){
-				doubles[0][i] = data.readShort();
-				doubles[1][i] = data.readShort();
+			final short pairCount = data.readShort();
+			final short[][] doubles;
+			if (pairCount != 0) {
+				doubles = new short[2][pairCount * 2];
+				for (int i = 0; i < doubles[0].length; i++){
+					doubles[0][i] = data.readShort();
+					doubles[1][i] = data.readShort();
+				}				
+			} else {
+				doubles = null;
 			}
 			
 			final float[] uvs;
@@ -119,37 +122,15 @@ public class Sch3D {
 				uvs = new float[vertCount*2];
 				data.readFloatArray(uvs, 0, vertCount*2);
 			} else {
-				uvs = new float[0];
+				uvs = null;
 			}
 			
-			if (animated) {
-				final byte n = data.readByte();
-				MeshAnimation[] anims = new MeshAnimation[n];
-				
-				for (int i = 0; i < n; i++) {
-					String animID = idStem + "." + data.readUTF();
-					short keyframeCount = data.readShort();
-					
-					ArrayList<Keyframe> keyframes = new ArrayList<Keyframe>();
-					float[] times = new float[keyframeCount];
-					
-					for (int j = 0; j < keyframeCount; j++) {
-						times[j] = data.readShort();
-						float[] frame = new float[vertCount * 3];
-						data.readFloatArray(frame, 0, vertCount * 3);
-						keyframes.add(new Keyframe(frame));
-					}
-					
-					anims[i] = new MeshAnimation(keyframes, times, animID);
-				}
-				
-				AnimatedMeshObject object = new AnimatedMeshObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
-				object.attachAnims(anims);
-				return object;
-			} else {
-				GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
-				return object;
+			if (armatureIndexed) {
+				//TODO import armature indices
 			}
+			
+			GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
+			return object;
 		} else {
 			throw new IOException("Version is invalid.");
 		}

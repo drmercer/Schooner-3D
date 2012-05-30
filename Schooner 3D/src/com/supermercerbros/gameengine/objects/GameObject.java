@@ -91,12 +91,12 @@ public class GameObject implements Movable, Collider {
 	 *            A Material object to use when for rendering
 	 */
 	public GameObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, Material mtl, short[][] doubles2) {
+			float[] normals, Material mtl, short[][] doubles) {
 		this.verts = verts;
 		this.indices = indices;
 		this.mtl = uvs;
 		this.normals = normals;
-		this.doubles = (doubles2 != null) ? doubles2 : new short[2][0];
+		this.doubles = doubles;
 		info = new Metadata();
 		info.size = indices.length;
 		info.count = verts.length / 3;
@@ -119,7 +119,7 @@ public class GameObject implements Movable, Collider {
 		this.indices = indices;
 		this.mtl = uvs;
 		this.normals = normals;
-		this.doubles = (doubles != null) ? doubles : new short[2][0];
+		this.doubles = doubles;
 		info = new Metadata();
 		info.size = indices.length;
 		info.count = verts.length / 3;
