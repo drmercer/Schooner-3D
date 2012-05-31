@@ -53,10 +53,34 @@ public class BetterDataInputStream extends DataInputStream {
 			}
 			return bytesRead / 2;
 	}
+	
+	/**
+	 * Reads a UTF-8 string whose end has been marked with NUL (0x00)
+	 * @return The string read
+	 * @throws IOException
+	 */
+	public String readString() throws IOException{
+		StringBuilder builder = new StringBuilder();
+		while (true) {
+			byte next = super.readByte();
+			if (next == 0x00) { // If next char is NUL, the String's end has been reached.
+				break;
+			} else {
+				builder.append((char) next);
+			}
+		}
+		return builder.toString();
+	}
 
 	private void ensureLength(int l) {
 		if (array.length < l) {
 			array = new byte[l];
 		}
+	}
+	
+	@Override
+	public void close() throws IOException{
+		super.close();
+		array = null;
 	}
 }

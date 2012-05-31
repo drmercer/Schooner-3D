@@ -1,7 +1,7 @@
 for each movement
-	UTF-8 string: movement name
+	null-terminated UTF-8 string: movement name
 	for each component of position (xyz), quaternion (wxyz), and scale (xyz)
 		short: n (number of keyframes - 1)
 		for n*3 + 1: (keyframes and control points)
-			int: frame
+			float: frame
 			float: value

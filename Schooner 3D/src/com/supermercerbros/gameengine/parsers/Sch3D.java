@@ -130,6 +130,7 @@ public class Sch3D {
 			}
 			
 			GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
+			data.close();
 			return object;
 		} else {
 			throw new IOException("Version is invalid.");
