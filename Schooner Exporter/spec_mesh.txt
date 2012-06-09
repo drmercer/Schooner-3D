@@ -1,20 +1,21 @@
-short: 0x0001 (version short)
-byte: flags {textured, armature-indexed}
-short: i (number of tris)
+byte: flags {tris, textured, armature-indexed}
+short: i (number of faces)
 short: v (number of vertices)
 
-short[i *3]: indices
+if tris
+	short[i *3]: indices
+else
+	short[i *4]: indices
 
 float[v *3]: vertex positions
 
-short: d (number of double pairs)
-short[d*2]: doubles (indices of vertices that are the same geometrically)
-
 if textured
+	short: d (number of double pairs)
+	short[d*2]: doubles (indices of vertices that are the same geometrically)
 	float[v *2]: uv coordinates
 	
 if armature-indexed
 	for each vertex (v)
 		byte: b (number of bones with nonzero weights)
-		byte[b]: indices of bones with nonzero weights
+		byte[b]: index of each bone
 		float[b]: weight for each bone

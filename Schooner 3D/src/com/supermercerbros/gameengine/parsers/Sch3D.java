@@ -90,51 +90,56 @@ public class Sch3D {
 			throws IOException {
 		BetterDataInputStream data = new BetterDataInputStream(is);
 		
-		short version = data.readShort();
-		if (version == 1) {
-			byte flags = data.readByte();
-			final boolean textured = Utils.checkByte(flags, V1.TEXTURED);
-			final boolean armatureIndexed = Utils.checkByte(flags, V1.ARMATURE_INDEXED);
-			
-			final short triCount = data.readShort();
-			final short vertCount = data.readShort();
-			
-			final short[] indices = new short[triCount * 3];
-			data.readShortArray(indices, 0, triCount * 3);
-			
-			final float[] verts = new float[vertCount * 3];
-			data.readFloatArray(verts, 0, vertCount * 3);
-			
+		final byte flags = data.readByte();
+		final boolean tris = Utils.checkByte(flags, 0);
+		final boolean textured = Utils.checkByte(flags, 1);
+		final boolean armatureIndexed = Utils.checkByte(flags, 2);
+		
+		final short faceCount = data.readShort();
+		final short vertCount = data.readShort();
+
+		final int indexCount = tris ? faceCount * 3 : faceCount * 4;
+		final short[] indices = new short[indexCount];
+		data.readShortArray(indices, 0, indexCount);
+
+		final float[] verts = new float[vertCount * 3];
+		data.readFloatArray(verts, 0, vertCount * 3);
+
+		final short[][] doubles;
+		final float[] uvs;
+		if (textured) {
 			final short pairCount = data.readShort();
-			final short[][] doubles;
-			if (pairCount != 0) {
-				doubles = new short[2][pairCount * 2];
-				for (int i = 0; i < doubles[0].length; i++){
+			if (pairCount > 0) {
+				doubles = new short[2][pairCount];
+				for (int i = 0; i < pairCount; i++) {
 					doubles[0][i] = data.readShort();
 					doubles[1][i] = data.readShort();
-				}				
+				}
 			} else {
 				doubles = null;
 			}
-			
-			final float[] uvs;
-			if (textured) {
-				uvs = new float[vertCount*2];
-				data.readFloatArray(uvs, 0, vertCount*2);
-			} else {
-				uvs = null;
-			}
-			
-			if (armatureIndexed) {
-				//TODO import armature indices
-			}
-			
-			GameObject object = new GameObject(verts, indices, uvs, new float[vertCount * 3], mtl, doubles);
-			data.close();
-			return object;
+			uvs = new float[vertCount * 2];
+			data.readFloatArray(uvs, 0, vertCount * 2);
 		} else {
-			throw new IOException("Version is invalid.");
+			doubles = null;
+			uvs = null;
 		}
+
+		if (armatureIndexed) {
+			for(int i = 0; i < vertCount; i++){
+				final byte boneCount = data.readByte();
+				final byte[] boneIndices = new byte[boneCount];
+				final float[] boneWeights = new float[boneCount];
+				data.readByteArray(boneIndices, 0, boneCount);
+				data.readFloatArray(boneWeights, 0, boneCount);
+			}
+			// TODO: do something with these.
+		}
+
+		GameObject object = new GameObject(verts, indices, uvs,
+				new float[vertCount * 3], mtl, doubles);
+		data.close();
+		return object;
 	}
 
 	/**

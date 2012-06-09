@@ -24,17 +24,32 @@ public class TestObjects {
 	 */
 	public static GameObject tetra() {
 		ArrayList<Keyframe> keyframesA = new ArrayList<Keyframe>();
-		short[] indices = { 0, 1, 2, 0, 1, 3, 0, 2, 3, 1, 2, 3, };
-		float[] colors = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-				1.0f, 1.0f, 1.0f, 1.0f, };
-		float[] normals = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 0.0f, 0.0f, };
+		// @formatter:off
+		short[] indices = { 
+				0, 1, 2, 
+				0, 1, 3, 
+				0, 2, 3, 
+				1, 2, 3, };
+		float[] colors = { 
+				1.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 
+				0.0f, 0.0f, 1.0f,
+				1.0f, 1.0f, 1.0f, };
+		float[] normals = new float[12];
 
-		float[] frameA1 = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-				1.0f, 0.0f, 0.0f, 0.0f, };
+		float[] frameA1 = { 
+				1.0f, 0.0f, 0.0f, 
+				0.0f, 1.0f, 0.0f, 
+				0.0f, 0.0f, 1.0f,
+				0.0f, 0.0f, 0.0f, };
+		float[] frameA2 = { 
+				3.0f, 0.0f, 0.0f, 
+				0.0f, 3.0f, 0.0f, 
+				0.0f, 0.0f, 3.0f, 
+				0.0f, 0.0f, 0.0f, };
+		//@formatter:on
+		
 		keyframesA.add(new Keyframe(frameA1));
-		float[] frameA2 = { 3.0f, 0.0f, 0.0f, 0.0f, 3.0f, 0.0f, 0.0f, 0.0f,
-				3.0f, 0.0f, 0.0f, 0.0f, };
 		keyframesA.add(new Keyframe(frameA2));
 		float[] times = { 0, 3000 };
 		MeshAnimation anim1 = new MeshAnimation(keyframesA, times, null);
@@ -53,6 +68,7 @@ public class TestObjects {
 	 * @return A textured cube.
 	 */
 	public static GameObject cube(Material mtl) {
+		// @formatter:off
 		final float[] verts = { 
 				1.0f, 1.0f, 1.0f, 
 				1.0f, 0.0f, 1.0f, 
@@ -64,11 +80,16 @@ public class TestObjects {
 				0.0f, 0.0f, 0.0f, };
 		final float[] uvs;
 		if (mtl instanceof TexturedMaterial) {
-			System.out.println(mtl.getClass().getSimpleName() + " instanceof TexturedMaterial");
-			uvs = new float[] { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-					0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, };
+			uvs = new float[] { 
+					0.0f, 0.0f, 
+					0.0f, 1.0f, 
+					1.0f, 0.0f, 
+					1.0f, 1.0f,
+					1.0f, 0.0f, 
+					1.0f, 1.0f, 
+					1.0f, 1.0f, 
+					0.0f, 0.0f, };
 		} else {
-			System.out.println(mtl.getClass().getSimpleName() + " not instanceof TexturedMaterial");
 			uvs = new float[] { 
 					0.0f, 0.0f, 0.0f, 
 					1.0f, 0.0f, 0.0f, 
@@ -94,10 +115,10 @@ public class TestObjects {
 				4, 5, 6, 
 				5, 7, 6, };
 		float[] normals = null;
+		// formatter:on
 
 		GameObject cube = new GameObject(verts, indices, uvs, normals,
 				mtl, null);
-		cube.setDebug(true);
 		return cube;
 	}
 
@@ -111,12 +132,23 @@ public class TestObjects {
 	 */
 	public static GameObject quad(String texName) {
 		float depth = -2.84f;
-		float[] verts = { .5f, .5f, depth, .5f, -.5f, depth, -.5f, .5f, depth,
+		//@formatter:off
+		float[] verts = { 
+				.5f, .5f, depth, 
+				.5f, -.5f, depth, 
+				-.5f, .5f, depth,
 				-.5f, -.5f, depth, };
-		float[] uvs = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f };
+		float[] uvs = { 
+				0.0f, 0.0f, 
+				0.0f, 1.0f, 
+				1.0f, 0.0f, 
+				1.0f, 1.0f };
 
-		short[] indices = { 0, 1, 2, 1, 2, 3 };
-		float[] normals = {};
+		short[] indices = { 
+				0, 1, 2, 
+				1, 2, 3 };
+		float[] normals = null;
+		//@formatter:on
 
 		GameObject obj = new GameObject(verts, indices, uvs, normals,
 				new TexturedMaterial(texName), null);
@@ -128,11 +160,18 @@ public class TestObjects {
 	 * @return A colored triangle.
 	 */
 	public static GameObject tri() {
-		float[] verts = { 0.0f, 0.0f, 0.0f, -0.6f, -0.6f, 0.0f, -0.6f, 0.6f,
-				0.0f };
-		float[] colors = { 1, 1, 0, 0, 1, 1, 1, 0, 1 };
+		//@formatter:off
+		float[] verts = { 
+				0.0f, 0.0f, 0.0f, 
+				-0.6f, -0.6f, 0.0f, 
+				-0.6f, 0.6f, 0.0f };
+		float[] colors = { 
+				1, 1, 0, 
+				0, 1, 1, 
+				1, 0, 1 };
 		short[] indices = { 0, 1, 2 };
-		float[] normals = {};
+		float[] normals = null;
+		//@formatter:on
 
 		GameObject tri = new GameObject(verts, indices, colors, normals,
 				new BasicMaterial(), null);
@@ -140,6 +179,7 @@ public class TestObjects {
 	}
 	
 	public static Bounds cubeBounds() {
+		//@formatter:off
 		final float[] cubeV = { 
 			0.0f, 0.0f, 0.0f, 
 			1.0f, 0.0f, 0.0f,
@@ -159,6 +199,7 @@ public class TestObjects {
 			1, 3, 7, 5, // X
 			2, 0, 4, 6, // X one
 		};
+		//@formatter:on
 		
 		final LinkedList<Polyhedron> parts = new LinkedList<Polyhedron>();
 		final Polyhedron poly = new Polyhedron(Polyhedron.featureMesh(cubeV, cubeI));
