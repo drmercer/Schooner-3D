@@ -3,7 +3,7 @@ package com.supermercerbros.gameengine.collision;
 import com.supermercerbros.gameengine.util.Utils;
 
 /**
- * Points are immutable (not entirely true for subclasses).
+ * Represents a point in 3D space. Points are immutable (not entirely true for subclasses).
  */
 public class Point {
 

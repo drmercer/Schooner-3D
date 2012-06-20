@@ -2,92 +2,240 @@ package com.supermercerbros.gameengine.engine;
 
 import android.opengl.Matrix;
 
-import com.supermercerbros.gameengine.util.IPO;
-
 public class Camera {
 	@SuppressWarnings("unused")
 	private static final String TAG = "Camera";
-	private float[] begin = new float[9];
-	private float[] end = new float[9];
+	
+	// Begin state
+	private float beginEyeX;
+	private float beginEyeY;
+	private float beginEyeZ;
+	private float beginCenterX;
+	private float beginCenterY;
+	private float beginCenterZ;
+	private float beginUpX;
+	private float beginUpY;
+	private float beginUpZ;
+	
+	// End state
+	private float endEyeX;
+	private float endEyeY;
+	private float endEyeZ;
+	private float endCenterX;
+	private float endCenterY;
+	private float endCenterZ;
+	private float endUpX;
+	private float endUpY;
+	private float endUpZ;
+	
+	// Animation data
 	private long startTime;
 	private long duration;
-
-	/**
-	 * {eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ}
-	 */
-	private final float[] current;
 	private boolean moving;
-
+	
+	// Current state
+	private float eyeX;
+	private float eyeY;
+	private float eyeZ;
+	private float centerX;
+	private float centerY;
+	private float centerZ;
+	private float upX;
+	private float upY;
+	private float upZ;
+	
 	/**
-	 * Creates an undefined Camera. Follow with
+	 * Creates a default Camera (Eye at the origin, looking along the negative
+	 * Z-axis, with the Y-axis pointing up). Follow with
 	 * {@link #set(float, float, float, float, float, float, float, float, float)}
 	 * ;
 	 */
 	public Camera() {
-		current = new float[9];
+		centerZ = -1.0f;
+		upY = 1.0f;
 	}
-
+	
+	/**
+	 * Moves the Camera to the given orientation and position over the given
+	 * amount of time.
+	 * 
+	 * @param eyeX
+	 * @param eyeY
+	 * @param eyeZ
+	 * @param centerX
+	 * @param centerY
+	 * @param centerZ
+	 * @param upX
+	 * @param upY
+	 * @param upZ
+	 * @param duration
+	 *            The duration of the transition, in milliseconds.
+	 */
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			float centerX, float centerY, float centerZ, float upX, float upY,
 			float upZ, long duration) {
-
-		System.arraycopy(current, 0, begin, 0, 9);
-
-		end[0] = eyeX;
-		end[1] = eyeY;
-		end[2] = eyeZ;
-		end[3] = centerX;
-		end[4] = centerY;
-		end[5] = centerZ;
-		end[6] = upX;
-		end[7] = upY;
-		end[8] = upZ;
-
+		
+		beginEyeX = this.eyeX;
+		beginEyeY = this.eyeY;
+		beginEyeZ = this.eyeZ;
+		beginCenterX = this.centerX;
+		beginCenterY = this.centerY;
+		beginCenterZ = this.centerZ;
+		beginUpX = this.upX;
+		beginUpY = this.upY;
+		beginUpZ = this.upZ;
+		
+		endEyeX = eyeX;
+		endEyeY = eyeY;
+		endEyeZ = eyeZ;
+		endCenterX = centerX;
+		endCenterY = centerY;
+		endCenterZ = centerZ;
+		endUpX = upX;
+		endUpY = upY;
+		endUpZ = upZ;
+		
 		startTime = System.currentTimeMillis();
 		this.duration = duration;
 		moving = true;
 	}
-
+	
+	/**
+	 * Moves the Camera to the given orientation and position over the given
+	 * amount of time.
+	 * 
+	 * @param eyeX
+	 * @param eyeY
+	 * @param eyeZ
+	 * @param centerX
+	 * @param centerY
+	 * @param centerZ
+	 * @param duration
+	 *            The duration of the transition, in milliseconds.
+	 */
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			float centerX, float centerY, float centerZ, long duration) {
-
-		moveTo(eyeX, eyeY, eyeZ, centerX, centerY, centerZ, current[6],
-				current[7], current[8], duration);
-		// TODO inline this once sure it works
+		
+		beginEyeX = this.eyeX;
+		beginEyeY = this.eyeY;
+		beginEyeZ = this.eyeZ;
+		beginCenterX = this.centerX;
+		beginCenterY = this.centerY;
+		beginCenterZ = this.centerZ;
+		beginUpX = this.upX;
+		beginUpY = this.upY;
+		beginUpZ = this.upZ;
+		
+		endEyeX = eyeX;
+		endEyeY = eyeY;
+		endEyeZ = eyeZ;
+		endCenterX = centerX;
+		endCenterY = centerY;
+		endCenterZ = centerZ;
+		endUpX = this.upX;
+		endUpY = this.upY;
+		endUpZ = this.upZ;
+		
+		startTime = System.currentTimeMillis();
+		this.duration = duration;
+		moving = true;
 	}
-
+	
+	/**
+	 * Moves the Camera to the given position over the given
+	 * amount of time.
+	 * 
+	 * @param eyeX
+	 * @param eyeY
+	 * @param eyeZ
+	 * @param duration
+	 *            The duration of the transition, in milliseconds.
+	 */
 	public synchronized void moveTo(float eyeX, float eyeY, float eyeZ,
 			long duration) {
-
-		moveTo(eyeX, eyeY, eyeZ, current[3], current[4], current[5],
-				current[6], current[7], current[8], duration);
-		// TODO inline this once sure it works
+		
+		beginEyeX = this.eyeX;
+		beginEyeY = this.eyeY;
+		beginEyeZ = this.eyeZ;
+		beginCenterX = this.centerX;
+		beginCenterY = this.centerY;
+		beginCenterZ = this.centerZ;
+		beginUpX = this.upX;
+		beginUpY = this.upY;
+		beginUpZ = this.upZ;
+		
+		endEyeX = eyeX;
+		endEyeY = eyeY;
+		endEyeZ = eyeZ;
+		endCenterX = this.centerX;
+		endCenterY = this.centerY;
+		endCenterZ = this.centerZ;
+		endUpX = this.upX;
+		endUpY = this.upY;
+		endUpZ = this.upZ;
+		
+		startTime = System.currentTimeMillis();
+		this.duration = duration;
+		moving = true;
 	}
-
+	
+	/**
+	 * Updates the Camera for the given point in time.
+	 * @param time The time of the current frame, in milliseconds.
+	 */
 	synchronized void update(long time) {
 		if (!moving) {
 			return;
 		}
 		float framePoint = ((float) (time - startTime)) / (float) duration;
-		if (framePoint > 1.0f){
-			System.arraycopy(end, 0, current, 0, 9);
+		if (framePoint > 1.0f) {
+			this.eyeX = endEyeX;
+			this.eyeY = endEyeY;
+			this.eyeZ = endEyeZ;
+			this.centerX = endCenterX;
+			this.centerY = endCenterY;
+			this.centerZ = endCenterZ;
+			this.upX = endUpX;
+			this.upY = endUpY;
+			this.upZ = endUpZ;
 			moving = false;
 			return;
-		} else if (framePoint < 0.0f){
+		} else if (framePoint < 0.0f) {
 			return;
 		}
-		IPO.mesh(current, begin, end, framePoint);
+		
+		this.eyeX = (float) (beginEyeX + ((endEyeX - beginEyeX) * (double) framePoint));
+		this.eyeY = (float) (beginEyeY + ((endEyeY - beginEyeY) * (double) framePoint));
+		this.eyeZ = (float) (beginEyeZ + ((endEyeZ - beginEyeZ) * (double) framePoint));
+		this.centerX = (float) (beginCenterX + ((endCenterX - beginCenterX) * (double) framePoint));
+		this.centerY = (float) (beginCenterY + ((endCenterY - beginCenterY) * (double) framePoint));
+		this.centerZ = (float) (beginCenterZ + ((endCenterZ - beginCenterZ) * (double) framePoint));
+		this.upX = (float) (beginUpX + ((endUpX - beginUpX) * (double) framePoint));
+		this.upY = (float) (beginUpY + ((endUpY - beginUpY) * (double) framePoint));
+		this.upZ = (float) (beginUpZ + ((endUpZ - beginUpZ) * (double) framePoint));
 	}
-
+	
+	/**
+	 * Writes this Camera as a view matrix to the given array.
+	 * 
+	 * @param a
+	 *            The array to write to.
+	 * @param offset
+	 *            The offset into <code>a</code> where the matrix will start.
+	 */
 	synchronized void writeToArray(float[] a, int offset) {
 		if (a == null) {
-			throw new IllegalStateException("Cannot copy Camera to null array.");
+			throw new IllegalArgumentException(
+					"Cannot write Camera to null array.");
+		} else if (a.length < offset + 16) {
+			throw new IllegalArgumentException(
+					"Cannot write Camera. Array is too small.");
 		}
-
-		Matrix.setLookAtM(a, 0, current[0], current[1], current[2], current[3],
-				current[4], current[5], current[6], current[7], current[8]);
+		
+		Matrix.setLookAtM(a, 0, eyeX, eyeY, eyeZ, centerX, centerY, centerZ,
+				upX, upY, upZ);
 	}
-
+	
 	/**
 	 * Sets the Camera to the given position and orientation.
 	 * 
@@ -110,23 +258,34 @@ public class Camera {
 	 * @param upZ
 	 *            The z-coord of the up vector
 	 */
-	public synchronized void set(float eyeX, float eyeY, float eyeZ, float centerX,
-			float centerY, float centerZ, float upX, float upY, float upZ) {
-		current[0] = eyeX;
-		current[1] = eyeY;
-		current[2] = eyeZ;
-		current[3] = centerX;
-		current[4] = centerY;
-		current[5] = centerZ;
-		current[6] = upX;
-		current[7] = upY;
-		current[8] = upZ;
+	public synchronized void set(float eyeX, float eyeY, float eyeZ,
+			float centerX, float centerY, float centerZ, float upX, float upY,
+			float upZ) {
+		this.eyeX = eyeX;
+		this.eyeY = eyeY;
+		this.eyeZ = eyeZ;
+		this.centerX = centerX;
+		this.centerY = centerY;
+		this.centerZ = centerZ;
+		this.upX = upX;
+		this.upY = upY;
+		this.upZ = upZ;
 	}
 	
-	public synchronized void set(float eyeX, float eyeY, float eyeZ){
-		current[0] = eyeX;
-		current[1] = eyeY;
-		current[2] = eyeZ;
+	/**
+	 * Sets the Camera to the given position.
+	 * 
+	 * @param eyeX
+	 *            The x-coord of the eye point
+	 * @param eyeY
+	 *            The y-coord of the eye point
+	 * @param eyeZ
+	 *            The z-coord of the eye point
+	 */
+	public synchronized void set(float eyeX, float eyeY, float eyeZ) {
+		this.eyeX = eyeX;
+		this.eyeY = eyeY;
+		this.eyeZ = eyeZ;
 	}
-
+	
 }
