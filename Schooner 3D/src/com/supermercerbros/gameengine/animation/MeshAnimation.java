@@ -11,10 +11,6 @@ import android.util.Log;
  */
 public class MeshAnimation {
 	private static final String TAG = "com.supermercerbros.gameengine.objects.MeshAnimation";
-
-	public static final int STOPPED = 0;
-	public static final int PAUSED = 1;
-	public static final int RUNNING = 2;
 	
 	/**
 	 * Contains the unique identifier for this Animation

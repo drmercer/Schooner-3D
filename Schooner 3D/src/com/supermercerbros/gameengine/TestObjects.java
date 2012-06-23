@@ -117,8 +117,8 @@ public class TestObjects {
 		float[] normals = null;
 		// formatter:on
 
-		GameObject cube = new GameObject(verts, indices, uvs, normals,
-				mtl, null);
+		GameObject cube = new GameObject(verts, indices, normals, uvs,
+				null, mtl);
 		return cube;
 	}
 
@@ -150,8 +150,8 @@ public class TestObjects {
 		float[] normals = null;
 		//@formatter:on
 
-		GameObject obj = new GameObject(verts, indices, uvs, normals,
-				new TexturedMaterial(texName), null);
+		GameObject obj = new GameObject(verts, indices, normals, uvs,
+				null, new TexturedMaterial(texName));
 		return obj;
 	}
 
@@ -173,8 +173,8 @@ public class TestObjects {
 		float[] normals = null;
 		//@formatter:on
 
-		GameObject tri = new GameObject(verts, indices, colors, normals,
-				new BasicMaterial(), null);
+		GameObject tri = new GameObject(verts, indices, normals, colors,
+				null, new BasicMaterial());
 		return tri;
 	}
 	

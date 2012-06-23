@@ -1,3 +1,4 @@
+int: version (1)
 byte: flags {tris, textured, armature-indexed}
 short: i (number of faces)
 short: v (number of vertices)

@@ -24,19 +24,18 @@ public class AnimatedMeshObject extends GameObject {
 
 	public AnimatedMeshObject(float[] verts, short[] indices, float[] uvs,
 			float[] normals, Material mtl, short[][] doubles) {
-		super(verts, indices, uvs, normals, mtl, doubles);
+		super(verts, indices, normals, uvs, doubles, mtl);
 		data = new AnimationData();
 	}
 
 	@Override
-	public void draw(long time) {
-		Log.d(TAG, "AnimatedMeshObject.draw(" + time + ") was called.");
+	public void drawVerts(long time) {
+		Log.d(TAG, "AnimatedMeshObject.drawVerts(" + time + ") was called.");
 		if (anim != null) {
 			anim.getFrame(time, data, this);
+			Normals.calculate(this);
 		}
-		
-		Normals.calculate(this);
-		super.draw(time);
+		super.drawVerts(time);
 
 	}
 

@@ -1,3 +1,11 @@
+# USAGE NOTES:
+# - Meshes must be quads OR tris, not mixed.
+# - All rotations must be in quaternions
+# - Do NOT place a keyframe on frame zero. (Blender starts 
+#   at frame 1 by default, so this shouldn't be a problem.)
+# - Unused bones (bones with no parented vertices) should not have used children.
+# - Bone scale is ignored
+
 import bpy
 
 from struct import Struct
@@ -46,6 +54,8 @@ class BinFile:
 	
 	signedFloat = Struct(endian + 'f')
 	
+	signedInt = Struct(endian + 'i')
+	
 	def __init__(self, directory, name):
 		filepath = directory + name
 		import os
@@ -56,9 +66,9 @@ class BinFile:
 		else:
 			self.file = open(filepath, "ab")
 		
-	def writeFlags(self, bools, bytes=1):
+	def writeFlags(self, bools, bytecount=1):
 		written = 0
-		while bytes > 0:
+		while bytecount > 0:
 			flags = 0
 			for i in range(min(8, len(bools) - written)):
 				if bools[written + i]:
@@ -67,7 +77,7 @@ class BinFile:
 			self.file.write(BinFile.unsignedByte.pack(flags))
 			
 			written += 8
-			bytes -= 1
+			bytecount -= 1
 	
 	def writeByte(self, b, signed=False):
 		if signed:
@@ -80,6 +90,9 @@ class BinFile:
 			self.file.write(BinFile.signedShort.pack(s))
 		else:
 			self.file.write(BinFile.unsignedShort.pack(s))
+	
+	def writeInt(self, i):
+		self.file.write(BinFile.signedInt.pack(i))
 		
 	def writeFloat(self, f):
 		self.file.write(BinFile.signedFloat.pack(f))
@@ -197,6 +210,7 @@ class MeshExporter:
 	
 	def export(self, directory, name):
 		file = BinFile(directory, name + ".sch3Dmesh")
+		file.writeInt(1)
 		
 		# write flags
 		file.writeFlags((self.tris, self.textured, self.armature_indexed))
@@ -253,7 +267,6 @@ class MeshExporter:
 class ArmatureExporter:
 	def __init__(self, armature_object, actions, exportMovements=True):
 		self.actions = actions
-		self.flags = [False, exportMovements,]
 		self.armature = armature_object.data
 		self.bones = []
 		for bone in self.armature.bones:
@@ -263,8 +276,8 @@ class ArmatureExporter:
 		
 	def export(self, directory, name, options):
 		file = BinFile(directory, name + ".sch3Darmature")
+		file.writeInt(1)
 		
-		file.writeFlags(self.flags) # TODO add optimized option
 		file.writeByte(len(self.bones))
 		
 		for bone in self.bones:
@@ -274,43 +287,34 @@ class ArmatureExporter:
 			else:
 				file.writeByte(0) # Root parent
 		
-		unnamedCount = 0
 		for action in self.actions:
-			actionNameParts = action.name.rsplit(".",1)
-			if len(actionNameParts) == 1: # action has no second part
-				actionName = "unnamed" + str(unnamedCount)
-				warn("Action " + action.name + " has no second part. Will be named in file as " + actionName + ".")
-				unnamedCount += 1
-			else:
-				actionName = actionNameParts[1]
-			file.writeString(actionName)
-			
-			actionCurves = []
-			if options.moveLoc:
-				actionCurves.append("location")
-			if options.moveRot:
-				actionCurves.append("rotation_quaternion")
 			if options.moveScale:
-				actionCurves.append("scale")
+				scale='UNIFORM'
+			elif options.moveScaleAxis:
+				scale='AXIS'
+			else:
+				scale='NONE'
 			
-			for fcurve in action.fcurves:
-				if actionCurves.count(fcurve.data_path):
-					writeFCurveToFile(fcurve, file)
+			writeMovementToFile(action, file, options.moveLoc, options.moveRot, scale)
 			
+			boneCurves = ["rotation_quaternion",]
 			for bone in self.bones:
 				group = action.groups.get(bone.name)
 				if group:
 					for fcurve in group.channels:
-						writeFCurveToFile(fcurve, file)
+						if boneCurves.count(fcurve.data_path):
+							writeFCurveToFile(fcurve, file)
+				else:
+					file.writeFloat(0.0)
 				
 		file.close()
 
 class ArmatureOptions:
 	
-	def __init__(self, boneScale=False, moveLoc=True, moveRot=True, moveScale=True):
-		self.boneScale = boneScale
+	def __init__(self, moveLoc=True, moveRot=True, moveScaleAxis=False, moveScale=True):
 		self.moveLoc = moveLoc
 		self.moveRot = moveRot
+		self.moveScaleAxis = moveScaleAxis
 		self.moveScale = moveScale
 
 def getActionsOfArmature(armature_object):
@@ -343,10 +347,10 @@ def getActionsOfArmature(armature_object):
 			actions.append(action)
 	return actions
 
-def getActionsOfObject(object):
+def getActionsOfObject(obj):
 	actions = []
 	for action in bpy.data.actions:
-		if action.name.rsplit(".",1)[0] == object.name + "Action":
+		if action.name.rsplit(".",1)[0] == obj.name + "Action":
 			for fcurve in action.fcurves:
 				if fcurve.data_path.find('quaternion') + 1:
 					actions.append(action)
@@ -360,29 +364,55 @@ def getActionsOfObject(object):
 def exportActions(directory, name, actions):
 	# Exports the given list of actions to a .sch3Dmovements file with the given name in the given directory
 	file = BinFile(directory, name + ".sch3Dmovements")
-	unnamedCount = 0
+	file.writeInt(1)
 	for action in actions:
-		actionName = action.name.rsplit(".",1)
-		if len(actionName) == 1: # action has no second part
-			actionName = "unnamed" + str(unnamedCount)
-			if verbose:
-				print("<!> Action " + action.name + " has no second part. Will be named in file as " + actionName + ".")
-			unnamedCount += 1
-		else:
-			actionName = actionName[len(actionName)-1]
-		file.writeString(actionName)
-		if verbose:
-			print("Action \"" + actionName + "\" (" + action.name + "):")
-		
-		for fcurve in action.fcurves:
-			if fcurve.group and verbose:
-				print("<!> Action FCurve has a group!")
-			writeFCurveToFile(fcurve, file)
+		writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM') # Only supports uniform scale for now
 	file.close()
 
-def writeFCurveToFile(fcurve, file, optimized=False):
-	n = len(fcurve.keyframe_points)-1
-	file.writeShort(n)
+def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
+	# name
+	nameParts = action.name.rsplit(".",1)
+	if len(nameParts) == 1: # action has no second part
+		name = action.name
+		warn("Action " + action.name + " has no second part. Will be named in file as \"" + name + "\".")
+	else:
+		name = nameParts[1]
+	
+	# flags
+	flags = (loc, rot, scale=='UNIFORM', scale=='AXIS')
+	
+	# FCurve data_paths and array_indices to export
+	curveNames = {}
+	if loc:
+		curveNames["location"] = (0, 1, 2)
+	if rot:
+		curveNames["rotation_quaternion"] = (0, 1, 2, 3)
+	if scale=='UNIFORM':
+		curveNames["scale"] = (0,)
+	elif scale=='AXIS':
+		curveNames["scale"] = (0, 1, 2)
+	
+	# FCurves to export, and number of keyframes - 1
+	curves = []
+	keyframeCount = -1;
+	for key in curveNames.keys():
+		for index in curveNames[key]:
+			for fcurve in action.fcurves:
+				if fcurve.data_path==key and fcurve.array_index==index:
+					if keyframeCount < 0:
+						keyframeCount = len(fcurve.keyframe_points)-1
+					elif keyframeCount != len(fcurve.keyframe_points)-1:
+						raise RuntimeError("Number of keyframes in FCurves is not uniform for Action \'" + action.name + "\'")
+					curves.append(fcurve)
+	
+	file.writeString(name)
+	file.writeFlags(flags)
+	file.writeByte(keyframeCount)
+	for curve in curves:
+		writeFCurveToFile(curve, file)
+				
+
+def writeFCurveToFile(fcurve, file):
 	counter = 0
 	i = 0
 	
@@ -399,14 +429,14 @@ def writeFCurveToFile(fcurve, file, optimized=False):
 			print(str(keyframe.co))
 		counter += 1
 		# Write right handle
-		if i < n:
+		if i < len(fcurve.keyframe_points)-1:
 			file.writeAllFloats(keyframe.handle_right)
 			if verbose and False:
 				print(str(keyframe.handle_left))
 			counter += 1
 		i+= 1
 
-# Begin script. TODO: add GUI?
+# Begin script.
 verbose = True
 if verbose:
 	print("BEGIN SCRIPT.")
@@ -421,17 +451,17 @@ bpy.ops.object.mode_set(mode='OBJECT')
 
 #verbose = False
 # Export movements.
-movementSources = [object for object in scene.objects if ['MESH',].count(object.type)]
-for object in movementSources:
-	if object.rotation_mode != 'QUATERNION':
-		warn(object.name + " is not in quaternion rotation mode. " +
+movementSources = [obj for obj in scene.objects if ['MESH',].count(obj.type)]
+for obj in movementSources:
+	if obj.rotation_mode != 'QUATERNION':
+		warn(obj.name + " is not in quaternion rotation mode. " +
 			"Make sure all objects and actions use quaternions for rotations.")
 		continue
-	actions = getActionsOfObject(object)
+	actions = getActionsOfObject(obj)
 	if actions is not None:
 		if verbose:
-			print("Exporting " + object.name + "'s actions.")
-		exportActions(directory, object.name, actions)
+			print("Exporting " + obj.name + "'s actions.")
+		exportActions(directory, obj.name, actions)
 
 # Export meshes.
 originalScene = bpy.context.scene
@@ -439,24 +469,24 @@ bpy.ops.scene.new(type='FULL_COPY')
 scene = bpy.context.scene
 
 
-mesh_objects = [object for object in scene.objects if object.type == 'MESH']
-for object in mesh_objects:
-	exporter = MeshExporter(object)
-	exporter.export(directory, object.name.rsplit(".",1)[0])
+mesh_objects = [obj for obj in scene.objects if obj.type == 'MESH']
+for obj in mesh_objects:
+	exporter = MeshExporter(obj)
+	exporter.export(directory, obj.name.rsplit(".",1)[0])
 bpy.ops.scene.delete()
 scene = bpy.context.scene
 
 verbose = True
 
 # Export armatures
-armature_objects = [object for object in scene.objects if object.type == 'ARMATURE']
+armature_objects = [obj for obj in scene.objects if obj.type == 'ARMATURE']
 print("ARMATURES: " + str(armature_objects))
-for object in armature_objects:
-	actions = getActionsOfArmature(object)
+for obj in armature_objects:
+	actions = getActionsOfArmature(obj)
 	print(actions)
 	if actions:
-		exporter = ArmatureExporter(object, actions)
-		exporter.export(directory, object.name, ArmatureOptions())
+		exporter = ArmatureExporter(obj, actions)
+		exporter.export(directory, obj.name, ArmatureOptions())
 
 # End script	
 if verbose:

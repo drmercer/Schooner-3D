@@ -26,23 +26,23 @@ public class Engine extends LoopingThread implements
 	private final RenderData outA;
 	private final RenderData outB;
 	private final Camera cam;
-
+	
 	public final CollisionDetector cd; // TODO after debug, revert to private
 	private final Toggle cdIsFinished = new Toggle(false);
-
+	
 	private boolean aBufs = true;
-
+	
 	/**
 	 * To be used by subclasses of Engine. Contains the GameObjects currently in
 	 * the Engine.
 	 */
 	protected LinkedList<GameObject> objects;
 	private long time;
-
+	
 	// Be careful to always synchronize access of these fields:
 	private volatile Toggle flush = new Toggle(false);
 	private final Light light = new Light();
-
+	
 	/**
 	 * Used for passing commands from the UI thread to the {@link Engine}
 	 * thread. This <b>should not</b> be polled by any thread other than the
@@ -66,7 +66,7 @@ public class Engine extends LoopingThread implements
 	 * thread.
 	 */
 	ConcurrentLinkedQueue<GameObject> delObjects = new ConcurrentLinkedQueue<GameObject>();
-
+	
 	/**
 	 * @param pipe
 	 *            The DataPipe that this Engine will use to communicate with the
@@ -81,15 +81,15 @@ public class Engine extends LoopingThread implements
 		this.pipe = pipe;
 		this.cam = cam;
 		this.objects = new LinkedList<GameObject>();
-
+		
 		this.cd = new CollisionDetector(this);
-
+		
 		this.outA = new RenderData(pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
 		this.outB = new RenderData(pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
-
+		
 		Log.d(TAG, "Engine constructed.");
 	}
-
+	
 	/**
 	 * Adds the collection of GameObjects to the Engine
 	 * 
@@ -109,13 +109,13 @@ public class Engine extends LoopingThread implements
 			newObjects.addAll(objects);
 		}
 	}
-
+	
 	@Override
 	public void end() {
 		super.end();
 		cd.end();
 	}
-
+	
 	/**
 	 * Adds the given GameObject to the Engine
 	 * 
@@ -133,7 +133,7 @@ public class Engine extends LoopingThread implements
 			newObjects.add(object);
 		}
 	}
-
+	
 	/**
 	 * Runs a Runnable on the Engine thread
 	 * 
@@ -143,7 +143,7 @@ public class Engine extends LoopingThread implements
 	public void doRunnable(Runnable r) {
 		actions.add(r);
 	}
-
+	
 	/**
 	 * Runs a {@link Runnable} on the Engine thread with a delay.
 	 * 
@@ -155,7 +155,7 @@ public class Engine extends LoopingThread implements
 	public void doRunnable(Runnable r, long delay) {
 		delayedActions.add(new DelayedRunnable(r, delay));
 	}
-
+	
 	/**
 	 * Tells the Engine to actually delete all of its GameObjects that are
 	 * marked for deletion
@@ -165,7 +165,7 @@ public class Engine extends LoopingThread implements
 			flush.setState(true);
 		}
 	}
-
+	
 	/**
 	 * Removes the given GameObject from the Engine.
 	 * 
@@ -206,19 +206,19 @@ public class Engine extends LoopingThread implements
 			d.r.run();
 			d = delayedActions.poll();
 		}
-
+		
 		synchronized (flush) {
 			if (flush.getState()) {
 				flush();
 			}
 		}
-
+		
 		doSpecialStuff(time);
 		computeFrame();
 		updatePipe();
 		aBufs = !aBufs; // Swap aBufs
 	}
-
+	
 	/**
 	 * Sets the directional light of the scene
 	 * 
@@ -245,7 +245,7 @@ public class Engine extends LoopingThread implements
 			light.b = b;
 		}
 	}
-
+	
 	/**
 	 * This method is called every frame, before objects are redrawn. The
 	 * default implementation does nothing; subclasses should override this if
@@ -255,22 +255,22 @@ public class Engine extends LoopingThread implements
 	 *            The time of the current frame.
 	 */
 	protected void doSpecialStuff(long time) {
-
+		
 	}
-
+	
 	private void computeFrame() {
 		cd.go();
 		waitOnToggle(cdIsFinished, true); // TODO put this somewhere else.
-
+		
 		for (GameObject object : objects) {
 			if (!object.isMarkedForDeletion()) {
-				object.draw(time);
+				object.drawMatrix(time);
 			}
 		}
-
+		
 		cam.update(time);
 	}
-
+	
 	/**
 	 * Marks the given GameObject for deletion.
 	 * 
@@ -282,7 +282,7 @@ public class Engine extends LoopingThread implements
 			object.markForDeletion();
 		}
 	}
-
+	
 	private void flush() {
 		for (int i = 0; i < objects.size(); i++) {
 			if (objects.get(i).isMarkedForDeletion()) {
@@ -293,7 +293,7 @@ public class Engine extends LoopingThread implements
 		}
 		flush.setState(false);
 	}
-
+	
 	private int loadToIBO(short[] ibo, GameObject object, int offset,
 			int vertexOffset) {
 		object.iOffset = offset;
@@ -302,39 +302,41 @@ public class Engine extends LoopingThread implements
 		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
 		return object.info.size;
 	}
-
+	
 	private void updatePipe() {
 		final RenderData out = aBufs ? outA : outB;
-		out.ibo_updatePos = out.ibo.length;
-		out.primitives.clear();
-
-		int vOffset = 0, iOffset = 0, vertexOffset = 0, matrixIndex = 0;
-		for (GameObject object : objects) {
-			synchronized (object) {
-				int bufferSize = object.info.mtl.loadObjectToVBO(object,
-						out.vbo, vOffset);
-				vOffset += bufferSize;
-
-				iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
-
-				vertexOffset += object.info.count;
-
-				System.arraycopy(object.modelMatrix, 0,
-						out.modelMatrices.get(matrixIndex++), 0, 16);
-
-				out.primitives.add(object.info);
+		synchronized (out) {
+			out.ibo_updatePos = out.ibo.length;
+			out.primitives.clear();
+			
+			int vOffset = 0, iOffset = 0, vertexOffset = 0, index = 0;
+			for (GameObject object : objects) {
+				synchronized (object) {
+					int bufferSize = object.info.mtl.loadObjectToVBO(object,
+							out.vbo, vOffset);
+					vOffset += bufferSize;
+					
+					iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
+					
+					vertexOffset += object.info.count;
+					
+					System.arraycopy(object.modelMatrix, 0,
+							out.modelMatrices.get(index++), 0, 16);
+					
+					out.primitives.add(object.info);
+				}
+			}
+			
+			cam.writeToArray(out.viewMatrix, 0);
+			
+			synchronized (light) {
+				light.copyTo(out.light);
 			}
 		}
-
-		cam.writeToArray(out.viewMatrix, 0);
-
-		synchronized (light) {
-			light.copyTo(out.light);
-		}
-
+		
 		time = pipe.putData(time, out);
 	}
-
+	
 	@Override
 	public void onCollisionCheckFinished() {
 		synchronized (cdIsFinished) {

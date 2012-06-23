@@ -1,4 +1,4 @@
-byte: flags {boneScale, moveLoc, moveRot, moveScale}
+int: version (1)
 unsigned byte: b (number of bones - 1)
 for each bone (b)
 	float[3]: location of head (child end) relative to tail (parent's head)
@@ -6,16 +6,17 @@ for each bone (b)
 
 for each action
 	null-terminated UTF-8 string: action name
+	byte: {moveLoc, moveRot, moveScaleAxis, moveScale} 
 	unsigned byte: n (number of keyframes - 1)
-	for each component of the movement (position if moveLoc, quaternion if moveRot, scale if moveScale) 
+	for each component of the movement (3 for position if moveLoc, 4 for quaternion if moveRot, and ((1 for scale if moveScale) or (3 for scale if moveScaleAxis))) 
 				for n*3 + 1: (keyframes and control points)
 					float: frame
 					float: value
 	for each bone (b)
 		if bone has no animation,
 			float: 0.0f
-			else
-				for each component of quaternion (wxyz) (and scale, if boneScale)
-					for n*3 + 1: (keyframes and control points)
-						float: frame
-						float: value
+		else
+			for each component of quaternion (w, x, y, and z)
+				for n*3 + 1: (keyframes and control points)
+					float: frame
+					float: value

@@ -15,7 +15,7 @@ import com.supermercerbros.gameengine.util.Utils;
 public class Polyhedron {
 	
 	/**
-	 * FIXME does not work!
+	 * FIXME Partitioning does not work!
 	 * Partitions a closed mesh of quads into convex subparts.
 	 * 
 	 * @param verts

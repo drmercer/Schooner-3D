@@ -1,7 +1,9 @@
-for each movement
-	null-terminated UTF-8 string: movement name
-	for each component of position (xyz), quaternion (wxyz), and scale (xyz)
-		short: n (number of keyframes - 1)
-		for n*3 + 1: (keyframes and control points)
-			float: frame
-			float: value
+int: version (1)
+for each action
+	null-terminated UTF-8 string: action name
+	byte: {moveLoc, moveRot, moveScale, moveScaleAxis} 
+	unsigned byte: n (number of keyframes - 1)
+	for each component of the movement (3 for position if moveLoc, 4 for quaternion if moveRot, and ((1 for scale if moveScale) or (3 for scale if moveScaleAxis))) 
+				for n*3 + 1: (keyframes and control points)
+					float: frame
+					float: value

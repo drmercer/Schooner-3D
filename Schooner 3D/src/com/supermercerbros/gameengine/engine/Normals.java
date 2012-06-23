@@ -2,7 +2,7 @@ package com.supermercerbros.gameengine.engine;
 
 import java.util.Arrays;
 
-import com.supermercerbros.gameengine.math.Vector;
+import com.supermercerbros.gameengine.math.MatrixUtils;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.util.Utils;
 
@@ -10,7 +10,7 @@ public class Normals {
 
 	public static void calculate(GameObject object) {
 		if (object.normals == null || object.normals.length != object.verts.length) {
-			object.normals = new float[object.verts.length];
+			throw new IllegalStateException("object.normals is not equal in length to object.verts");
 		} else {
 			Arrays.fill(object.normals, 0.0f);
 		}
@@ -33,7 +33,7 @@ public class Normals {
 			vecB[1] = verts[indices[faceIndex * 3 + 0] * 3 + 1] - cY;
 			vecB[2] = verts[indices[faceIndex * 3 + 0] * 3 + 2] - cZ;
 
-			Vector.cross(normal, 0, vecA, 0, vecB, 0, true);
+			MatrixUtils.cross(normal, 0, vecA, 0, vecB, 0, true);
 			
 			for (int index = 0; index < 3; index++) {
 				int offset = indices[faceIndex * 3 + index] * 3;

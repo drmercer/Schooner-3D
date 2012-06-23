@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.Arrays;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -148,7 +147,7 @@ public class GameRenderer implements Renderer {
 			loadUniforms(in.viewMatrix, in.light);
 
 			int size = primitive.mtl.attachAttribs(primitive, vboOffset,
-					in.modelMatrices.get(matrixNumber), 0); //TODO
+					in.modelMatrices.get(matrixNumber), 0);
 			vboOffset += size;
 			Log.d("CT", "object size = " + size + " bytes");
 
@@ -196,7 +195,7 @@ public class GameRenderer implements Renderer {
 		GLES20.glClearColor(Schooner3D.backgroundColor[0],
 				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
 				Schooner3D.backgroundColor[3]);
-		// GLES20.glEnable(GLES20.GL_CULL_FACE);
+		GLES20.glEnable(GLES20.GL_CULL_FACE);
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
 	}

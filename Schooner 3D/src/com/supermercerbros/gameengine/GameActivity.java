@@ -155,8 +155,7 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		engine.start();
 		renderer = new GameRenderer(pipe, near, far);
 		gameView.setRenderer(renderer);
-		super.setContentView(gameView); // TODO change to
-										// super.setContentView(content);
+		super.setContentView(gameView); // TODO change to super.setContentView(content);
 	}
 
 	@Override

@@ -185,8 +185,19 @@ public class Utils {
 		return sb.toString();
 	}
 
-	public static boolean checkByte(byte flags, int place) {
+	public static boolean checkBit(byte flags, int place) {
 		return (flags & (1 << place)) != 0;
+	}
+	
+	public static boolean[] checkBits(byte flags, int count) {
+		if (count > 8) {
+			throw new IllegalArgumentException("count is greater than 8");
+		}
+		boolean[] result = new boolean[count];
+		for (int i = 0; i < count; i++) {
+			result[i] = (flags & (1 << i)) != 0;
+		}
+		return result;
 	}
 
 	public static int search(short[] array, int begin, int end, int value) {
