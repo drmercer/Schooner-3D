@@ -9,6 +9,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnTouchListener;
+import android.view.Window;
+import android.view.WindowManager;
 
 import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.DataPipe;
@@ -43,7 +45,12 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getWindow().setBackgroundDrawable(null);
+		final Window window = getWindow();
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+                                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        window.setBackgroundDrawable(null);
+        
 		created = true;
 		Log.d(TAG, "onCreate");
 
@@ -53,7 +60,6 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 
 		gameView = new GLSurfaceView(this);
 		gameView.setEGLContextClientVersion(2);
-
 		gameView.setOnTouchListener(this);
 	}
 
@@ -152,10 +158,10 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 					"GameActivity subclass must call super.onCreate() first!");
 		}
 		Log.d(TAG, "GameActivity Start!");
-		engine.start();
 		renderer = new GameRenderer(pipe, near, far);
 		gameView.setRenderer(renderer);
 		super.setContentView(gameView); // TODO change to super.setContentView(content);
+		engine.start();
 	}
 
 	@Override

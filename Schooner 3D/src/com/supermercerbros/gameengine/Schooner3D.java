@@ -4,11 +4,16 @@ public class Schooner3D {
 	/**
 	 * The default maximum number of objects.
 	 */
-	public static final int DEFAULT_MAX_OBJECTS = 100;
+	public static final int DEFAULT_MAX_OBJECTS = 50;
 	/**
 	 * The approximate number of vertices per object.
 	 */
-	private static final int vertsPerObject = 500;
+	private static final int vertsPerObject = 400;
+	/**
+	 * The approximate number of tris per object.
+	 */
+	private static final int trisPerObject = 800;
+	
 	/**
 	 * The default VBO size, in bytes.
 	 */
@@ -16,12 +21,12 @@ public class Schooner3D {
 	/**
 	 * The default IBO size, in bytes.
 	 */
-	public static final int DEFAULT_IBO_SIZE = 2 * 3 * DEFAULT_MAX_OBJECTS * vertsPerObject;
+	public static final int DEFAULT_IBO_SIZE = 2 * 3 * DEFAULT_MAX_OBJECTS * trisPerObject;
 	/**
 	 * The default render backgroundColor color.
 	 */
-	public static final float[] DEFAULT_BACKGROUND_COLOR = { 0.0f, 0.0f, 0.0f,
-			1.0f };
+	public static final float[] DEFAULT_BACKGROUND_COLOR = 
+		{ 0.0f, 0.0f, 0.0f, 1.0f };
 	/**
 	 * The default maximum number of light.
 	 */

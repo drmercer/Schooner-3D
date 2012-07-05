@@ -1,5 +1,6 @@
 package com.supermercerbros.gameengine.util;
 
+import android.annotation.SuppressLint;
 import android.opengl.GLES20;
 import android.util.Log;
 
@@ -34,6 +35,7 @@ public class GLES2 extends GLES20 {
 	 *            value is 0.
 	 * @param offset The byte offset into the buffer object's data store
 	 */
+	@SuppressLint("NewApi")
 	public static void glVertexAttribPointer(int index, int size, int type,
 			boolean normalized, int stride, int offset) {
 		if (USE_FIX) {
@@ -48,7 +50,14 @@ public class GLES2 extends GLES20 {
 	}
 
 	public static void glDrawElements(int mode, int count, int type, int offset) {
+		if (USE_FIX) {
+			
+			Log.e(TAG, "glDrawElements is not patched yet!");
+			// Put patched method here
 
+		} else {
+			GLES20.glDrawElements(mode, count, type, offset);
+		}
 	}
 	// TODO Use NDK to patch GLES20
 

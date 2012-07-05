@@ -9,6 +9,8 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.collision.CollisionDetector;
 import com.supermercerbros.gameengine.collision.OnCollisionCheckFinishedListener;
+import com.supermercerbros.gameengine.debug.JankCatcher;
+import com.supermercerbros.gameengine.debug.LoopLog;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
 import com.supermercerbros.gameengine.util.LoopingThread;
@@ -40,7 +42,7 @@ public class Engine extends LoopingThread implements
 	private long time;
 	
 	// Be careful to always synchronize access of these fields:
-	private volatile Toggle flush = new Toggle(false);
+	private final Toggle flush = new Toggle(false);
 	private final Light light = new Light();
 	
 	/**
@@ -84,8 +86,8 @@ public class Engine extends LoopingThread implements
 		
 		this.cd = new CollisionDetector(this);
 		
-		this.outA = new RenderData(pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
-		this.outB = new RenderData(pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
+		outA = new RenderData(0, pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
+		outB = new RenderData(1, pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
 		
 		Log.d(TAG, "Engine constructed.");
 	}
@@ -215,8 +217,15 @@ public class Engine extends LoopingThread implements
 		
 		doSpecialStuff(time);
 		computeFrame();
-		updatePipe();
-		aBufs = !aBufs; // Swap aBufs
+		final RenderData out;
+		if (aBufs) {
+			out = outA;
+		} else {
+			out = outB;
+		}
+		updatePipe(out);
+		aBufs = !aBufs;
+		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs? 0 : 1));
 	}
 	
 	/**
@@ -255,12 +264,20 @@ public class Engine extends LoopingThread implements
 	 *            The time of the current frame.
 	 */
 	protected void doSpecialStuff(long time) {
-		
+		// Nothing here. Implement in subclass.
 	}
 	
 	private void computeFrame() {
 		cd.go();
-		waitOnToggle(cdIsFinished, true); // TODO put this somewhere else.
+		
+		for (GameObject object : objects) {
+			if (!object.isMarkedForDeletion()) {
+				object.drawVerts(time);
+			}
+		}
+		cam.update(time);
+		
+		waitOnToggle(cdIsFinished, true);
 		
 		for (GameObject object : objects) {
 			if (!object.isMarkedForDeletion()) {
@@ -268,7 +285,6 @@ public class Engine extends LoopingThread implements
 			}
 		}
 		
-		cam.update(time);
 	}
 	
 	/**
@@ -297,44 +313,43 @@ public class Engine extends LoopingThread implements
 	private int loadToIBO(short[] ibo, GameObject object, int offset,
 			int vertexOffset) {
 		object.iOffset = offset;
-		if (object.isMarkedForDeletion())
+		if (object.isMarkedForDeletion()) {
 			return 0;
+		}
 		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
 		return object.info.size;
 	}
 	
-	private void updatePipe() {
-		final RenderData out = aBufs ? outA : outB;
-		synchronized (out) {
-			out.ibo_updatePos = out.ibo.length;
-			out.primitives.clear();
-			
-			int vOffset = 0, iOffset = 0, vertexOffset = 0, index = 0;
-			for (GameObject object : objects) {
-				synchronized (object) {
-					int bufferSize = object.info.mtl.loadObjectToVBO(object,
-							out.vbo, vOffset);
-					vOffset += bufferSize;
-					
-					iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
-					
-					vertexOffset += object.info.count;
-					
-					System.arraycopy(object.modelMatrix, 0,
-							out.modelMatrices.get(index++), 0, 16);
-					
-					out.primitives.add(object.info);
-				}
-			}
-			
-			cam.writeToArray(out.viewMatrix, 0);
-			
-			synchronized (light) {
-				light.copyTo(out.light);
+	private void updatePipe(RenderData out) {
+		JankCatcher.instance().onBeginUpdate(out.index);
+		out.primitives.clear();
+		
+		int vOffset = 0, iOffset = 0, vertexOffset = 0, index = 0;
+		for (GameObject object : objects) {
+			synchronized (object) {
+				int bufferSize = object.info.mtl.loadObjectToVBO(object,
+						out.vbo, vOffset);
+				vOffset += bufferSize;
+				
+				iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
+				
+				vertexOffset += object.info.count;
+				
+				System.arraycopy(object.modelMatrix, 0,
+						out.modelMatrices.get(index++), 0, 16);
+				
+				out.primitives.add(object.info);
 			}
 		}
 		
-		time = pipe.putData(time, out);
+		cam.writeToArray(out.viewMatrix, 0);
+		
+		synchronized (light) {
+			light.copyTo(out.light);
+		}
+		
+		JankCatcher.instance().onFinishUpdate(out.index);
+		time = pipe.putData(this, out);
 	}
 	
 	@Override

@@ -2,23 +2,25 @@ package com.supermercerbros.gameengine.engine;
 
 
 import android.content.Context;
+import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
+import com.supermercerbros.gameengine.debug.LoopLog;
+import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 
 /**
  * Used for communication between the main thread, the Engine thread, and the
  * renderer thread.
  */
 public class DataPipe {
-	@SuppressWarnings("unused")
-	private static final String TAG = "com.supermercerbros.gameengine.engine.DataPipe";
+	private static final String TAG = DataPipe.class.getSimpleName();
 
 	final int VBO_capacity = Schooner3D.vboSize;
 	final int IBO_capacity = Schooner3D.iboSize;
 
 	private RenderData data;
 	private long lastReadTime;
-	private boolean isRead = false;
+	private boolean hasData = false;
 
 	/**
 	 * Constructs a new DataPipe. This also initializes <code>ShaderLib</code>
@@ -30,7 +32,7 @@ public class DataPipe {
 	 *            The material to render GameObjects with.
 	 */
 	public DataPipe(Context context) {
-		ShaderLib.init(context);
+		ShaderLib.init();
 		TextureLib.init(context);
 	}
 
@@ -46,41 +48,40 @@ public class DataPipe {
 	 * 
 	 * @param frameTime
 	 *            the time of the frame represented by the data
-	 * @param data
+	 * @param newData
 	 *            a RenderData object containing the data to be rendered.
 	 * @return The time of the next frame that the Engine should calculate
 	 */
-	public synchronized long putData(long frameTime, RenderData data) {
-		while (!isRead) {
+	public synchronized long putData(Engine engine, RenderData newData) {
+		this.data = newData;
+		hasData = true;
+		LoopLog.i(TAG, "DataPipe now contains RD " + data.index);
+		notify();
+		while (hasData) {
 			try {
-				wait(1000 / 30);
-				if (isRead){
-					break;
-				} else {
-					return lastReadTime + 3*(1000 / 30);
-				}
+				wait(); //1000 / 30);
 			} catch (InterruptedException e) {
-				return lastReadTime + 3*(1000 / 30);
+				if (engine.isEnding()) {
+					Log.i(TAG, "Engine was interrupted while waiting in DataPipe.");
+					break;
+				}
 			}
 		}
-		this.data = data;
-
-		isRead = false;
-		notify();
-		return lastReadTime + 2*(1000/30);
+		return lastReadTime + (1000/30);
 	}
 
 	public synchronized RenderData retrieveData() {
-		while (isRead) {
+		while (!hasData) {
 			try {
 				wait();
 			} catch (InterruptedException e) {
 			}
 		}
-
+		final RenderData ldata = this.data;
 		lastReadTime = System.currentTimeMillis();
-		isRead = true;
+		hasData = false;
 		notify();
-		return data;
+		LoopLog.i(TAG, "DataPipe was read. Renderer now has RD " + ldata.index);
+		return ldata;
 	}
 }

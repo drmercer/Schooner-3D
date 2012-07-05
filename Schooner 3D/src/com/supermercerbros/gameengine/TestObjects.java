@@ -157,24 +157,36 @@ public class TestObjects {
 
 	/**
 	 * Creates a vertex-colored triangle.
+	 * @param mtl The Material to use
+	 * 
 	 * @return A colored triangle.
 	 */
-	public static GameObject tri() {
+	public static GameObject tri(Material mtl) {
 		//@formatter:off
+		
 		float[] verts = { 
-				0.0f, 0.0f, 0.0f, 
-				-0.6f, -0.6f, 0.0f, 
-				-0.6f, 0.6f, 0.0f };
+				0.0f, 0.0f, -1.0f, 
+				-0.6f, -0.6f, -1.0f, 
+				-0.6f, 0.6f, -1.0f };
 		float[] colors = { 
 				1, 1, 0, 
 				0, 1, 1, 
 				1, 0, 1 };
-		short[] indices = { 0, 1, 2 };
+		short[] indices = { 
+				0, 2, 1 
+				};
 		float[] normals = null;
+		
 		//@formatter:on
-
+		
+		final Material material;
+		if (mtl == null) {
+			material = new BasicMaterial();
+		} else {
+			material = mtl;
+		}
 		GameObject tri = new GameObject(verts, indices, normals, colors,
-				null, new BasicMaterial());
+				null, material);
 		return tri;
 	}
 	

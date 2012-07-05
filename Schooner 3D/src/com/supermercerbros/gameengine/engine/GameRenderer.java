@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -15,14 +16,17 @@ import android.opengl.GLSurfaceView.Renderer;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
+import com.supermercerbros.gameengine.debug.JankCatcher;
+import com.supermercerbros.gameengine.engine.shaders.Program;
+import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.GLES2;
 import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
 	private static final String TAG = GameRenderer.class.getName();
-	private static final boolean alwaysDebug = true; 
-	private static final int framesToDebug = 2;
+	private static final boolean alwaysDebug = false; 
+	private static final int framesToDebug = -1;
 
 	/**
 	 * @param location
@@ -112,28 +116,29 @@ public class GameRenderer implements Renderer {
 
 		final RenderData in = pipe.retrieveData();
 		if (in == null) {
-			Log.w(TAG, "in == null");
+			Log.e(TAG, "in == null");
 			drawFrameCount--;
 			return;
 		}
-
+		JankCatcher.instance().onBeginRender(in.index);
 		// long startFrame = System.nanoTime();
 
-		// Load VBO data
 		vbo.clear();
+		ibo.clear();
+		
+		// Load VBO data
 		vbo.put(in.vbo);
 		vbo.position(0);
-
+		
 		// Load index data to IBO
-		ibo.clear();
 		ibo.put(in.ibo);
 		ibo.position(0);
-
+		
 		GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0,
 				in.ibo.length * 2, ibo);
 		GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, in.vbo.length * 4,
 				vbo);
-
+		
 		// Render each primitive
 		int matrixNumber = 0, iboOffset = 0, vboOffset = 0;
 		for (final Metadata primitive : in.primitives) {
@@ -142,15 +147,17 @@ public class GameRenderer implements Renderer {
 			} else if (primitive.mtl == null){
 				Log.e(TAG, "primitive.mtl == null");
 			}
-
-			useProgram(primitive.mtl.getProgramName());
+			
+			useProgram(primitive.mtl.getProgram());
 			loadUniforms(in.viewMatrix, in.light);
-
+			
 			int size = primitive.mtl.attachAttribs(primitive, vboOffset,
 					in.modelMatrices.get(matrixNumber), 0);
 			vboOffset += size;
-			Log.d("CT", "object size = " + size + " bytes");
-
+			if (drawFrameCount <= framesToDebug || alwaysDebug) {
+				Log.d("GameRenderer", "object size = " + size + " bytes");
+			}
+			
 			// Render primitive!
 			GLES2.glDrawElements(primitive.mtl.getGeometryType(),
 					primitive.size, GLES20.GL_UNSIGNED_SHORT, iboOffset);
@@ -158,12 +165,13 @@ public class GameRenderer implements Renderer {
 			
 			if (!GLES20.glIsEnabled(GLES2.GL_DEPTH_TEST)){
 				GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+				logError("glEnable (DEPTH)");
 			}
-
+			
 			iboOffset += primitive.size * 2;
 			matrixNumber++;
 		}
-
+		JankCatcher.instance().onFinishRender(in.index);
 	}
 
 	@Override
@@ -195,7 +203,7 @@ public class GameRenderer implements Renderer {
 		GLES20.glClearColor(Schooner3D.backgroundColor[0],
 				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
 				Schooner3D.backgroundColor[3]);
-		GLES20.glEnable(GLES20.GL_CULL_FACE);
+//		GLES20.glEnable(GLES20.GL_CULL_FACE);
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
 	}
@@ -204,18 +212,13 @@ public class GameRenderer implements Renderer {
 	 * @param name
 	 * @return True if a new program has been loaded
 	 */
-	private boolean useProgram(String name) {
-		if (drawFrameCount <= framesToDebug || alwaysDebug) {
-			Log.d(TAG, "useProgram(" + name + ")");
-		}
-		Program program = ShaderLib.getProgram(name);
-
+	private boolean useProgram(Program program) {
 		boolean success = true;
 		if (!(program.equals(activeProgram) && program.getHandle() > 0)) {
 			try {
 				program.load();
 			} catch (GLException e) {
-				Log.e(TAG, "Program Could not be loaded.", e);
+				Log.e(TAG, "Program could not be loaded.", e);
 				if (activeProgram != null)
 					activeProgram.load();
 				success = false;
@@ -238,6 +241,12 @@ public class GameRenderer implements Renderer {
 	private void loadUniforms(float[] viewMatrix, Light light) {
 		// Load World View-Projection matrix
 		Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, viewMatrix, 0);
+		
+		if (drawFrameCount <= framesToDebug || alwaysDebug) {
+			Log.d("GameRenderer", "viewMatrix = " + Arrays.toString(viewMatrix));
+			Log.d("GameRenderer", "projMatrix = " + Arrays.toString(projMatrix));
+			Log.d("GameRenderer", "wvpMatrix = " + Arrays.toString(wvpMatrix));
+		}
 
 		GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
 		logError("glUniformMatrix4fv (wvpMatrix)");

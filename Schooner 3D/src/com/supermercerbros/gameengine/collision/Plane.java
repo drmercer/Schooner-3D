@@ -103,6 +103,6 @@ public class Plane {
 
 	@Override
 	public String toString(){
-		return "Plane(" + ((Point) point).toString() + ", " + normal + ")";
+		return "Plane(" + point.toString() + ", " + normal + ")";
 	}
 }

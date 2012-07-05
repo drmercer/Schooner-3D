@@ -1,4 +1,6 @@
-package com.supermercerbros.gameengine.engine;
+package com.supermercerbros.gameengine.engine.shaders;
+
+import com.supermercerbros.gameengine.engine.GameRenderer;
 
 import android.opengl.GLES20;
 import android.opengl.GLException;
@@ -6,10 +8,9 @@ import android.util.Log;
 
 public class Shader {
 	private static final String TAG = "com.supermercerbros.gameengine.engine.Shader";
-	private String source;
+	public final String source;
 	private int handle;
 	private boolean loaded;
-	
 	
 	Shader(String source){
 		this.source = source;

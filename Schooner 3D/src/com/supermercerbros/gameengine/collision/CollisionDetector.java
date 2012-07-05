@@ -117,8 +117,10 @@ public class CollisionDetector extends LoopingThread {
 
 			}
 		}
-
-		dbg.onFrameComplete(System.currentTimeMillis() - startTime);
+		
+		if (dbg != null) {
+			dbg.onFrameComplete(System.currentTimeMillis() - startTime);
+		}
 	}
 
 	@Override
@@ -534,6 +536,7 @@ public class CollisionDetector extends LoopingThread {
 	/**
 	 * @deprecated Use {@link #go()} instead.
 	 */
+	@Deprecated
 	@Override
 	public void resumeLooping() {
 		throw new UnsupportedOperationException("Use go() instead.");
@@ -542,6 +545,7 @@ public class CollisionDetector extends LoopingThread {
 	/**
 	 * @deprecated Use {@link #go()} instead.
 	 */
+	@Deprecated
 	@Override
 	public void start() {
 		throw new UnsupportedOperationException("Use go() instead.");

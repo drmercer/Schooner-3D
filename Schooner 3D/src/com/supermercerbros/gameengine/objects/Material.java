@@ -1,38 +1,31 @@
 package com.supermercerbros.gameengine.objects;
 
+import java.util.Arrays;
+
 import android.opengl.GLES20;
 
 import com.supermercerbros.gameengine.engine.GameRenderer;
-import com.supermercerbros.gameengine.engine.Program;
-import com.supermercerbros.gameengine.engine.ShaderLib;
+import com.supermercerbros.gameengine.engine.shaders.Program;
+import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 import com.supermercerbros.gameengine.util.GLES2;
 
 /**
  * Superclass for materials to be used when rendering 3D objects. Subclasses
- * should override this and call the super method like so:
- * 
- * <pre>
- * public int attachAttribs(Metadata primitive, int vboOffset, float[] matrix, int matrixOffset) {
- * 	int response = super.attachAttribs(primitive, vboOffset, matrix, matrixOffset);
- * 	attachAttrib(a_pos, 3);
- * 	
- * 	... //
- * }
- * </pre>
+ * should override {@link #attachAttribs(Metadata, int, float[], int)}.
  */
 public abstract class Material {
 	/**
 	 * Contains the OpenGL shader program used by this Material. This field is
 	 * initialized during {@link #attachAttribs(Metadata, int, float[], int)}.
 	 */
-	protected Program program;
+	protected final Program program;
 
 	/**
 	 * Contains the handle to the <code>a_pos</code> attribute in the shader,
 	 * the attribute used to store vertex position. This handle is initialized
 	 * during {@link #attachAttribs(Metadata, int, float[], int)}.
 	 */
-	protected int a_pos;
+	protected int a_pos = -2;
 	/**
 	 * Contains the handle to the <code>a_normal</code> attribute in the shader,
 	 * the attribute used to store vertex normals. This handle is initialized
@@ -48,12 +41,12 @@ public abstract class Material {
 	protected int a_mtl;
 
 	/**
-	 * Contains the handle to the <code>a_mtl</code> attribute in the shader,
+	 * Contains the handle to the <code>a_model</code> attribute in the shader,
 	 * the attribute used to store the object-specific tranformation matrix.
 	 * This handle is initialized during
 	 * {@link #attachAttribs(Metadata, int, float[], int)}.
 	 */
-	private int a_model;
+	protected int a_model;
 
 	/**
 	 * The loading offset for the VBO. Starts at the offset provided by {@link #setLoadOffset(int)}
@@ -64,17 +57,16 @@ public abstract class Material {
 	 */
 	private int outPos = 0;
 	/**
-	 * The name of the program that this Material uses.
+	 * The stride of this Material
 	 */
-	private final String programName;
 	private final int stride;
 
 	/**
 	 * @param programName The name of the program in ShaderLib
 	 * @param stride The number of floats per vert
 	 */
-	protected Material(String programName, int stride) {
-		this.programName = programName;
+	protected Material(Program program, int stride) {
+		this.program = program;
 		this.stride = stride;
 	}
 
@@ -105,23 +97,42 @@ public abstract class Material {
 	 */
 	public int attachAttribs(Metadata primitive, int vboOffset, float[] matrix,
 			int matrixIndex) {
-		if (program == null) {
-			program = ShaderLib.getProgram(programName);
+		if (a_pos == -2) {
 			a_pos = program.getAttribLocation(ShaderLib.A_POS);
 			a_normal = program.getAttribLocation(ShaderLib.A_NORMAL);
 			a_mtl = program.getAttribLocation(ShaderLib.A_MTL);
 			a_model = program.getAttribLocation(ShaderLib.A_MODEL);
 		}
-
-		GLES20.glDisableVertexAttribArray(a_model);
-		GLES20.glDisableVertexAttribArray(a_model + 1);
-		GLES20.glDisableVertexAttribArray(a_model + 2);
-		GLES20.glDisableVertexAttribArray(a_model + 3);
 		
-		GLES20.glVertexAttrib4fv(a_model + 0, matrix, matrixIndex * 16 + 0);
-		GLES20.glVertexAttrib4fv(a_model + 1, matrix, matrixIndex * 16 + 4);
-		GLES20.glVertexAttrib4fv(a_model + 2, matrix, matrixIndex * 16 + 8);
-		GLES20.glVertexAttrib4fv(a_model + 3, matrix, matrixIndex * 16 + 12);
+		GameRenderer.logError("(Before Material.attachAttribs(...) was called)");
+		
+		if (a_model > -1) {
+			// Disable Vertex Attrib Array
+			GLES20.glDisableVertexAttribArray(a_model    );
+			GameRenderer.logError("glDisableVertexAttribArray(" + a_model + "    )");
+			
+			GLES20.glDisableVertexAttribArray(a_model + 1);
+			GameRenderer.logError("glDisableVertexAttribArray(" + a_model + " + 1)");
+			
+			GLES20.glDisableVertexAttribArray(a_model + 2);
+			GameRenderer.logError("glDisableVertexAttribArray(" + a_model + " + 2)");
+			
+			GLES20.glDisableVertexAttribArray(a_model + 3);
+			GameRenderer.logError("glDisableVertexAttribArray(" + a_model + " + 3)");
+			
+			// Load model matrix
+			GLES20.glVertexAttrib4fv(a_model, matrix, matrixIndex * 16 + 0);
+			GameRenderer.logError("glVertexAttrib4fv(" + a_model + "    , " + Arrays.toString(matrix) + ", " + matrixIndex * 16 + " + 0)");
+			
+			GLES20.glVertexAttrib4fv(a_model + 1, matrix, matrixIndex * 16 + 4);
+			GameRenderer.logError("glVertexAttrib4fv(" + a_model + " + 1, " + Arrays.toString(matrix) + ", " + matrixIndex * 16 + " + 4)");
+			
+			GLES20.glVertexAttrib4fv(a_model + 2, matrix, matrixIndex * 16 + 8);
+			GameRenderer.logError("glVertexAttrib4fv(" + a_model + " + 2, " + Arrays.toString(matrix) + ", " + matrixIndex * 16 + " + 8)");
+			
+			GLES20.glVertexAttrib4fv(a_model + 3, matrix, matrixIndex * 16 + 12);
+			GameRenderer.logError("glVertexAttrib4fv(" + a_model + " + 3, " + Arrays.toString(matrix) + ", " + matrixIndex * 16 + " + 12)");
+		}
 
 		outPos = vboOffset;
 
@@ -134,14 +145,21 @@ public abstract class Material {
 	public abstract int getGeometryType();
 
 	/**
-	 * @return The name of the program that this Material uses
-	 */
-	public final String getProgramName() {
-		return programName;
-	}
-
-	/**
 	 * Called by the Engine thread to load a GameObject's data to the VBO array.
+	 * 
+	 * Subclasses should implement it like this:
+	 * 
+	 * <pre>
+	 * public int loadObjectToVBO(GameObject obj, int[] vbo, int offset) {
+	 *   int numOfVerts = obj.verts.length / 3;
+	 *   setLoadOffset(offset);
+	 *   
+	 *   loadArrayToVbo(obj.verts, vbo, 3, numOfVerts);
+	 *   ...
+	 *   
+	 *   return obj.info.count * stride;
+	 * }
+	 * </pre>
 	 * 
 	 * @param obj
 	 *            The GameObject to load
@@ -194,7 +212,7 @@ public abstract class Material {
 	 *            The size of the attribute.
 	 */
 	protected final void attachAttrib(int attrib, int size) {
-		GLES2.glGetError();
+		GameRenderer.logError("(Before attachAttrib(" + attrib + ", " + size + ") was called)");
 		final int byteStride = 4 * stride;
 		GLES2.glEnableVertexAttribArray(attrib);
 		GameRenderer.logError("EnableVertexAttribArray(" + attrib + ")");
@@ -264,5 +282,9 @@ public abstract class Material {
 	
 	public int getStride(){
 		return stride;
+	}
+	
+	public Program getProgram() {
+		return program;
 	}
 }

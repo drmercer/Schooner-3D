@@ -1,7 +1,9 @@
-package com.supermercerbros.gameengine.engine;
+package com.supermercerbros.gameengine.engine.shaders;
 
 import java.util.HashMap;
 
+import com.supermercerbros.gameengine.engine.EGLContextLostHandler;
+import com.supermercerbros.gameengine.engine.GameRenderer;
 import com.supermercerbros.gameengine.engine.EGLContextLostHandler.EGLContextLostListener;
 
 import android.opengl.GLES20;
@@ -14,8 +16,8 @@ import android.util.Log;
  */
 public class Program implements EGLContextLostListener {
 	private static final String TAG = "com.supermercerbros.gameengine.engine.Program";
-	private Shader vertex;
-	private Shader fragment;
+	public final Shader vertex;
+	public final Shader fragment;
 
 	private int handle;
 

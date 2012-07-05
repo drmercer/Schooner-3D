@@ -58,7 +58,7 @@ public class Utils {
 	 * @return The length of the vector.
 	 */
 	public static float pythagF(float x, float y, float z) {
-		return (float) Math.sqrt((x * x) + (y * y) + (z * z));
+		return (float) android.util.FloatMath.sqrt((x * x) + (y * y) + (z * z));
 	}
 
 	/**
@@ -217,5 +217,55 @@ public class Utils {
 				return middle;
 			}
 		}
+	}
+	
+	public static String vboToString(int[] vbo, int offset, int length) {
+		StringBuilder sb = new StringBuilder("[");
+		
+		if (offset > 0) {
+			sb.append(" ... ");
+		}
+		
+		for (int i = offset; i < offset + length; i++) {
+			sb.append(Float.intBitsToFloat(vbo[i]));
+			if (i < vbo.length - 1) {
+				sb.append(", ");
+			}
+		}
+		
+		if (offset + length < vbo.length) {
+			sb.append(" ... ");
+		}
+		sb.append("]");
+		
+		if (offset > 0 || offset + length < vbo.length) {
+			sb.append(" (" + length + " floats)");
+		}
+		return sb.toString();
+	}
+
+	public static String iboToString(short[] ibo, int offset, int length) {
+		StringBuilder sb = new StringBuilder("[");
+		
+		if (offset > 0) {
+			sb.append(" ... ");
+		}
+		
+		for (int i = offset; i < offset + length; i++) {
+			sb.append(ibo[i]);
+			if (i < ibo.length - 1) {
+				sb.append(", ");
+			}
+		}
+		
+		if (offset + length < ibo.length) {
+			sb.append(" ... ");
+		}
+		sb.append("]");
+		
+		if (offset > 0 || offset + length < ibo.length) {
+			sb.append(" (" + length + " shorts)");
+		}
+		return sb.toString();
 	}
 }
