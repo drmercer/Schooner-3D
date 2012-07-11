@@ -126,7 +126,6 @@ class BinFile:
 class MeshExporter:
 	def __init__(self, mesh_object, tris=True, textured=False, armature_indexed=False):
 		bpy.context.scene.objects.active = mesh_object
-		bpy.ops.object.select_all(action='DESELECT')
 		mesh_object.select = True
 		self.setMode('EDIT')
 		bpy.ops.mesh.select_all(action='SELECT')
@@ -383,19 +382,24 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	
 	# FCurve data_paths and array_indices to export
 	curveNames = {}
+	curveKeys = []
 	if loc:
 		curveNames["location"] = (0, 1, 2)
+		curveKeys.append("location")
 	if rot:
 		curveNames["rotation_quaternion"] = (0, 1, 2, 3)
+		curveKeys.append("rotation_quaternion")
 	if scale=='UNIFORM':
 		curveNames["scale"] = (0,)
+		curveKeys.append("scale")
 	elif scale=='AXIS':
 		curveNames["scale"] = (0, 1, 2)
+		curveKeys.append("scale")
 	
 	# FCurves to export, and number of keyframes - 1
 	curves = []
 	keyframeCount = -1;
-	for key in curveNames.keys():
+	for key in curveKeys:
 		for index in curveNames[key]:
 			for fcurve in action.fcurves:
 				if fcurve.data_path==key and fcurve.array_index==index:
@@ -406,11 +410,14 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 					curves.append(fcurve)
 	
 	file.writeString(name)
+	print("NAME: " + name)
 	file.writeFlags(flags)
+	print("FLAGS: " + str(flags))
 	file.writeByte(keyframeCount)
+	print("KEYFRAMECOUNT " + str(keyframeCount))
 	for curve in curves:
 		writeFCurveToFile(curve, file)
-				
+		print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
 
 def writeFCurveToFile(fcurve, file):
 	counter = 0
@@ -441,6 +448,8 @@ verbose = True
 if verbose:
 	print("BEGIN SCRIPT.")
 scene = bpy.context.scene
+if bpy.data.filepath == "" :
+	warn("You must save the .blend first!")
 blendFileName = bpy.data.filepath.rsplit("\\",1)[1].rsplit(".",1)[0]
 directory = bpy.data.filepath.rsplit("\\",1)[0] + "\\"  + blendFileName + "_exports\\"
 
@@ -468,8 +477,10 @@ originalScene = bpy.context.scene
 bpy.ops.scene.new(type='FULL_COPY')
 scene = bpy.context.scene
 
-
 mesh_objects = [obj for obj in scene.objects if obj.type == 'MESH']
+bpy.ops.object.mode_set(mode='OBJECT')
+for obj in mesh_objects:
+	obj.select=False
 for obj in mesh_objects:
 	exporter = MeshExporter(obj)
 	exporter.export(directory, obj.name.rsplit(".",1)[0])

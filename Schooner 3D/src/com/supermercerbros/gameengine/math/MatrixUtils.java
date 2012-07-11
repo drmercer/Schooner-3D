@@ -13,9 +13,13 @@ import com.supermercerbros.gameengine.util.Utils;
  * 
  */
 public class MatrixUtils extends Matrix {
-	
+	/*
+	 * The technique of using a temp float array was obtained from Matrix.java of the AOSP
+	 */
+	private static final float[] temp = new float[32];
+
 	/**
-	 * Calculates the cross product of two vectors, vecA and vecB, and stores it
+	 * Calculates the cross product of two vectors, a and b, and stores it
 	 * in result.
 	 * 
 	 * @param result
@@ -23,57 +27,47 @@ public class MatrixUtils extends Matrix {
 	 * @param resultOffset
 	 *            The offset into the result array where the result will be
 	 *            stored.
-	 * @param vecA
+	 * @param a
 	 *            The float array where the first vector is stored.
-	 * @param vecAOffset
-	 *            The offset into the vecA array where the first vector is
+	 * @param aOffset
+	 *            The offset into the a array where the first vector is
 	 *            stored.
-	 * @param vecB
+	 * @param b
 	 *            The float array where the second vector is stored.
-	 * @param vecBOffset
-	 *            The offset into the vecB array where the second vector is
+	 * @param bOffset
+	 *            The offset into the b array where the second vector is
 	 *            stored.
+	 * @param normalize
+	 *            If <code>true</code>, the result is normalized.
 	 * 
 	 * @throws IndexOutOfBoundsException
-	 *             if resultOffset + 3 > result.length, vecAOffset + 3 >
-	 *             vecA.length, or vecBOffset + 3 > vecB.length, or if
-	 *             resultOffset, vecAOffset, or vecBOffset is negative.
+	 *             if resultOffset + 3 > result.length, aOffset + 3 >
+	 *             a.length, or bOffset + 3 > b.length, or if
+	 *             resultOffset, aOffset, or bOffset is negative.
 	 * @throws NullPointerException
-	 *             if result, vecA, or vecB is null.
+	 *             if result, a, or b is null.
 	 */
-	public static void cross(float[] result, int resultOffset, float[] vecA,
-			int vecAOffset, float[] vecB, int vecBOffset, boolean normalize) {
-		if (resultOffset + 3 > result.length || vecAOffset + 3 > vecA.length
-				|| vecBOffset + 3 > vecB.length)
+	public static void cross(float[] result, int resultOffset, float[] a,
+			int aOffset, float[] b, int bOffset, boolean normalize) {
+		if (resultOffset + 3 > result.length || aOffset + 3 > a.length 
+				|| bOffset + 3 > b.length) {
 			throw new IndexOutOfBoundsException();
-		if (result == null || vecA == null || vecB == null)
+		}
+		if (result == null || a == null || b == null) {
 			throw new NullPointerException();
-		
-		if (normalize) {
-			float length = Utils.pythagF(vecA[vecAOffset + 0],
-					vecA[vecAOffset + 1], vecA[vecAOffset + 2]);
-			vecA[vecAOffset + 0] /= length;
-			vecA[vecAOffset + 1] /= length;
-			vecA[vecAOffset + 2] /= length;
-			
-			length = Utils.pythagF(vecB[vecBOffset + 0], vecB[vecBOffset + 1],
-					vecB[vecBOffset + 2]);
-			vecB[vecBOffset + 0] /= length;
-			vecB[vecBOffset + 1] /= length;
-			vecB[vecBOffset + 2] /= length;
 		}
 		
-		result[resultOffset + 0] = vecA[vecAOffset + 1] * vecB[vecBOffset + 2]
-				- vecA[vecAOffset + 2] * vecB[vecBOffset + 1];
-		result[resultOffset + 1] = vecA[vecAOffset + 2] * vecB[vecBOffset + 0]
-				- vecA[vecAOffset + 0] * vecB[vecBOffset + 2];
-		result[resultOffset + 2] = vecA[vecAOffset + 0] * vecB[vecBOffset + 1]
-				- vecA[vecAOffset + 1] * vecB[vecBOffset + 0];
+		result[resultOffset    ] = a[aOffset + 1] * b[bOffset + 2]
+				- a[aOffset + 2] * b[bOffset + 1];
+		result[resultOffset + 1] = a[aOffset + 2] * b[bOffset    ]
+				- a[aOffset    ] * b[bOffset + 2];
+		result[resultOffset + 2] = a[aOffset    ] * b[bOffset + 1]
+				- a[aOffset + 1] * b[bOffset    ];
 		
 		if (normalize) {
-			float length = Utils.pythagF(result[resultOffset + 0],
+			float length = Utils.pythagF(result[resultOffset    ],
 					result[resultOffset + 1], result[resultOffset + 2]);
-			result[resultOffset + 0] /= length;
+			result[resultOffset    ] /= length;
 			result[resultOffset + 1] /= length;
 			result[resultOffset + 2] /= length;
 		}
@@ -82,75 +76,52 @@ public class MatrixUtils extends Matrix {
 	/**
 	 * Rotates the given matrix in place by the given quaternion rotation
 	 * 
-	 * @param m
-	 *            The matrix to rotate
-	 * @param mOffset
-	 *            The offset into <code>m</code> where the matrix starts
-	 * @param w
-	 *            The W-component of the quaternion rotation
-	 * @param x
-	 *            The X-component of the quaternion rotation
-	 * @param y
-	 *            The Y-component of the quaternion rotation
-	 * @param z
-	 *            The Z-component of the quaternion rotation
+	 * @param m The float array that holds matrix to rotate
+	 * @param mOffset The offset into <code>m</code> where the matrix starts
+	 * @param w The w-component of the quaternion
+	 * @param x The x-component of the quaternion
+	 * @param y The y-component of the quaternion
+	 * @param z The z-component of the quaternion
 	 */
 	public static void rotateQuaternionM(float[] m, int mOffset, float w,
 			float x, float y, float z) {
-		final double theta = 2 * Math.acos(w);
-		final double sin = Math.sin(theta / 2);
-		rotateM(m, mOffset, (float) Math.toDegrees(theta), (float) (x / sin),
-				(float) (y / sin), (float) (z / sin));
+		synchronized (temp) {
+			setRotateQuaternionM(temp, 0, w, x, y, z);
+			multiplyMM(temp, 16, m, mOffset, temp, 0);
+			System.arraycopy(temp, 16, m, mOffset, 16);
+		}
 	}
 	
 	/**
 	 * Rotates the given matrix by the given quaternion rotation, putting the
 	 * result in rm
 	 * 
-	 * @param rm
-	 *            The array to store the result
-	 * @param rmOffset
-	 *            The offset into rm where the matrix should start.
-	 * @param m
-	 *            The matrix to rotate
-	 * @param mOffset
-	 *            The offset into <code>m</code> where the matrix starts
-	 * @param w
-	 *            The W-component of the quaternion rotation
-	 * @param x
-	 *            The X-component of the quaternion rotation
-	 * @param y
-	 *            The Y-component of the quaternion rotation
-	 * @param z
-	 *            The Z-component of the quaternion rotation
+	 * @param rm The array to store the result
+	 * @param rmOffset The offset into rm where the matrix should start.
+	 * @param m The float array that holds matrix to rotate
+	 * @param mOffset The offset into <code>m</code> where the matrix starts
+	 * @param w The w-component of the quaternion
+	 * @param x The x-component of the quaternion
+	 * @param y The y-component of the quaternion
+	 * @param z The z-component of the quaternion
 	 */
 	public static void rotateQuaternionM(float[] rm, int rmOffset, float[] m,
 			int mOffset, float w, float x, float y, float z) {
-		final double theta = 2 * Math.acos(w);
-		final double sin = Math.sin(theta / 2);
-		rotateM(rm, rmOffset, m, mOffset, (float) Math.toDegrees(theta),
-				(float) (x / sin), (float) (y / sin), (float) (z / sin));
+		synchronized (temp) {
+			setRotateQuaternionM(temp, 0, w, x, y, z);
+			multiplyMM(rm, rmOffset, m, mOffset, temp, 0);
+		}
 	}
 	
 	/**
 	 * Converts a quaternion (w, x, y, z) to a rotation matrix.
 	 * 
-	 * @param m
-	 *            The array to store the result
-	 * @param mOffset
-	 *            The offset into rm where the matrix should start.
-	 * @param w
-	 *            The W-component of the quaternion rotation
-	 * @param x
-	 *            The X-component of the quaternion rotation
-	 * @param y
-	 *            The Y-component of the quaternion rotation
-	 * @param z
-	 *            The Z-component of the quaternion rotation
-	 * 
-	 * @see <a
-	 *      href=http://en.wikipedia.org/wiki/Rotation_matrix#Quaternion>Quaternion
-	 *      -Derived Rotation Matrix (Wikipedia)</a>
+	 * @param m The float array that holds matrix to rotate
+	 * @param mOffset The offset into <code>m</code> where the matrix starts
+	 * @param w The w-component of the quaternion
+	 * @param x The x-component of the quaternion
+	 * @param y The y-component of the quaternion
+	 * @param z The z-component of the quaternion
 	 */
 	public static void setRotateQuaternionM(float[] m, int mOffset, float w,
 			float x, float y, float z) {

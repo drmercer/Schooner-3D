@@ -2,17 +2,16 @@ package com.supermercerbros.gameengine.objects;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 
 import android.opengl.Matrix;
 
-import com.supermercerbros.gameengine.motion.Movement;
-import com.supermercerbros.gameengine.motion.MovementData;
 import com.supermercerbros.gameengine.collision.Bounds;
 import com.supermercerbros.gameengine.collision.Collider;
 import com.supermercerbros.gameengine.collision.Collision;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.Normals;
+import com.supermercerbros.gameengine.motion.Movement;
+import com.supermercerbros.gameengine.motion.MovementData;
 
 /**
  * Represents a 3D mesh object.
@@ -70,18 +69,19 @@ public class GameObject implements Collider {
 	 * {@link #motion}
 	 */
 	protected final MovementData motionData;
+	
 	/**
 	 * Contains the VBO offset at which this GameObject's data is loaded. This
 	 * is used for multiple instances of the same primitive.
 	 */
 	protected int[] instanceLoaded = { -1 };
+	private boolean isInstance = false;
 	
 	/**
 	 * Used by the Engine class when loading the GameObject into buffers.
 	 */
 	public int iOffset = -1;
 	
-	private boolean isInstance = false;
 	
 	/**
 	 * 
@@ -175,16 +175,20 @@ public class GameObject implements Collider {
 	 * @see AnimatedMeshObject#drawMatrix(long)
 	 */
 	public void drawMatrix(long time) {
-		if (motion != null) {
-			motion.getFrame(this, motionData, time);
+		synchronized (motionData) {
+			if (motion != null) {
+				motion.getFrame(this, motionData, time);
+			}
 		}
 	}
 	
 	/**
 	 * This method is called to tell the object to update its vertices for the
-	 * given point in time, in milliseconds. To do something with the
+	 * given point in time, in milliseconds.
+	 * 
+	 * <p> The default implementation does nothing. To do something with the
 	 * object-space (local) vertices every frame, override this method in a
-	 * <code>GameObject</code> subclass.
+	 * <code>GameObject</code> subclass. </p>
 	 * 
 	 * @param time
 	 *            The time of the frame currently being calculated,
@@ -223,8 +227,16 @@ public class GameObject implements Collider {
 	 *            The duration of the movement, in milliseconds.
 	 */
 	public void startMovement(Movement motion, long time, long duration) {
-		this.motion = motion;
-		this.motionData.set(time, duration, modelMatrix);
+		synchronized (motionData) {
+			this.motion = motion;
+			this.motionData.set(time, duration, modelMatrix);
+		}
+	}
+	
+	public void endMovement() {
+		synchronized (motionData) {
+			this.motion = null;
+		}
 	}
 	
 	private final HashMap<Collision, Collider> collisions;

@@ -8,7 +8,7 @@ public class MovementData {
 	protected long duration;
 	
 	/**
-	 * The initial state of the described object
+	 * The initial state of the object
 	 */
 	protected final float[] matrix;
 	

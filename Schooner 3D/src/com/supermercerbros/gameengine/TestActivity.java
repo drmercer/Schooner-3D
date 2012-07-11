@@ -6,6 +6,7 @@ import java.util.Random;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MotionEvent;
 
 import com.supermercerbros.gameengine.engine.Camera;
@@ -15,15 +16,15 @@ import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
 public class TestActivity extends GameActivity {
-	@SuppressWarnings("unused")
 	private static String TAG = GameActivity.class.getSimpleName();
 	private static final float NEAR_CLIP_DISTANCE = 0.1f;
-	private static final float FAR_CLIP_DISTANCE = 10.0f;
+	private static final float FAR_CLIP_DISTANCE = 20.0f;
 	private static final int CAMERA_MOVE_DURATION = 1500;
 	private Engine engine;
 	private Camera cam;
 	private boolean iso = true;
 	private int bg;
+	private GameObject object;
 	
 	/**
 	 * This provides an example of a subclass of GameActivity
@@ -35,14 +36,13 @@ public class TestActivity extends GameActivity {
 		setBackgroundColor(bg);
 		engine = getEngine();
 		cam = getCamera();
-		cam.set(5.0f, 5.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f );
+		cam.set(10.0f, 10.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f );
 		
-		GameObject object = getObject();
+		object = getObject();
 		
 		engine.setLight(0.0f, 0.0f, 1.0f, ((float) Color.red(bg) / 256 + 1.0f) / 2.0f, ((float) Color.green(bg) / 256 + 1.0f) / 2.0f, ((float) Color.blue(bg) / 256 + 1.0f) / 2.0f);
 		engine.addObject(object);
 		start(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
-		
 	}
 
 	protected GameObject getObject() {
@@ -69,10 +69,10 @@ public class TestActivity extends GameActivity {
 	
 	private void switchCamPosition(){
 		if (iso) {
-			cam.moveTo(1.0f, -5.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, CAMERA_MOVE_DURATION);
+			cam.moveTo(2.0f, -10.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, CAMERA_MOVE_DURATION);
 			iso = false;
 		} else {
-			cam.moveTo(5.0f, 5.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, CAMERA_MOVE_DURATION);
+			cam.moveTo(10.0f, 10.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, CAMERA_MOVE_DURATION);
 			iso = true;
 		}
 	}
@@ -90,5 +90,14 @@ public class TestActivity extends GameActivity {
 	private int getHeight(){
 		return getWindowManager().getDefaultDisplay().getHeight();
 	}
+	
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		onMenuButtonClick();
+		Log.d(TAG, "onMenuButtonClick");
+		return super.onPrepareOptionsMenu(menu);
+	}
 
+	protected void onMenuButtonClick() {
+	}
 }

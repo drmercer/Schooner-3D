@@ -1,5 +1,7 @@
 package com.supermercerbros.gameengine;
 
+import java.util.Arrays;
+
 import android.opengl.GLES20;
 import android.util.Log;
 
@@ -153,6 +155,7 @@ public class TestMaterials {
 			
 			if (logCount < FRAMES_TO_LOG) {
 				Log.d(TAG, "attachAttribs(primitve, " + vboOffset + ", matrix, " + matrixOffset + ")");
+				Log.d(TAG, "matrix = " + Arrays.toString(matrix));
 				Log.d(TAG, "a_pos = " + a_pos);
 				Log.d(TAG, "a_normal = " + a_normal);
 				Log.d(TAG, "a_mtl = " + a_mtl);

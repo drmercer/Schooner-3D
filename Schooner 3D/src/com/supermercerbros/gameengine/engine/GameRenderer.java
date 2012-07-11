@@ -203,7 +203,7 @@ public class GameRenderer implements Renderer {
 		GLES20.glClearColor(Schooner3D.backgroundColor[0],
 				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
 				Schooner3D.backgroundColor[3]);
-//		GLES20.glEnable(GLES20.GL_CULL_FACE);
+		GLES20.glEnable(GLES20.GL_CULL_FACE);
 		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
 	}

@@ -1,10 +1,15 @@
 package com.supermercerbros.gameengine.motion;
 
+import java.util.Arrays;
+
+import android.util.Log;
+
 import com.supermercerbros.gameengine.math.Bezier;
 import com.supermercerbros.gameengine.math.MatrixUtils;
 import com.supermercerbros.gameengine.objects.GameObject;
 
 public class CurveMovement implements Movement {
+	private static final String TAG = CurveMovement.class.getSimpleName();
 	private final Bezier xPos, yPos, zPos, wRot, xRot, yRot, zRot,
 			xScl, yScl, zScl;
 
@@ -58,6 +63,9 @@ public class CurveMovement implements Movement {
 	public void getFrame(GameObject target, MovementData data, long time) {
 		final float framePoint = ((float) (time - data.startTime))
 				/ (float) data.duration;
+		if (framePoint >= 1) {
+			target.endMovement();
+		}
 		
 		// Translate
 		if (xPos != null) {
@@ -65,6 +73,7 @@ public class CurveMovement implements Movement {
 			final float posY = yPos.getInterpolation(framePoint);
 			final float posZ = zPos.getInterpolation(framePoint);
 			MatrixUtils.translateM(target.modelMatrix, 0, data.matrix, 0, posX, posY, posZ);
+			Log.d(TAG, "Translate = " + posX + ", " + posY + ", " + posZ);
 		}
 		
 		// Rotate
@@ -73,7 +82,8 @@ public class CurveMovement implements Movement {
 			final float rotX = xRot.getInterpolation(framePoint);
 			final float rotY = yRot.getInterpolation(framePoint);
 			final float rotZ = zRot.getInterpolation(framePoint);
-			MatrixUtils.rotateQuaternionM(target.modelMatrix, 0, data.matrix, 0, rotW, rotX, rotY, rotZ);
+			MatrixUtils.rotateQuaternionM(target.modelMatrix, 0, rotW, rotX, rotY, rotZ);
+			Log.d(TAG, "Rotate = " + rotW + ", " + rotX + ", " + rotY + ", " + rotZ);
 		}
 		
 		// Scale
@@ -83,14 +93,17 @@ public class CurveMovement implements Movement {
 				final float sclX = xScl.getInterpolation(framePoint);
 				final float sclY = yScl.getInterpolation(framePoint);
 				final float sclZ = zScl.getInterpolation(framePoint);
-				MatrixUtils.scaleM(target.modelMatrix, 0, data.matrix, 0, sclX, sclY, sclZ);
+				MatrixUtils.scaleM(target.modelMatrix, 0, sclX, sclY, sclZ);
+				Log.d(TAG, "Scale = " + sclX + ", " + sclY + ", " + sclZ);
 			} else {
 				// Uniform Scale
 				final float scl = xScl.getInterpolation(framePoint);
-				MatrixUtils.scaleM(target.modelMatrix, 0, data.matrix, 0, scl, scl, scl);
+				MatrixUtils.scaleM(target.modelMatrix, 0, scl, scl, scl);
+				Log.d(TAG, "Scale = " + scl);
 			}
 		}
 		
+		Log.d(TAG, "matrix = " + Arrays.toString(target.modelMatrix));
 	}
 
 }

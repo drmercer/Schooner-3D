@@ -1,17 +1,20 @@
 package com.supermercerbros.gameengine.parsers;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.util.Log;
 
 import com.supermercerbros.gameengine.math.Bezier;
 import com.supermercerbros.gameengine.motion.CurveMovement;
-import com.supermercerbros.gameengine.objects.AnimatedBoneObject;
+import com.supermercerbros.gameengine.objects.BonedObject;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Material;
 import com.supermercerbros.gameengine.util.BetterDataInputStream;
@@ -57,6 +60,8 @@ public class GameFactory {
 	 * sch3Dmovements, sch3Darmature).
 	 */
 	public static class Sch3D {
+		private static final String TAG = Sch3D.class.getSimpleName();
+		
 		public static PreObjectData parseMesh(InputStream is)
 				throws IOException {
 			BetterDataInputStream data = new BetterDataInputStream(is);
@@ -68,7 +73,7 @@ public class GameFactory {
 				final boolean textured = Utils.checkBit(flags, 1);
 				final boolean armatureIndexed = Utils.checkBit(flags, 2);
 				
-				final short faceCount = data.readShort();
+				final int faceCount = data.readShort() & 0x0000FFFF;
 				final short vertCount = data.readShort();
 				
 				final short[] indices;
@@ -83,13 +88,13 @@ public class GameFactory {
 					// Triangulate quads (split each face into two tris)
 					for (int i = 0; i < faceCount; i++) {
 						// For each quad, get its four indices
-						final short a = temp[i * 4    ];
+						final short a = temp[i * 4];
 						final short b = temp[i * 4 + 1];
 						final short c = temp[i * 4 + 2];
 						final short d = temp[i * 4 + 3];
 						
 						// First half of quad
-						indices[i * 6    ] = a;
+						indices[i * 6] = a;
 						indices[i * 6 + 1] = b;
 						indices[i * 6 + 2] = c;
 						
@@ -141,8 +146,8 @@ public class GameFactory {
 				}
 				
 				data.close();
-				return new PreObjectData(verts, indices, uvs, doubles, boneIndices,
-						boneWeights);
+				return new PreObjectData(verts, indices, uvs, doubles,
+						boneIndices, boneWeights);
 			} else {
 				throw new IOException("File version is incorrect.");
 			}
@@ -155,7 +160,7 @@ public class GameFactory {
 			
 			final int version = data.readInt();
 			if (version == 1) {
-				while(data.hasNext()) {
+				while (data.hasNext()) {
 					readMovement(data, map);
 				}
 				return map;
@@ -171,36 +176,47 @@ public class GameFactory {
 		 */
 		private static void readMovement(final BetterDataInputStream data,
 				final Map<String, CurveMovement> map) throws IOException {
-			String name = data.readString();
-			byte flags = data.readByte();
-			int curveCount = 0;
-			if (Utils.checkBit(flags, 0)) {
-				curveCount += 3;
-			}
-			if (Utils.checkBit(flags, 1)) {
-				curveCount += 4;
-			}
-			if (Utils.checkBit(flags, 2)) {
-				curveCount += 1;
-			} else if (Utils.checkBit(flags, 3)) {
-				curveCount += 3;
-			}
-			final int pointCount = data.readShort()*3+1;
-			
-			Bezier[] curves = new Bezier[curveCount];
-			for(int curveIndex = 0; curveIndex < curveCount; curveIndex++){
-				float[] frames = new float[pointCount];
-				float[] values = new float[pointCount];
-				
-				for(int pointIndex = 0; pointIndex < pointCount; pointIndex++){
-					frames[pointIndex] = data.readFloat();
-					values[pointIndex] = data.readFloat();
+			try {
+				String name = data.readString();
+				Log.d(TAG, "NAME: " + name);
+				byte flagsByte = data.readByte();
+				boolean[] flags = Utils.checkBits(flagsByte, 4);
+				Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
+				int curveCount = 0;
+				if (flags[0]) {
+					curveCount += 3;
 				}
+				if (flags[1]) {
+					curveCount += 4;
+				}
+				if (flags[2]) {
+					curveCount += 1;
+				} else if (flags[3]) {
+					curveCount += 3;
+				}
+				Log.d(TAG, "CURVE COUNT: " + curveCount);
+				final int pointCount = (data.readByte() & 0x00FF) * 3 + 1;
+				Log.d(TAG, "POINT COUNT: " + pointCount);
 				
-				curves[curveIndex] = new Bezier(frames, values); 
+				Bezier[] curves = new Bezier[curveCount];
+				for (int curveIndex = 0; curveIndex < curveCount; curveIndex++) {
+					Log.d(TAG, "Curve " + curveIndex);
+					float[] frames = new float[pointCount];
+					float[] values = new float[pointCount];
+					
+					for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+						frames[pointIndex] = data.readFloat();
+						values[pointIndex] = data.readFloat();
+						Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+					}
+					
+					curves[curveIndex] = new Bezier(frames, values);
+				}
+				CurveMovement m = new CurveMovement(flagsByte, curves);
+				map.put(name, m);
+			} catch (EOFException e) {
+				Log.e(TAG, "EOF reached while trying to read movement.", e);
 			}
-			CurveMovement m = new CurveMovement(flags, curves);
-			map.put(name, m);
 		}
 	}
 	
@@ -247,21 +263,32 @@ public class GameFactory {
 	 *             If an error occurs opening or reading the file, i.e. if it
 	 *             does not exist or is corrupt.
 	 */
-	public PreObjectData getObjectData(int resId)
-			throws IOException {
+	public PreObjectData getObjectData(int resId) throws IOException {
 		return Sch3D.parseMesh(res.openRawResource(resId));
 	}
 	
 	public GameObject getGameObject(String fileName, Material mtl)
 			throws IOException {
 		PreObjectData data = Sch3D.parseMesh(am.open(fileName));
-		if (data.isArmatureIndexed()) {
-			return new AnimatedBoneObject(data.verts, data.indices, data.uvs,
-					data.doubles, mtl, data.boneIndices, data.boneWeights);
-		} else {
-			return new GameObject(data.verts, data.indices, data.uvs, null,
-					data.doubles, mtl);
+		return new GameObject(data.verts, data.indices, null, data.uvs,
+				data.doubles, mtl);
+	}
+	
+	public GameObject getGameObject(int resId, Material mtl) throws IOException {
+		PreObjectData data = Sch3D.parseMesh(res.openRawResource(resId));
+		return new GameObject(data.verts, data.indices, null, data.uvs,
+				data.doubles, mtl);
+	}
+	
+	public BonedObject getBonedObject(String objectFile, String armatureFile,
+			Material mtl) throws IOException {
+		PreObjectData data = Sch3D.parseMesh(am.open(objectFile));
+		if (!data.isArmatureIndexed()) {
+			throw new UnsupportedOperationException("\"" + objectFile
+					+ "\" does not contain armature indices.");
 		}
+		// TODO: return BonedObject
+		return null;
 	}
 	
 	/**

@@ -4,7 +4,7 @@ public class Schooner3D {
 	/**
 	 * The default maximum number of objects.
 	 */
-	public static final int DEFAULT_MAX_OBJECTS = 50;
+	public static final int DEFAULT_MAX_OBJECTS = 100;
 	/**
 	 * The approximate number of vertices per object.
 	 */

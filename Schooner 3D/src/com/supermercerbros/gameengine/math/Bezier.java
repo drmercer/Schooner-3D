@@ -1,8 +1,15 @@
 package com.supermercerbros.gameengine.math;
 
+import android.util.Log;
+
+/**
+ * Represents a piecwise Bezier curve, used for interpolation
+ */
 public class Bezier {
+	private static final String TAG = Bezier.class.getSimpleName();
 	private final float[] values;
 	private final float[] times;
+	private final int lastIndex;
 	
 	public Bezier(float[] x, float[] y) {
 		if (x.length != y.length) {
@@ -15,6 +22,7 @@ public class Bezier {
 		
 		times = x;
 		values = y;
+		lastIndex = times.length - 1;
 	}
 	
 	/**
@@ -25,7 +33,12 @@ public class Bezier {
 	 *            The elapsed fraction.
 	 */
 	public float getInterpolation(float x) {
-		final float frame = x * times[times.length - 1];
+		if (x >= 1) {
+			return values[lastIndex];
+		} else if (x <= 0) {
+			return values[0];
+		}
+		final float frame = times[0] + x * (times[lastIndex] - times[0]);
 		
 		// Get index of lower keyframe
 		int keyframe = 0;
@@ -33,6 +46,7 @@ public class Bezier {
 			keyframe++;
 		}
 		
+		Log.d(TAG, "keyframe: " + keyframe + ", frame: " + frame + ", x: " + x);
 		// Point frame coordinates
 		final float fp0 = times[(keyframe * 3) + 0];
 		final float fp1 = times[(keyframe * 3) + 1];
@@ -73,7 +87,7 @@ public class Bezier {
 		
 	}
 	
-	private float solve(final float p0, final float p1, final float p2,
+	private static float solve(final float p0, final float p1, final float p2,
 			final float p3, final float t) {
 		if (t == 0.0) {
 			return p0;
@@ -88,7 +102,10 @@ public class Bezier {
 				(t * t * t * p3);
 	}
 	
-	public float getFirstValue(){
+	/**
+	 * @return The value of the first keyframe of this Bezier
+	 */
+	public float getStartValue() {
 		return values[0];
 	}
 }

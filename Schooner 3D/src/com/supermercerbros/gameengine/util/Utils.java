@@ -10,38 +10,6 @@ import android.content.res.Resources.NotFoundException;
 
 public class Utils {
 	/**
-	 * Appends multiple arrays onto the end of another array of the same type. I
-	 * found this code <a
-	 * href=http://stackoverflow.com/questions/80476/how-to-concatenate
-	 * -two-arrays-in-java/784842#784842>here</a>, and I claim no personal
-	 * credit for it.
-	 * 
-	 * @author <a
-	 *         href=http://stackoverflow.com/questions/80476/how-to-concatenate
-	 *         -two-arrays-in-java/784842#784842>Joachim Sauer</a>
-	 * @param first
-	 *            The array to add to
-	 * @param rest
-	 *            The arrays to append onto the end of <code>first</code>
-	 * @param <T>
-	 *            The object class
-	 * @return The concatenation of the arrays.
-	 */
-	// public static <T> T[] concatAll(T[] first, T[]... rest){
-	// int totalLength = first.length;
-	// for (T[] array : rest) {
-	// totalLength += array.length;
-	// }
-	// T[] result = Arrays.copyOf(first, totalLength);
-	// int offset = first.length;
-	// for (T[] array : rest) {
-	// System.arraycopy(array, 0, result, offset, array.length);
-	// offset += array.length;
-	// }
-	// return result;
-	// }
-
-	/**
 	 * Returns the length of a vector given the vector's three coordinates. This
 	 * uses the Pythagorean theorem (hence it's name).
 	 * 
@@ -79,38 +47,6 @@ public class Utils {
 	 */
 	public static double pythagD(double x, double y, double z) {
 		return Math.sqrt(x * x + y * y + z * z);
-	}
-
-	/**
-	 * Appends multiple float arrays onto the end of another float array. I
-	 * found this code <a
-	 * href=http://stackoverflow.com/questions/80476/how-to-concatenate
-	 * -two-arrays-in-java/784842#784842>here</a> and adapted it to work with
-	 * float arrays.
-	 * 
-	 * @author <a
-	 *         href=http://stackoverflow.com/questions/80476/how-to-concatenate
-	 *         -two-arrays-in-java/784842#784842>Joachim Sauer</a>
-	 * @param first
-	 *            The array to add to
-	 * @param rest
-	 *            The arrays to append onto the end of <code>first</code>
-	 * @return The concatenation of the arrays.
-	 */
-	public static float[] concatAll(float[] first, float[]... rest) {
-		int totalLength = first.length;
-		for (float[] array : rest) {
-			totalLength += array.length;
-		}
-		float[] result = new float[totalLength];
-		System.arraycopy(first, 0, result, 0, first.length);
-
-		int offset = first.length;
-		for (float[] array : rest) {
-			System.arraycopy(array, 0, result, offset, array.length);
-			offset += array.length;
-		}
-		return result;
 	}
 
 	/**

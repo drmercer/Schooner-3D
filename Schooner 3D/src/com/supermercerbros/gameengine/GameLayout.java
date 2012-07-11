@@ -9,6 +9,7 @@ import android.widget.FrameLayout;
  * A ViewGroup that holds the UI views on top of the GLSurfaceView which renders
  * a game. Only the GLSurfaceView is drawn by the system call to
  * {@link #dispatchDraw(Canvas)}.
+ * FIXME: remove this. Won't help
  */
 class GameLayout extends FrameLayout {
 	private GLSurfaceView gameView;
@@ -43,8 +44,13 @@ class GameLayout extends FrameLayout {
 	 * @see android.view.ViewGroup#dispatchDraw(android.graphics.Canvas)
 	 */
 	@Override
-	protected void dispatchDraw(Canvas canvas) {
+	public void draw(Canvas canvas) {
 		gameView.draw(canvas);
+	}
+	
+	@Override
+	protected void dispatchDraw(Canvas canvas) {
+		// This method should do nothing.
 	}
 
 	/**
