@@ -104,8 +104,10 @@ public class Engine extends LoopingThread implements
 				if (object.getBounds() != null) {
 					cd.addCollider(object);
 				}
-				outA.modelMatrices.add(new float[16]);
-				outB.modelMatrices.add(new float[16]);
+				outA.modelMatrices.add(new float[16 + (16 * object
+						.getExtraMatrixCount())]);
+				outB.modelMatrices.add(new float[16 + (16 * object
+						.getExtraMatrixCount())]);
 			}
 		} else {
 			newObjects.addAll(objects);
@@ -129,8 +131,10 @@ public class Engine extends LoopingThread implements
 			if (object.getBounds() != null) {
 				cd.addCollider(object);
 			}
-			outA.modelMatrices.add(new float[16]);
-			outB.modelMatrices.add(new float[16]);
+			outA.modelMatrices.add(new float[16 + (16 * object
+					.getExtraMatrixCount())]);
+			outB.modelMatrices.add(new float[16 + (16 * object
+					.getExtraMatrixCount())]);
 		} else {
 			newObjects.add(object);
 		}
@@ -225,7 +229,7 @@ public class Engine extends LoopingThread implements
 		}
 		updatePipe(out);
 		aBufs = !aBufs;
-		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs? 0 : 1));
+		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
 	}
 	
 	/**
@@ -335,8 +339,7 @@ public class Engine extends LoopingThread implements
 				
 				vertexOffset += object.info.count;
 				
-				System.arraycopy(object.modelMatrix, 0,
-						out.modelMatrices.get(index++), 0, 16);
+				object.writeMatrices(out.modelMatrices.get(index++));
 				
 				out.primitives.add(object.info);
 			}

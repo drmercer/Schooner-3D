@@ -47,36 +47,6 @@ public class Quaternion {
 	}
 	
 	/**
-	 * Creates a Quaternion form of the given Point.
-	 * <code>{0, p.x, p.y, p.z}</code>
-	 * 
-	 * @param p
-	 *            The point to convert to Quaternion form.
-	 */
-	private Quaternion(Point p) {
-		this(0, p.x, p.y, p.z);
-	}
-	
-	/**
-	 * Converts this Quaternion to a Point. <code>(x, y, z)</code>
-	 * 
-	 * @return The point form of this Quaternion.
-	 */
-	private Point toPoint() {
-		return new Point(x, y, z);
-	}
-	
-	/**
-	 * Returns the conjugate of this Quaternion.
-	 * 
-	 * @return Returns the conjugate of this Quaternion, which is simply
-	 *         <code>{w, -x, -y, -z}</code>
-	 */
-	private Quaternion conjugate() {
-		return new Quaternion(w, -x, -y, -z);
-	}
-	
-	/**
 	 * Applies the rotation represented by this Quaternion to the given Point.
 	 * 
 	 * @param p
@@ -88,39 +58,23 @@ public class Quaternion {
 	 *      #Using_quaternion_rotations>Quaternion Rotations (Wikipedia)</a>
 	 */
 	public Point rotate(Point p) {
-		return this.multiply(new Quaternion(p)).multiply(this.conjugate())
-				.toPoint();
+		final float xx = x*x, yy = y*y, zz = z*z;
+		final float xy = x*y, yz = y*z, xz = x*z;
+		final float xw = x*w, yw = y*w, zw = z*w;
+		
+		final float rX = p.x * (1 - 2*yy - 2*zz) + p.y * (2*xy - 2*zw) + p.z * (2*xz + 2*yw);
+		final float rY = p.x * (2*xy + 2*zw) + p.y * (1 - 2*xx - 2*zz) + p.z * (2*yz - 2*xw);
+		final float rZ = p.x * (2*xz - 2*yw) + p.y * (2*yz + 2*xw) + p.z * (1 - 2*xx - 2*yy);
+		
+		return new Point(rX, rY, rZ);
 	}
 	
 	/**
-	 * Multiplies this Quaternion (left-hand side) with another Quaternion
-	 * (left-hand side).
-	 * 
-	 * @param q
-	 *            The right-hand Quaternion
-	 * 
-	 * @return The Hamilton product of the two quaternions
-	 * 
-	 * @see <a
-	 *      href=http://en.wikipedia.org/wiki/Quaternion#Hamilton_product>Hamilton
-	 *      Product (Wikipedia)</a>
-	 */
-	public Quaternion multiply(Quaternion q) {
-		//@formatter:off
-		return new Quaternion(
-				(w * q.w - x * q.x - y * q.y - z * q.z), 
-				(w * q.x + x * q.w + y * q.z - z * q.y),
-				(w * q.y - x * q.z + y * q.w + z * q.x), 
-				(w * q.z + x * q.y - y * q.x + z * q.w));
-		//@formatter:on
-	}
-
-	/**
 	 * Applies the rotation represented by this Quaternion to the given point.
 	 * 
-	 * @param x The x-coordinate of the Point to rotate.
-	 * @param y The y-coordinate of the Point to rotate.
-	 * @param z The z-coordinate of the Point to rotate.
+	 * @param pX The x-coordinate of the Point to rotate.
+	 * @param pY The y-coordinate of the Point to rotate.
+	 * @param pZ The z-coordinate of the Point to rotate.
 	 * 
 	 * @return A new Point at the location of the rotated point.
 	 * 
@@ -128,8 +82,27 @@ public class Quaternion {
 	 *      href=http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
 	 *      #Using_quaternion_rotations>Quaternion Rotations (Wikipedia)</a>
 	 */
-	public Point rotate(float x, float y, float z) {
-		return this.multiply(new Quaternion(0, x, y, z)).multiply(this.conjugate())
-				.toPoint();
+	public Point rotate(float pX, float pY, float pZ) {
+		final float xx = x*x, yy = y*y, zz = z*z;
+		final float xy = x*y, yz = y*z, xz = x*z;
+		final float xw = x*w, yw = y*w, zw = z*w;
+		
+		final float rX = pX * (1 - 2*yy - 2*zz) + pY * (2*xy - 2*zw) + pZ * (2*xz + 2*yw);
+		final float rY = pX * (2*xy + 2*zw) + pY * (1 - 2*xx - 2*zz) + pZ * (2*yz - 2*xw);
+		final float rZ = pX * (2*xz - 2*yw) + pY * (2*yz + 2*xw) + pZ * (1 - 2*xx - 2*yy);
+		
+		return new Point(rX, rY, rZ);
+	}
+	
+	public static Point rotate(float qW, float qX, float qY, float qZ, float pX, float pY, float pZ) {
+		final float xx = qX*qX, yy = qY*qY, zz = qZ*qZ;
+		final float xy = qX*qY, yz = qY*qZ, xz = qX*qZ;
+		final float xw = qX*qW, yw = qY*qW, zw = qZ*qW;
+		
+		final float rX = pX * (1 - 2*yy - 2*zz) + pY * (2*xy - 2*zw) + pZ * (2*xz + 2*yw);
+		final float rY = pX * (2*xy + 2*zw) + pY * (1 - 2*xx - 2*zz) + pZ * (2*yz - 2*xw);
+		final float rZ = pX * (2*xz - 2*yw) + pY * (2*yz + 2*xw) + pZ * (1 - 2*xx - 2*yy);
+		
+		return new Point(rX, rY, rZ);
 	}
 }

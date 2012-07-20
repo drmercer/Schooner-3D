@@ -5,6 +5,7 @@ import android.util.Log;
 import com.supermercerbros.gameengine.animation.AnimationData;
 import com.supermercerbros.gameengine.animation.MeshAnimation;
 import com.supermercerbros.gameengine.engine.Normals;
+import com.supermercerbros.gameengine.engine.shaders.Material;
 
 /**
  * Represents an animated 3D mesh object.

@@ -12,11 +12,11 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.util.Log;
 
+import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.math.Bezier;
 import com.supermercerbros.gameengine.motion.CurveMovement;
 import com.supermercerbros.gameengine.objects.BonedObject;
 import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.Material;
 import com.supermercerbros.gameengine.util.BetterDataInputStream;
 import com.supermercerbros.gameengine.util.Utils;
 

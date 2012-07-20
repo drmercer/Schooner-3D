@@ -2,6 +2,11 @@ package com.supermercerbros.gameengine.engine;
 
 import android.opengl.Matrix;
 
+/**
+ * Represents the "eye" in a 3D scene, through which the user views the scene.
+ * By default, the camera is at the origin looking in the direction of the
+ * negative z-axis, with the y-axis as the up vector.
+ */
 public class Camera {
 	@SuppressWarnings("unused")
 	private static final String TAG = "Camera";
@@ -181,7 +186,9 @@ public class Camera {
 	
 	/**
 	 * Updates the Camera for the given point in time.
-	 * @param time The time of the current frame, in milliseconds.
+	 * 
+	 * @param time
+	 *            The time of the current frame, in milliseconds.
 	 */
 	synchronized void update(long time) {
 		if (!moving) {

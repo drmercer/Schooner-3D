@@ -7,10 +7,10 @@ import com.supermercerbros.gameengine.animation.Keyframe;
 import com.supermercerbros.gameengine.animation.MeshAnimation;
 import com.supermercerbros.gameengine.collision.Bounds;
 import com.supermercerbros.gameengine.collision.Polyhedron;
+import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.objects.AnimatedMeshObject;
 import com.supermercerbros.gameengine.objects.BasicMaterial;
 import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.Material;
 import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
 /**
@@ -119,6 +119,7 @@ public class TestObjects {
 
 		GameObject cube = new GameObject(verts, indices, normals, uvs,
 				null, mtl);
+		mtl.makeProgram();
 		return cube;
 	}
 

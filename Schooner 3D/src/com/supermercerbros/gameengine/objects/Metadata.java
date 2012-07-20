@@ -1,5 +1,7 @@
 package com.supermercerbros.gameengine.objects;
 
+import com.supermercerbros.gameengine.engine.shaders.Material;
+
 public class Metadata {
 	@SuppressWarnings("unused")
 	private static final String TAG = "com.supermercerbros.gameengine.objects.GameObject.Metadata";

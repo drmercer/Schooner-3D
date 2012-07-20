@@ -10,6 +10,7 @@ import com.supermercerbros.gameengine.collision.Collider;
 import com.supermercerbros.gameengine.collision.Collision;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.Normals;
+import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.motion.Movement;
 import com.supermercerbros.gameengine.motion.MovementData;
 
@@ -81,7 +82,6 @@ public class GameObject implements Collider {
 	 * Used by the Engine class when loading the GameObject into buffers.
 	 */
 	public int iOffset = -1;
-	
 	
 	/**
 	 * 
@@ -186,9 +186,11 @@ public class GameObject implements Collider {
 	 * This method is called to tell the object to update its vertices for the
 	 * given point in time, in milliseconds.
 	 * 
-	 * <p> The default implementation does nothing. To do something with the
+	 * <p>
+	 * The default implementation does nothing. To do something with the
 	 * object-space (local) vertices every frame, override this method in a
-	 * <code>GameObject</code> subclass. </p>
+	 * <code>GameObject</code> subclass.
+	 * </p>
 	 * 
 	 * @param time
 	 *            The time of the frame currently being calculated,
@@ -264,6 +266,20 @@ public class GameObject implements Collider {
 	@Override
 	public void addCollision(Collider other, Collision collision) {
 		collisions.put(collision, other);
+	}
+	
+	/**
+	 * Returns the number of extra matrices used by this GameObject. The default
+	 * implementation returns zero.
+	 * 
+	 * @return The number of extra matrices used by this GameObject.
+	 */
+	public int getExtraMatrixCount() {
+		return 0;
+	}
+	
+	public void writeMatrices(float[] matrixArray){
+		System.arraycopy(modelMatrix, 0, matrixArray, 0, 16);
 	}
 	
 }

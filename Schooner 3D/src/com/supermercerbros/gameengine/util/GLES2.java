@@ -13,6 +13,8 @@ public class GLES2 extends GLES20 {
 	private static final boolean USE_FIX = android.os.Build.VERSION.SDK_INT < 9;
 
 	/**
+	 * (Documentation from <a href="http://www.khronos.org/opengles/sdk/docs/man/">OpenGL ES 2.0 Reference Pages</a>)
+	 * 
 	 * @param index
 	 *            Specifies the index of the generic vertex attribute to be
 	 *            modified.

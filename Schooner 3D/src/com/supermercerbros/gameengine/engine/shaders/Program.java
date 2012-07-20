@@ -1,7 +1,5 @@
 package com.supermercerbros.gameengine.engine.shaders;
 
-import java.util.HashMap;
-
 import com.supermercerbros.gameengine.engine.EGLContextLostHandler;
 import com.supermercerbros.gameengine.engine.GameRenderer;
 import com.supermercerbros.gameengine.engine.EGLContextLostHandler.EGLContextLostListener;
@@ -21,18 +19,11 @@ public class Program implements EGLContextLostListener {
 
 	private int handle;
 
-	private int a_pos;
-	private int a_normal;
-	private int a_mtl;
-	private int a_model;
-
 	private boolean loaded;
-	private HashMap<String, Integer> attribs;
 
 	Program(Shader vertexShader, Shader fragmentShader) {
 		vertex = vertexShader;
 		fragment = fragmentShader;
-		attribs = new HashMap<String, Integer>();
 		EGLContextLostHandler.addListener(this);
 	}
 
@@ -71,40 +62,14 @@ public class Program implements EGLContextLostListener {
 
 		Log.d(TAG, "Program successfully created and linked!");
 		loaded = true;
-
-		a_pos = GLES20.glGetAttribLocation(handle, ShaderLib.A_POS);
-		a_normal = GLES20.glGetAttribLocation(handle, ShaderLib.A_NORMAL);
-		a_mtl = GLES20.glGetAttribLocation(handle, ShaderLib.A_MTL);
-		a_model = GLES20.glGetAttribLocation(handle, ShaderLib.A_MODEL);
-
 		return handle;
 	}
 
 	public int getAttribLocation(String name) {
-		if (!loaded)
+		if (!loaded) {
 			throw new IllegalStateException("Program is not loaded");
-
-		if (name.equals(ShaderLib.A_POS)) {
-			return a_pos;
-
-		} else if (name.equals(ShaderLib.A_NORMAL)) {
-			return a_normal;
-
-		} else if (name.equals(ShaderLib.A_MTL)) {
-			return a_mtl;
-
-		} else if (name.equals(ShaderLib.A_MODEL)) {
-			return a_model;
-
-		} else if (attribs.containsKey(name)) {
-			return attribs.get(name);
-
-			} else {
-			int location = GLES20.glGetAttribLocation(handle, name);
-			attribs.put(name, location);
-			return location;
 		}
-
+		return GLES20.glGetAttribLocation(handle, name);
 	}
 
 	public int getUniformLocation(String name) {
@@ -129,10 +94,6 @@ public class Program implements EGLContextLostListener {
 			Log.d("Program", "handle is not a program.");
 			loaded = false;
 			handle = -1;
-			a_model = -1;
-			a_mtl = -1;
-			a_pos = -1;
-			a_normal = -1;
 		}
 	}
 }

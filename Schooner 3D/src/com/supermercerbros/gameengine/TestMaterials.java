@@ -1,16 +1,8 @@
 package com.supermercerbros.gameengine;
 
-import java.util.Arrays;
-
-import android.opengl.GLES20;
-import android.util.Log;
-
-import com.supermercerbros.gameengine.engine.shaders.Program;
-import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
+import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.Material;
-import com.supermercerbros.gameengine.objects.Metadata;
-import com.supermercerbros.gameengine.util.Utils;
+import com.supermercerbros.gameengine.shaders.ProgramSource;
 
 public class TestMaterials {
 	public static final int FRAMES_TO_LOG = 0;
@@ -19,65 +11,31 @@ public class TestMaterials {
 	 * Flat white polys, no transformations
 	 */
 	public static class MinimalMaterial extends Material {
-		private static final String TAG = MinimalMaterial.class.getSimpleName();
+		private static final String VERT_VARS = 
+				"attribute vec3 a_pos;\n";
+
+		private static final String VERT_MAIN = 
+				"gl_Position = vec4(a_pos, 1.0);\n";
 		
-		private static final String vertex = 
-				"attribute vec3 a_pos;\n" +
-				"void main() {\n" + 
-				"	gl_Position = vec4(a_pos, 1.0);\n" + 
-				"}";
-		
-		private static final String fragment = 
-				"void main() {\n" + 
-				"	gl_FragColor = vec4(1.0);\n" +
-				"}";
-		
+		private static final String FRAG_MAIN =
+				"gl_FragColor = vec4(1.0);\n";
+
 		private static final int STRIDE = 3;
-		
-		private int logCount = 0;
-		private static Program makeProgram() {
-			return ShaderLib.newProgram(vertex, fragment);
-		}
-
-		public MinimalMaterial() {
-			super(makeProgram(), STRIDE);
-		}
-
 
 		@Override
-		public int getGeometryType() {
-			return GLES20.GL_TRIANGLES;
-		}
-
-		@Override
-		public int loadObjectToVBO(GameObject obj, int[] vbo, int offset) {
-			final int numOfVerts = obj.info.count;
-
-			setLoadOffset(offset);
-			loadArrayToVbo(obj.verts, vbo, 3, numOfVerts);
-			
-			if (logCount < FRAMES_TO_LOG) {
-				Log.d(TAG, "loadObjectToVBO(obj, vbo, " + offset + ")");
-				Log.d(TAG, "vbo = " + Utils.vboToString(vbo, offset, numOfVerts * STRIDE));
-			}
-			
-			return numOfVerts * STRIDE;
+		public void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+			loadArrayToVbo(obj.verts, vbo, 3, vertCount);
 		}
 		
 		@Override
-		public int attachAttribs(Metadata primitive, int vboOffset, float[] matrix, int matrixOffset) {
-			int response = super.attachAttribs(primitive, vboOffset, matrix, matrixOffset);
-			
-			if (logCount < FRAMES_TO_LOG) {
-				Log.d(TAG, "attachAttribs(primitve, " + vboOffset + ", matrix, " + matrixOffset + ")");
-				Log.d(TAG, "a_pos = " + a_pos);
-				Log.d(TAG, "a_normal = " + a_normal);
-				Log.d(TAG, "a_mtl = " + a_mtl);
-				Log.d(TAG, "a_model = " + a_model);
-				logCount++;
-			}
+		public void onAttachAttribs() {
 			attachAttrib(a_pos, 3);
-			return response;
+		}
+
+		@Override
+		public void makeProgram() {
+			ProgramSource prog = new ProgramSource(null, null, VERT_VARS, VERT_MAIN, null, null, FRAG_MAIN);
+			setProgram(prog, STRIDE);
 		}
 		
 	}
@@ -86,86 +44,47 @@ public class TestMaterials {
 	 * Vertex-shaded polys
 	 */
 	public static class ShadedMaterial extends Material {
-		private static final String uniforms = 
+		private static final String VERT_VARS = 
 				"uniform mat4 u_viewProj;\n" + 
-				"uniform vec3 u_lightVec;\n" + 
-				"uniform vec3 u_lightColor;\n";
-
-		private static final String TAG = ShadedMaterial.class.getSimpleName();
-		
-		private static final String varyings = 
-				"varying vec3 v_normal;\n";
-		
-		private static final String vertex = 
-				uniforms + 
-				"attribute mat4 a_model;\n" + 
+				"uniform vec3 u_lightVec;\n" +
+				"uniform mat4 u_model;\n" + 
+				
 				"attribute vec3 a_pos;\n" + 
-				"attribute vec3 a_normal;\n" + 
-				varyings + 
-				"void main() {\n" + 
-				"	gl_Position = (u_viewProj * a_model) * vec4(a_pos, 1.0);\n" + 
-				"   v_normal = a_normal;\n" + 
-				"}";
+				"attribute vec3 a_normal;\n";
+
+		private static final String VERT_MAIN = 
+				"mat4 transform = u_viewProj * u_model;\n" +
+				"gl_Position = transform * vec4(a_pos, 1.0);\n" +
+				"vec3 normal = (transform * vec4(a_normal, 0.0)).xyz;\n" +
+				"v_brightness = (dot(normalize(normal), u_lightVec) + 1.0) / 2.0;\n";
 		
-		private static final String fragment = 
-				"precision mediump float;\n" +
-				uniforms +
-				varyings + 
-				"void main() {\n" + 
-				"   float brightness = (dot(normalize(v_normal), u_lightVec) + 1.0) / 2.0;\n" + 
-				"	gl_FragColor = vec4(min(u_lightColor * brightness + 0.2, vec3(1.0)), 1.0);\n" +
-				"}";
+		private static final String VARYINGS = 
+				"varying float v_brightness;";
+		
+		private static final String FRAG_VARS =
+				"uniform vec3 u_lightColor;\n";
+		
+		private static final String FRAG_MAIN = 
+				"gl_FragColor = vec4(min(u_lightColor * v_brightness + 0.2, vec3(1.0)), 1.0);\n";
 		
 		private static final int STRIDE = 6;
-		
-		private int logCount = 0;
-		private static Program makeProgram() {
-			return ShaderLib.newProgram(vertex, fragment);
-		}
-
-		public ShadedMaterial() {
-			super(makeProgram(), STRIDE);
-		}
-
 
 		@Override
-		public int getGeometryType() {
-			return GLES20.GL_TRIANGLES;
-		}
-
-		@Override
-		public int loadObjectToVBO(GameObject obj, int[] vbo, int offset) {
-			final int numOfVerts = obj.info.count;
-
-			setLoadOffset(offset);
-			loadArrayToVbo(obj.verts, vbo, 3, numOfVerts);
-			loadArrayToVbo(obj.normals, vbo, 3, numOfVerts);
-			
-			if (logCount < FRAMES_TO_LOG) {
-				Log.d(TAG, "loadObjectToVBO(obj, vbo, " + offset + ")");
-				Log.d(TAG, "vbo = " + Utils.vboToString(vbo, offset, numOfVerts * STRIDE));
-			}
-			
-			return numOfVerts * STRIDE;
+		public void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+			loadArrayToVbo(obj.verts, vbo, 3, vertCount);
+			loadArrayToVbo(obj.normals, vbo, 3, vertCount);
 		}
 		
 		@Override
-		public int attachAttribs(Metadata primitive, int vboOffset, float[] matrix, int matrixOffset) {
-			int response = super.attachAttribs(primitive, vboOffset, matrix, matrixOffset);
-			
-			if (logCount < FRAMES_TO_LOG) {
-				Log.d(TAG, "attachAttribs(primitve, " + vboOffset + ", matrix, " + matrixOffset + ")");
-				Log.d(TAG, "matrix = " + Arrays.toString(matrix));
-				Log.d(TAG, "a_pos = " + a_pos);
-				Log.d(TAG, "a_normal = " + a_normal);
-				Log.d(TAG, "a_mtl = " + a_mtl);
-				Log.d(TAG, "a_model = " + a_model);
-				logCount++;
-			}
+		public void onAttachAttribs() {
 			attachAttrib(a_pos, 3);
 			attachAttrib(a_normal, 3);
-			return response;
 		}
-		
+
+		@Override
+		public void makeProgram() {
+			ProgramSource prog = new ProgramSource(VARYINGS, null, VERT_VARS, VERT_MAIN, null, FRAG_VARS, FRAG_MAIN);
+			setProgram(prog, STRIDE);
+		}
 	}
 }

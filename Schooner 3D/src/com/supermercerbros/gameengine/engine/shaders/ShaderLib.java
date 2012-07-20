@@ -10,7 +10,9 @@ public class ShaderLib {
 	public static final String A_POS = "a_pos";
 	public static final String A_NORMAL = "a_normal";
 	public static final String A_MTL = "a_mtl";
-	public static final String A_MODEL = "a_model";
+	
+	public static final String U_MODEL = "u_model";
+	public static final String U_MATRICES = "u_matrices";
 	
 	public static final String U_LIGHTVEC = "u_lightVec";
 	public static final String U_LIGHTCOLOR = "u_lightColor";

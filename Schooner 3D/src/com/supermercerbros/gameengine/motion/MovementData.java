@@ -5,17 +5,17 @@ public class MovementData {
 	/**
 	 * The duration of the movement, in milliseconds.
 	 */
-	protected long duration;
+	public long duration;
 	
 	/**
 	 * The initial state of the object
 	 */
-	protected final float[] matrix;
+	public final float[] matrix;
 	
 	/**
 	 * The time at which the movement starts, in milliseconds.
 	 */
-	protected long startTime;
+	public long startTime;
 	
 	/**
 	 * Creates a new MovementData

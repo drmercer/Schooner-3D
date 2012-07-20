@@ -152,7 +152,7 @@ public class GameRenderer implements Renderer {
 			loadUniforms(in.viewMatrix, in.light);
 			
 			int size = primitive.mtl.attachAttribs(primitive, vboOffset,
-					in.modelMatrices.get(matrixNumber), 0);
+					in.modelMatrices.get(matrixNumber));
 			vboOffset += size;
 			if (drawFrameCount <= framesToDebug || alwaysDebug) {
 				Log.d("GameRenderer", "object size = " + size + " bytes");
@@ -213,8 +213,12 @@ public class GameRenderer implements Renderer {
 	 * @return True if a new program has been loaded
 	 */
 	private boolean useProgram(Program program) {
+		if (program == null) {
+			Log.e(TAG, "program == null");
+			throw new NullPointerException("program == null");
+		}
 		boolean success = true;
-		if (!(program.equals(activeProgram) && program.getHandle() > 0)) {
+		if (!program.isLoaded() || activeProgram == null || !activeProgram.equals(program)) {
 			try {
 				program.load();
 			} catch (GLException e) {
@@ -223,6 +227,7 @@ public class GameRenderer implements Renderer {
 					activeProgram.load();
 				success = false;
 			}
+			logError("Program.load()");
 			if (success) {
 				GLES20.glUseProgram(program.getHandle());
 
@@ -241,7 +246,6 @@ public class GameRenderer implements Renderer {
 	private void loadUniforms(float[] viewMatrix, Light light) {
 		// Load World View-Projection matrix
 		Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, viewMatrix, 0);
-		
 		if (drawFrameCount <= framesToDebug || alwaysDebug) {
 			Log.d("GameRenderer", "viewMatrix = " + Arrays.toString(viewMatrix));
 			Log.d("GameRenderer", "projMatrix = " + Arrays.toString(projMatrix));

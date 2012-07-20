@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
@@ -35,7 +34,6 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 	private static final String TAG = "com.supermercerbros.gameengine.GameActivity";
 	private GLSurfaceView gameView;
 	private GameRenderer renderer;
-	private GameLayout content;
 	private DataPipe pipe;
 	private Camera cam;
 	private Engine engine;
@@ -61,61 +59,6 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		gameView = new GLSurfaceView(this);
 		gameView.setEGLContextClientVersion(2);
 		gameView.setOnTouchListener(this);
-	}
-
-	/**
-	 * Sets the content to be displayed. The layout given is superimposed over
-	 * the game.
-	 * 
-	 * @param layoutResID
-	 *            The resource ID of the layout to display over the game.
-	 * @see android.app.Activity#setContentView(int)
-	 */
-	@Override
-	public void setContentView(int layoutResID) {
-		ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.MATCH_PARENT);
-		setContentView(getLayoutInflater().inflate(layoutResID, null), params);
-	}
-
-	/**
-	 * Sets the content to be displayed. The layout given is superimposed over
-	 * the game.
-	 * 
-	 * @param v
-	 *            The view to display over the game.
-	 * 
-	 * @see android.app.Activity#setContentView(int)
-	 */
-	@Override
-	public void setContentView(View v) {
-		ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.MATCH_PARENT);
-		setContentView(v, params);
-	}
-
-	/**
-	 * Sets the content to be displayed. The layout given is superimposed over
-	 * the game.
-	 * 
-	 * @param v
-	 *            The view to display over the game.
-	 * @param params
-	 *            The ViewGroup params to use.
-	 * 
-	 * @see android.app.Activity#setContentView(int)
-	 */
-	@Override
-	public void setContentView(View v, ViewGroup.LayoutParams params) {
-		if (content == null) {
-			content = new GameLayout(this, gameView);
-		} else {
-			content.removeAllViews();
-		}
-		content.addView(v, params);
-		super.setContentView(content);
 	}
 
 	/**
@@ -160,7 +103,7 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		Log.d(TAG, "GameActivity Start!");
 		renderer = new GameRenderer(pipe, near, far);
 		gameView.setRenderer(renderer);
-		super.setContentView(gameView); // TODO change to super.setContentView(content);
+		setContentView(gameView);
 		engine.start();
 	}
 

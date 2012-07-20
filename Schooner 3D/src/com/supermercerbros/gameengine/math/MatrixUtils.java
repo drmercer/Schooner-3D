@@ -2,8 +2,6 @@ package com.supermercerbros.gameengine.math;
 
 import android.opengl.Matrix;
 
-import com.supermercerbros.gameengine.util.Utils;
-
 /**
  * Vector and matrix utilities not found in the android.opengl.Matrix class.
  * 
@@ -18,61 +16,6 @@ public class MatrixUtils extends Matrix {
 	 */
 	private static final float[] temp = new float[32];
 
-	/**
-	 * Calculates the cross product of two vectors, a and b, and stores it
-	 * in result.
-	 * 
-	 * @param result
-	 *            The float array where the cross product will be stored.
-	 * @param resultOffset
-	 *            The offset into the result array where the result will be
-	 *            stored.
-	 * @param a
-	 *            The float array where the first vector is stored.
-	 * @param aOffset
-	 *            The offset into the a array where the first vector is
-	 *            stored.
-	 * @param b
-	 *            The float array where the second vector is stored.
-	 * @param bOffset
-	 *            The offset into the b array where the second vector is
-	 *            stored.
-	 * @param normalize
-	 *            If <code>true</code>, the result is normalized.
-	 * 
-	 * @throws IndexOutOfBoundsException
-	 *             if resultOffset + 3 > result.length, aOffset + 3 >
-	 *             a.length, or bOffset + 3 > b.length, or if
-	 *             resultOffset, aOffset, or bOffset is negative.
-	 * @throws NullPointerException
-	 *             if result, a, or b is null.
-	 */
-	public static void cross(float[] result, int resultOffset, float[] a,
-			int aOffset, float[] b, int bOffset, boolean normalize) {
-		if (resultOffset + 3 > result.length || aOffset + 3 > a.length 
-				|| bOffset + 3 > b.length) {
-			throw new IndexOutOfBoundsException();
-		}
-		if (result == null || a == null || b == null) {
-			throw new NullPointerException();
-		}
-		
-		result[resultOffset    ] = a[aOffset + 1] * b[bOffset + 2]
-				- a[aOffset + 2] * b[bOffset + 1];
-		result[resultOffset + 1] = a[aOffset + 2] * b[bOffset    ]
-				- a[aOffset    ] * b[bOffset + 2];
-		result[resultOffset + 2] = a[aOffset    ] * b[bOffset + 1]
-				- a[aOffset + 1] * b[bOffset    ];
-		
-		if (normalize) {
-			float length = Utils.pythagF(result[resultOffset    ],
-					result[resultOffset + 1], result[resultOffset + 2]);
-			result[resultOffset    ] /= length;
-			result[resultOffset + 1] /= length;
-			result[resultOffset + 2] /= length;
-		}
-	}
-	
 	/**
 	 * Rotates the given matrix in place by the given quaternion rotation
 	 * 

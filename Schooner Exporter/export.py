@@ -280,7 +280,7 @@ class ArmatureExporter:
 		file.writeByte(len(self.bones))
 		
 		for bone in self.bones:
-			file.writeAllFloats([bone.tail_local[i] - bone.head_local[i] for i in range(3)])
+			file.writeAllFloats([bone.head_local[i] for i in range(3)])
 			if bone.parent:
 				file.writeByte(self.bones.index(bone.parent) + 1)
 			else:
