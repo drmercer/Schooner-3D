@@ -105,5 +105,4 @@ public class CurveMovement implements Movement {
 		
 		Log.d(TAG, "matrix = " + Arrays.toString(target.modelMatrix));
 	}
-
 }

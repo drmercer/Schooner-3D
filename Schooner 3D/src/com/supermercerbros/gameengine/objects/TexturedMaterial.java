@@ -31,7 +31,7 @@ public class TexturedMaterial extends Material {
 			"float brightness = max((dot(a_normal, u_lightVec) + 1.0) / 2.0, 0.0);\n" +
 			"vec3 lighting = (u_lightColor * brightness + 0.2);\n" +
 			
-			"v_lightColor = min(lighting, vec3(1.0f));\n";
+			"v_lightColor = min(lighting, vec3(1.0));\n";
 	
 	private static final String VARYINGS =
 			"varying vec2 v_tc;\n" +
@@ -41,7 +41,7 @@ public class TexturedMaterial extends Material {
 			"uniform sampler2D s_baseMap;\n";
 	
 	private static final String FRAG_MAIN =
-			"gl_FragColor = texture2D(s_baseMap, v_tc) * vec4(v_lightColor, 1.0);\n";
+			"gl_FragColor = vec4(texture2D(s_baseMap, v_tc).rgb, 1.0) * vec4(v_lightColor, 1.0);\n";
 	
 	private Texture texture;
 	

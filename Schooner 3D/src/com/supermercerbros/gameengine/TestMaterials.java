@@ -40,6 +40,40 @@ public class TestMaterials {
 		
 	}
 	
+	public static class ShadelessMaterial extends Material {
+		private static final String VERT_VARS = 
+				"uniform mat4 u_viewProj;\n" + 
+				"uniform mat4 u_model;\n" + 
+				
+				"attribute vec3 a_pos;\n";
+
+		private static final String VERT_MAIN = 
+				"mat4 transform = u_viewProj * u_model;\n" +
+				"gl_Position = transform * vec4(a_pos, 1.0);\n";
+		
+		private static final String FRAG_MAIN = 
+				"gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n";
+		
+		private static final int STRIDE = 3;
+		
+		@Override
+		protected void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+			loadArrayToVbo(obj.verts, vbo, 3, vertCount);
+		}
+
+		@Override
+		protected void onAttachAttribs() {
+			attachAttrib(a_pos, 3);
+		}
+
+		@Override
+		public void makeProgram() {
+			ProgramSource prog = new ProgramSource(null, null, VERT_VARS, VERT_MAIN, null, null, FRAG_MAIN);
+			setProgram(prog, STRIDE);
+		}
+		
+	}
+	
 	/**
 	 * Vertex-shaded polys
 	 */

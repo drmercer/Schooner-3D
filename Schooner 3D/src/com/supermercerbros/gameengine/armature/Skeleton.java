@@ -1,7 +1,6 @@
 package com.supermercerbros.gameengine.armature;
 
 import java.util.LinkedList;
-import java.util.List;
 
 public class Skeleton {
 	private final String id;
@@ -11,10 +10,13 @@ public class Skeleton {
 	 */
 	protected final LinkedList<Bone> bones;
 	
-	public Skeleton(String id, List<Bone> roots, List<Bone> bones){
+	public Skeleton(String id, LinkedList<Bone> roots){
 		this.id = id;
-		this.rootParents = new LinkedList<Bone>(roots);
-		this.bones = new LinkedList<Bone>(bones);
+		this.rootParents = roots;
+		this.bones = new LinkedList<Bone>(roots);
+		for (Bone root : roots) {
+			root.getChildren(bones);
+		}
 	}
 	
 	public int boneCount() {

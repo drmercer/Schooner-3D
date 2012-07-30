@@ -13,6 +13,7 @@ import com.supermercerbros.gameengine.engine.Normals;
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.motion.Movement;
 import com.supermercerbros.gameengine.motion.MovementData;
+import com.supermercerbros.gameengine.parsers.PreObjectData;
 
 /**
  * Represents a 3D mesh object.
@@ -60,7 +61,7 @@ public class GameObject implements Collider {
 	/**
 	 * The model transformation matrix for this GameObject
 	 */
-	public final float[] modelMatrix = new float[16];
+	public final float[] modelMatrix;
 	/**
 	 * The current Movement of the GameObject
 	 */
@@ -70,18 +71,6 @@ public class GameObject implements Collider {
 	 * {@link #motion}
 	 */
 	protected final MovementData motionData;
-	
-	/**
-	 * Contains the VBO offset at which this GameObject's data is loaded. This
-	 * is used for multiple instances of the same primitive.
-	 */
-	protected int[] instanceLoaded = { -1 };
-	private boolean isInstance = false;
-	
-	/**
-	 * Used by the Engine class when loading the GameObject into buffers.
-	 */
-	public int iOffset = -1;
 	
 	/**
 	 * 
@@ -114,6 +103,7 @@ public class GameObject implements Collider {
 		
 		collisions = new HashMap<Collision, Collider>();
 		
+		modelMatrix = new float[16];
 		Matrix.setIdentityM(modelMatrix, 0);
 		
 		if (normals == null) {
@@ -121,14 +111,31 @@ public class GameObject implements Collider {
 		}
 	}
 	
-	private GameObject(float[] verts, short[] indices, float[] uvs,
-			float[] normals, int[] instanceLoaded, Material mtl,
-			short[][] doubles) {
-		this(verts, indices, normals, uvs, doubles, mtl);
-		this.instanceLoaded = instanceLoaded;
-		this.isInstance = true;
+	public GameObject(PreObjectData data, Material material) {
+		this.verts = data.verts;
+		this.indices = data.indices;
+		this.mtl = data.uvs;
+		this.normals = new float[verts.length];
+		this.doubles = data.doubles;
+		Normals.calculate(this);
+		
+		info = new Metadata();
+		info.size = indices.length;
+		info.count = verts.length / 3;
+		info.mtl = material;
+		
+		motionData = new MovementData();
+		
+		collisions = new HashMap<Collision, Collider>();
+		
+		if (data.matrix == null) {
+			modelMatrix = new float[16];
+			Matrix.setIdentityM(modelMatrix, 0);
+		} else {
+			modelMatrix = data.matrix;
+		}
 	}
-	
+
 	/**
 	 * Returns a LinkedList containing one instance of this GameObject per
 	 * Material in <code>materials</code>.
@@ -148,22 +155,11 @@ public class GameObject implements Collider {
 		return instances;
 	}
 	
-	/**
-	 * Creates a copy of this GameObject. Subclasses should override this and
-	 * construct a new instance of the same class. The default method creates a
-	 * new GameObject with pointers to the same <code>verts</code>,
-	 * <code>indices</code>, <code>mtl</code>, <code>normals</code>, and
-	 * <code>doubles</code> arrays.
-	 * 
-	 * @param material
-	 *            The Material to apply to the copy
-	 * @return A copy of this GameObject
-	 */
-	protected GameObject getInstance(Material material) {
-		return new GameObject(verts, indices, mtl, normals, instanceLoaded,
-				material, doubles);
+	private GameObject getInstance(Material material) {
+		// TODO GO.getInstance()
+		return null;
 	}
-	
+
 	/**
 	 * This method is called to tell the object to recalculate its
 	 * transformation matrix for the given point in time, in milliseconds.

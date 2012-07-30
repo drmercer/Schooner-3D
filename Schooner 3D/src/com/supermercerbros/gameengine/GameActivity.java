@@ -5,8 +5,6 @@ import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
@@ -160,22 +158,4 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		Schooner3D.backgroundColor[2] = (float) Color.blue(color) / 256;
 		Schooner3D.backgroundColor[3] = (float) Color.alpha(color) / 256;
 	}
-
-	@Override
-	public final boolean onTouch(View v, MotionEvent e) {
-		if (v == gameView) {
-			return onTouch(e);
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Called when the background (the rendered scene) receives a touch event.
-	 * 
-	 * @param e
-	 *            The MotionEvent received.
-	 * @return True if the handling has consumed the event, false if otherwise.
-	 */
-	protected abstract boolean onTouch(MotionEvent e);
 }

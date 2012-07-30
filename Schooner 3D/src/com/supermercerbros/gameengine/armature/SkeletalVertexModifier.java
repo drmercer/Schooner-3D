@@ -64,22 +64,22 @@ public class SkeletalVertexModifier extends VertexModifier {
 			"normal = normal / m_weight_sum;\n";
 	private static final int STRIDE = 5;
 	
-	private static final int BONES_PER_VERTEX = BonedObject.BONES_PER_VERTEX;
-	
+	private final int bonesPerVertex;
 	private final int boneCount;
 	
 	private int a_weights = -2;
 	private int a_indices;
 	
-	public SkeletalVertexModifier(int boneCount) {
+	public SkeletalVertexModifier(int bonesPerVertex, int boneCount) {
 		this.boneCount = boneCount;
+		this.bonesPerVertex = bonesPerVertex;
 	}
 	
 	@Override
 	public void onLoadObject(Material mtl, GameObject object, int[] vbo) {
 		BonedObject bonedObject = (BonedObject) object;
-		mtl.loadArrayToVbo(bonedObject.boneWeights, vbo, BONES_PER_VERTEX, object.info.count);
-		mtl.loadArrayToVbo(bonedObject.boneIndices, vbo, BONES_PER_VERTEX / 4, object.info.count);
+		mtl.loadArrayToVbo(bonedObject.boneWeights, vbo, bonesPerVertex, object.info.count);
+		mtl.loadArrayToVbo(bonedObject.boneIndices, vbo, (bonesPerVertex + 3) / 4, object.info.count);
 	}
 	
 	@Override
@@ -88,8 +88,8 @@ public class SkeletalVertexModifier extends VertexModifier {
 			a_weights = program.getAttribLocation("a_weights");
 			a_indices = program.getAttribLocation("a_indices");
 		}
-		mtl.attachAttrib(a_weights, BONES_PER_VERTEX);
-		mtl.attachAttrib(a_indices, BONES_PER_VERTEX, GLES20.GL_BYTE); 
+		mtl.attachAttrib(a_weights, bonesPerVertex);
+		mtl.attachAttrib(a_indices, bonesPerVertex, GLES20.GL_BYTE); 
 	}
 
 	@Override

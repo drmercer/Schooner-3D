@@ -5,6 +5,7 @@ import com.supermercerbros.gameengine.armature.ActionData;
 import com.supermercerbros.gameengine.armature.Skeleton;
 import com.supermercerbros.gameengine.armature.SkeletalVertexModifier;
 import com.supermercerbros.gameengine.engine.shaders.Material;
+import com.supermercerbros.gameengine.parsers.PreObjectData;
 
 public class BonedObject extends GameObject {
 	public static final int BONES_PER_VERTEX = 4;
@@ -17,11 +18,8 @@ public class BonedObject extends GameObject {
 	private final ActionData actionData;
 	private final int boneCount;
 	
-	public BonedObject(float[] verts, short[] indices, float[] uvs,
-			short[][] doubles, Material mtl, byte[][] boneIndices,
-			float[][] boneWeights, Skeleton skeleton) {
-		super(verts, indices, null, uvs, doubles, mtl);
-		
+	public BonedObject(PreObjectData data, Material material, Skeleton skeleton) {
+		super(data, material);
 		this.skeleton = skeleton;
 		
 		int vertCount = verts.length / 3;
@@ -30,10 +28,12 @@ public class BonedObject extends GameObject {
 		this.boneIndices = new byte[BONES_PER_VERTEX * vertCount];
 		this.boneWeights = new float[BONES_PER_VERTEX * vertCount];
 		
-		mtl.setVertexModifier(new SkeletalVertexModifier(boneCount));
+		// TODO: fill boneIndices and boneWeights
+		
+		material.setVertexModifier(new SkeletalVertexModifier(BONES_PER_VERTEX, boneCount));
 		actionData = new ActionData(boneCount);
 	}
-	
+
 	/**
 	 * Sets the Action of this BonedObject to the given Action
 	 * 

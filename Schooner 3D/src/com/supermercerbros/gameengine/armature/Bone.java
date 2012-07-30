@@ -19,7 +19,7 @@ public class Bone {
 	 * @param index
 	 *            The index of this Bone in its Skeleton's bone list.
 	 * @param children
-	 *            A List of this Bone's children.
+	 *            A LinkedList of this Bone's children.
 	 * @param x
 	 *            The x-coordinate of the Bone, in object-space coordinates
 	 * @param y
@@ -27,13 +27,9 @@ public class Bone {
 	 * @param z
 	 *            The z-coordinate of the Bone, in object-space coordinates
 	 */
-	public Bone(byte index, List<Bone> children, float x, float y, float z) {
+	public Bone(byte index, LinkedList<Bone> children, float x, float y, float z) {
 		this.index = index;
-		if (children != null) {
-			this.children = new LinkedList<Bone>(children);
-		} else {
-			this.children = null;
-		}
+		this.children = children;
 		this.locX = x;
 		this.locY = y;
 		this.locZ = z;
@@ -83,6 +79,21 @@ public class Bone {
 			// Bone is a root bone
 			MatrixUtils.setRotateQuaternionM(matrixArray, boneOffset, w, x, y, z);
 			MatrixUtils.translateM(matrixArray, boneOffset, x - r.x, y - r.y, z - r.z);
+		}
+		
+		if (children != null) {
+			for (Bone child : children) {
+				child.writeMatrix(matrixArray, offset, index);
+			}
+		}
+	}
+
+	public void getChildren(List<Bone> list) {
+		if (children != null) {
+			list.addAll(children);
+			for (Bone child : children) {
+				child.getChildren(list);
+			}
 		}
 	}
 }

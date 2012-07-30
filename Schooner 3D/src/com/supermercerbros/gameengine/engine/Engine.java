@@ -316,7 +316,6 @@ public class Engine extends LoopingThread implements
 	
 	private int loadToIBO(short[] ibo, GameObject object, int offset,
 			int vertexOffset) {
-		object.iOffset = offset;
 		if (object.isMarkedForDeletion()) {
 			return 0;
 		}

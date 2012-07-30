@@ -25,7 +25,7 @@ import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
 	private static final String TAG = GameRenderer.class.getName();
-	private static final boolean alwaysDebug = false; 
+	private static final boolean alwaysDebug = true; 
 	private static final int framesToDebug = -1;
 
 	/**
@@ -156,7 +156,9 @@ public class GameRenderer implements Renderer {
 			vboOffset += size;
 			if (drawFrameCount <= framesToDebug || alwaysDebug) {
 				Log.d("GameRenderer", "object size = " + size + " bytes");
+				Log.d(TAG, "primitve.size = " + primitive.size + ", primitive.count = " + primitive.count);
 			}
+			
 			
 			// Render primitive!
 			GLES2.glDrawElements(primitive.mtl.getGeometryType(),
@@ -244,13 +246,9 @@ public class GameRenderer implements Renderer {
 	}
 
 	private void loadUniforms(float[] viewMatrix, Light light) {
+		
 		// Load World View-Projection matrix
 		Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, viewMatrix, 0);
-		if (drawFrameCount <= framesToDebug || alwaysDebug) {
-			Log.d("GameRenderer", "viewMatrix = " + Arrays.toString(viewMatrix));
-			Log.d("GameRenderer", "projMatrix = " + Arrays.toString(projMatrix));
-			Log.d("GameRenderer", "wvpMatrix = " + Arrays.toString(wvpMatrix));
-		}
 
 		GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
 		logError("glUniformMatrix4fv (wvpMatrix)");

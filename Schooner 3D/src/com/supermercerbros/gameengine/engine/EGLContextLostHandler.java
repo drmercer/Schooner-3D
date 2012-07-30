@@ -26,7 +26,9 @@ public class EGLContextLostHandler{
 	}
 	
 	static void clear() {
-		listeners.clear();
-		listeners = null;		
+		if (listeners != null) {
+			listeners.clear();
+			listeners = null;		
+		}
 	}
 }

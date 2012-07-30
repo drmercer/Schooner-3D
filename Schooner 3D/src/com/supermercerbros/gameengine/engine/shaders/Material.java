@@ -219,7 +219,7 @@ public abstract class Material {
 	}
 	
 	protected abstract void onLoadObject(GameObject obj, int[] vbo,
-			int numOfVerts);
+			int vertCount);
 	
 	/**
 	 * Called by {@link #attachAttribs(Metadata, int, float[])} to set

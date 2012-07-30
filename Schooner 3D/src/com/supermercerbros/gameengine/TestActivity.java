@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MotionEvent;
+import android.view.View;
 
 import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.Engine;
@@ -58,7 +59,7 @@ public class TestActivity extends GameActivity {
 	}
 
 	@Override
-	public boolean onTouch(MotionEvent event) {
+	public boolean onTouch(View v, MotionEvent event) {
 		if (event.getAction() != MotionEvent.ACTION_DOWN) return false;
 		switchCamPosition();
 		Random rand = new Random();

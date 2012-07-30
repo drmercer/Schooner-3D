@@ -125,6 +125,8 @@ class BinFile:
 
 class MeshExporter:
 	def __init__(self, mesh_object, tris=True, textured=False, armature_indexed=False):
+		self.setMode('OBJECT')
+		bpy.ops.object.select_all(action='DESELECT')
 		bpy.context.scene.objects.active = mesh_object
 		mesh_object.select = True
 		self.setMode('EDIT')

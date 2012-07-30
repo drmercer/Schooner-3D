@@ -1,7 +1,7 @@
 int: version (1)
 unsigned byte: b (number of bones - 1)
 for each bone (b)
-	float[3]: location of head (child end) relative to tail (parent's head)
+	float[3]: location of bone's center of rotation in object-space coordinates
 	byte: index of parent + 1, or 0 if bone has no parent
 
 for each action
