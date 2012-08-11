@@ -130,6 +130,10 @@ class MeshExporter:
 		bpy.context.scene.objects.active = mesh_object
 		mesh_object.select = True
 		self.setMode('EDIT')
+		
+		mesh = mesh_object.data
+		
+		# Convert to tris or quads
 		bpy.ops.mesh.select_all(action='SELECT')
 		if tris:
 			bpy.ops.mesh.quads_convert_to_tris()
@@ -137,37 +141,38 @@ class MeshExporter:
 			bpy.ops.mesh.tris_convert_to_quads()
 		bpy.ops.mesh.remove_doubles()
 		
-		mesh = mesh_object.data
+		# Set to Edge select mode
+		bpy.ops.object.mode_set(mode='EDIT')
+		bpy.ops.mesh.select_all(action='DESELECT')
+		bpy.ops.mesh.remove_doubles()
+		bpy.context.tool_settings.mesh_select_mode=(False,True,False)
 		
-		if textured:
-			# select the seam edges
-			seams = [edge for edge in mesh.edges if edge.use_seam and not edge.use_edge_sharp]
-			self.select(seams)
-			bpy.ops.mesh.edge_split()
-			# get selected edges (result of split)
-			self.seams = [edge for edge in mesh.edges if edge.select]
-			# get the vertex indices in the selected edges
-			seamIndices = []
-			for edge in self.seams:
-				for vert_index in edge.vertices:
-					if not seamIndices.count(vert_index):
-						seamIndices.append(vert_index)
-			
-			# for each possible pair of indices, compare the vertices
-			# and write those indices to doubles if the vertices coincide
-			self.doubles = []
-			for indexA in seamIndices:
-				for indexB in seamIndices[seamIndices.find(indexA)+1:]:
-					vertA = self.mesh.vertices[indexA]
-					vertB = self.mesh.vertices[indexB]
-					match = [a == b for a, b in zip(vertA.co, vertB.co)]
-					if match[0] and match[1] and match[2]:
-						self.doubles.append((indexA, indexB))
-		
-		# split sharp edges. We don't have to worry about doubles because we want these to be sharp.
-		sharp = [edge for edge in mesh.edges if edge.use_edge_sharp]
-		self.select(sharp)
+		# split sharp edges
+		bpy.ops.object.mode_set(mode='OBJECT')
+		sharpEdges = [edge for edge in mesh.edges if edge.use_edge_sharp]
+		for edge in sharpEdges:
+			edge.select=True
+		bpy.ops.object.mode_set(mode='EDIT')
 		bpy.ops.mesh.edge_split()
+		
+		# get the vertex indices in the sharp edges
+		self.sharps = []
+		for edge in mesh.edges:
+		    if edge.use_edge_sharp:
+		        for index in edge.vertices:
+		            if not self.sharps.count(index):
+		                self.sharps.append(index)
+		self.sharps.sort()
+		
+		bpy.ops.mesh.select_all(action='DESELECT')
+		# split seam edges
+		bpy.ops.object.mode_set(mode='OBJECT')
+		seams = [edge for edge in mesh.edges if edge.use_seam and not edge.use_edge_sharp]
+		for edge in seams:
+			edge.select=True
+		bpy.ops.object.mode_set(mode='EDIT')
+		bpy.ops.mesh.edge_split()
+		bpy.ops.object.mode_set(mode='OBJECT')
 		
 		# store flags
 		self.tris = tris
@@ -182,18 +187,21 @@ class MeshExporter:
 		
 		# store UV data
 		if textured:
-			bpy.ops.mesh.select_all(action='SELECT')
-			mesh.calc_tessface()
+			#mesh.calc_tessface()
+			mesh.update(calc_tessface=True)
 			self.uvs = []
 			for vertIndex in range(len(mesh.vertices)):
 				for face in mesh.polygons:
 					uvs_found = False
-					for value, i in zip(face.vertices, range(len(face.vertices))):
+					i = 0
+					for value in face.vertices:
 						if value == vertIndex:
-							uv = self.getUVs(mesh, mesh.polygons.find(face), i)
+							faceIndex = face.index
+							uv = self.getUVs(mesh, faceIndex, i)
 							self.uvs.extend(uv)
 							uvs_found = True
 							break
+						i += 1
 					if uvs_found:
 						break
 		
@@ -207,7 +215,6 @@ class MeshExporter:
 						bone = (mesh_object.parent.data.bones.find(mesh_object.vertex_groups[g.group].name), g.weight)
 						bones.append(bone)
 				self.armature_indices.append(bones)
-				
 	
 	def export(self, directory, name):
 		file = BinFile(directory, name + ".sch3Dmesh")
@@ -232,9 +239,9 @@ class MeshExporter:
 		file.writeAllFloats(self.vertices)
 		
 		if self.textured:
-			# write doubles
-			file.writeShort(len(self.doubles))
-			file.writeAllShortPairs(self.doubles)
+			# write sharp verts
+			file.writeShort(len(self.sharps))
+			file.writeAllShorts(self.sharps)
 			# write UVs
 			file.writeAllFloats(self.uvs)
 		
@@ -250,7 +257,19 @@ class MeshExporter:
 		file.close()
 	
 	def getUVs(self, mesh, faceIndex=0, uvIndex=0):
-		return mesh.tessface_uv_textures.active.data[faceIndex].uv[uvIndex*2:uvIndex*2+2]
+		#mesh = bpy.context.active_object.to_mesh(bpy.context.scene, True, 'PREVIEW')
+		
+		#tessface = mesh.tessface_uv_textures.active
+		#face_data = tessface.data[faceIndex]
+		#if uvIndex == 0:
+		#	return face_data.uv1
+		#elif uvIndex == 1:
+		#	return face_data.uv2
+		#elif uvIndex == 2:
+		#	return face_data.uv3
+		
+		uv_data = mesh.uv_layers.active.data
+		return uv_data[faceIndex * 3 + uvIndex].uv
 	
 	def select(self, edges, extend=False):
 		originalMode = bpy.context.active_object.mode
@@ -445,6 +464,7 @@ def writeFCurveToFile(fcurve, file):
 			counter += 1
 		i+= 1
 
+print("\n\n\n\n\n\n")
 # Begin script.
 verbose = True
 if verbose:
@@ -476,7 +496,7 @@ for obj in movementSources:
 
 # Export meshes.
 originalScene = bpy.context.scene
-bpy.ops.scene.new(type='FULL_COPY')
+bpy.ops.scene.new(type='LINK_OBJECT_DATA')
 scene = bpy.context.scene
 
 mesh_objects = [obj for obj in scene.objects if obj.type == 'MESH']
@@ -484,10 +504,10 @@ bpy.ops.object.mode_set(mode='OBJECT')
 for obj in mesh_objects:
 	obj.select=False
 for obj in mesh_objects:
-	exporter = MeshExporter(obj)
+	exporter = MeshExporter(obj, tris=True, textured=True, armature_indexed=False)
 	exporter.export(directory, obj.name.rsplit(".",1)[0])
-bpy.ops.scene.delete()
-scene = bpy.context.scene
+#bpy.ops.scene.delete()
+scene = originalScene #bpy.context.scene
 
 verbose = True
 

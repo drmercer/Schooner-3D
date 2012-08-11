@@ -18,7 +18,6 @@ public class Action {
 
 	public void getFrame(ActionData data, Skeleton skeleton, long time) {		
 		final float framePoint;
-		//TODO: check if action has ended
 		if (time < data.startTime) {
 			// Interpolating to the action
 			framePoint = (time - data.callTime) / (data.startTime - data.callTime);
@@ -57,6 +56,7 @@ public class Action {
 		} else {
 			// Interpolating in the action
 			framePoint = (time - data.startTime) / data.duration;
+			//TODO: check if action has ended. See MeshAnimation, line 56
 			Iterator<Bone> iter = skeleton.bones.iterator();
 			for (int i = 0; iter.hasNext(); i++) {
 				final int offset = i*4;

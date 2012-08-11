@@ -29,7 +29,7 @@ public class Engine extends LoopingThread implements
 	private final RenderData outB;
 	private final Camera cam;
 	
-	public final CollisionDetector cd; // TODO after debug, revert to private
+	private final CollisionDetector cd;
 	private final Toggle cdIsFinished = new Toggle(false);
 	
 	private boolean aBufs = true;

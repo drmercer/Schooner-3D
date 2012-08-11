@@ -68,8 +68,8 @@ public class Vector {
 	}
 
 	/**
-	 * Computes the normalized cross product of this Vector and another
-	 * Vector. (The vectors are normalized before the operation.)
+	 * Computes the normalized cross product of this Vector and another Vector.
+	 * (The vectors are normalized before the operation.)
 	 * 
 	 * @param v
 	 *            The other vector.
@@ -137,13 +137,13 @@ public class Vector {
 	}
 
 	/**
-	 * Transforms this Vector by the given transformation matrix.
+	 * Transforms this Vector by the given transformation matrix. Does not
+	 * currently support non-uniform scale.
 	 * 
 	 * @param matrix
 	 * @return The transformed Vector
 	 */
 	public Vector transform(final Matrix matrix) {
-		// TODO: Support non-uniform axis scale
 		final float tx = matrix.m0 * x + matrix.m4 * y + matrix.m8 * z;
 		final float ty = matrix.m1 * x + matrix.m5 * y + matrix.m9 * z;
 		final float tz = matrix.m2 * x + matrix.m6 * y + matrix.m10 * z;
@@ -164,16 +164,16 @@ public class Vector {
 		if (this == o) {
 			return true;
 		}
-		
-		if (!(o instanceof Vector)){
+
+		if (!(o instanceof Vector)) {
 			return false;
 		}
-		
+
 		final Vector v = (Vector) o;
-		
+
 		return x == v.x && y == v.y && z == v.z;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Vector[" + x + ", " + y + ", " + z + "]";

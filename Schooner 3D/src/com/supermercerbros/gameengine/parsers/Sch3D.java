@@ -76,18 +76,69 @@ public class Sch3D {
 			final float[] uvs;
 			if (textured) {
 				Log.d(TAG, "Object is textured");
-				final short pairCount = data.readShort();
-				if (pairCount > 0) {
+				final short sharpCount = data.readShort();
+				if (sharpCount > 0) {
+					final short[] sharpVerts = new short[sharpCount];
+					data.readShortArray(sharpVerts, 0, sharpCount);
+					
+					final LinkedList<Short> doublesList = new LinkedList<Short>();
+					
+					int sharpArrayIndex1 = 0;
+					for (short v1 = 0; v1 < vertCount - 1; v1++) {
+						if (sharpArrayIndex1 < sharpCount && sharpVerts[sharpArrayIndex1] == v1) {
+							sharpArrayIndex1++;
+							continue;
+						}
+						
+						int sharpArrayIndex2 = sharpArrayIndex1;
+						for (short v2 = (short) (v1 + 1); v2 < vertCount; v2++) {
+							if (sharpArrayIndex2 < sharpCount && sharpVerts[sharpArrayIndex2] == v2) {
+								sharpArrayIndex2++;
+								continue;
+							}
+							
+							final boolean coincident = 
+									verts[v1 * 3 + 0] == verts[v2 * 3 + 0] &&
+									verts[v1 * 3 + 1] == verts[v2 * 3 + 1] &&
+									verts[v1 * 3 + 2] == verts[v2 * 3 + 2];
+							if (coincident) {
+								doublesList.add(v1);
+								doublesList.add(v2);
+							}
+						}
+					}
+					
+					int pairCount = doublesList.size() / 2;
 					doubles = new short[2][pairCount];
 					for (int i = 0; i < pairCount; i++) {
-						doubles[0][i] = data.readShort();
-						doubles[1][i] = data.readShort();
+						doubles[0][i] = doublesList.get(i * 2);
+						doubles[1][i] = doublesList.get(i * 2 + 1);
 					}
 				} else {
-					doubles = null;
+					final LinkedList<Short> doublesList = new LinkedList<Short>();
+					for (short v1 = 0; v1 < vertCount - 1; v1++) {
+						for (short v2 = (short) (v1 + 1); v2 < vertCount; v2++) {
+							final boolean coincident = 
+									verts[v1 * 3 + 0] == verts[v2 * 3 + 0] &&
+									verts[v1 * 3 + 1] == verts[v2 * 3 + 1] &&
+									verts[v1 * 3 + 2] == verts[v2 * 3 + 2];
+							if (coincident) {
+								doublesList.add(v1);
+								doublesList.add(v2);
+							}
+						}
+					}
+					
+					int pairCount = doublesList.size() / 2;
+					doubles = new short[2][pairCount];
+					for (int i = 0; i < pairCount; i++) {
+						doubles[0][i] = doublesList.get(i * 2);
+						doubles[1][i] = doublesList.get(i * 2 + 1);
+					}
 				}
 				uvs = new float[vertCount * 2];
 				data.readFloatArray(uvs, 0, vertCount * 2);
+				Log.d(TAG, "uvs = " + Arrays.toString(uvs));
 			} else {
 				doubles = null;
 				uvs = null;
@@ -111,7 +162,6 @@ public class Sch3D {
 			}
 			
 			data.close();
-			Log.d(TAG, "object has " + (verts.length / 3) + " verts and " + (indices.length / 3) + " faces");
 			return new PreObjectData(verts, indices, uvs, doubles,
 					boneIndices, boneWeights);
 		} else {

@@ -16,22 +16,24 @@ public class TexturedMaterial extends Material {
 	private final static int STRIDE = 8;
 	
 	private static final String VERT_VARS =
-			"attribute mat4 a_model;\n" +
-			"attribute vec4 a_pos;\n" +
+			"attribute vec3 a_pos;\n" +
 			"attribute vec3 a_normal;\n" +
 			"attribute vec2 a_mtl;\n" + // Stores UV coords
 					
 			"uniform mat4 u_viewProj;\n" +
 			"uniform vec3 u_lightVec;\n" +
-			"uniform vec3 u_lightColor;\n";
+			"uniform vec3 u_lightColor;\n" + 
+			"uniform mat4 u_model;\n";
 	
 	private static final String VERT_MAIN =
-			"gl_Position = (u_viewProj * a_model) * a_pos;\n" +
-			"v_tc = a_mtl;\n" +
+			"mat4 transform = (u_viewProj * u_model);" +
+			"gl_Position = transform * vec4(a_pos, 1.0);\n" +
+			"v_tc = vec2(a_mtl.x, 1.0 - a_mtl.y);\n" +
+			"vec3 normal = (transform * vec4(a_normal, 0.0)).xyz;\n" +
 			"float brightness = max((dot(a_normal, u_lightVec) + 1.0) / 2.0, 0.0);\n" +
-			"vec3 lighting = (u_lightColor * brightness + 0.2);\n" +
+			"vec3 color = (u_lightColor * brightness + 0.2);\n" +
 			
-			"v_lightColor = min(lighting, vec3(1.0));\n";
+			"v_lightColor = min(color, vec3(1.0));\n";
 	
 	private static final String VARYINGS =
 			"varying vec2 v_tc;\n" +

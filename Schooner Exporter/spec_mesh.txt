@@ -8,11 +8,11 @@ if tris
 else
 	short[i *4]: indices
 
-float[v *3]: vertex positions
+float[(v - d) *3]: vertex positions
 
 if textured
-	short: d (number of double pairs)
-	short[d*2]: doubles (indices of vertices that are the same geometrically)
+	short: d (number of sharp vertices)
+	short[d]: sharps (indices of sharp vertices)
 	float[v *2]: uv coordinates
 	
 if armature-indexed
