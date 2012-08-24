@@ -93,18 +93,18 @@ public class SkeletalVertexModifier extends VertexModifier {
 	}
 
 	@Override
-	public String getVars() {
-		return String.format(Locale.US, VARS, boneCount);
+	public void getVars(StringBuilder sb) {
+		sb.append(String.format(Locale.US, VARS, boneCount));
 	}
 
 	@Override
-	public String getCode() {
-		return CODE;
+	public void getCode(StringBuilder sb) {
+		sb.append(CODE);
 	}
 
 	@Override
-	public String getMethods() {
-		return METHODS;
+	public void getMethods(StringBuilder sb) {
+		sb.append(METHODS);
 	}
 
 	@Override

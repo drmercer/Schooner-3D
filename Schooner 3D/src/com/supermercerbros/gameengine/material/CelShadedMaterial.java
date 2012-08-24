@@ -1,4 +1,4 @@
-package com.supermercerbros.gameengine.objects;
+package com.supermercerbros.gameengine.material;
 
 import java.io.IOException;
 
@@ -6,48 +6,56 @@ import com.supermercerbros.gameengine.engine.Texture;
 import com.supermercerbros.gameengine.engine.TextureLib;
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
+import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.shaders.ProgramSource;
 
 /**
  * This is a basic textured material. Use it for smooth-shaded, uv-mapped
  * triangles.
  */
-public class TexturedMaterial extends Material {
+public class CelShadedMaterial extends Material {
 	private final static int STRIDE = 8;
 	
 	private static final String VERT_VARS =
-			"attribute vec3 a_pos;\n" +
-			"attribute vec3 a_normal;\n" +
-			"attribute vec2 a_mtl;\n" + // Stores UV coords
+			"attribute vec3 a_pos;" +
+			"attribute vec3 a_normal;" +
+			"attribute vec2 a_mtl;" + // Stores UV coords
 					
-			"uniform mat4 u_viewProj;\n" +
-			"uniform vec3 u_lightVec;\n" +
-			"uniform vec3 u_lightColor;\n" + 
-			"uniform mat4 u_model;\n";
+			"uniform mat4 u_viewProj;" +
+			"uniform mat4 u_model;" + 
+			"uniform vec3 u_lightVec;";
 	
 	private static final String VERT_MAIN =
-			"mat4 transform = (u_viewProj * u_model);" +
-			"gl_Position = transform * vec4(a_pos, 1.0);\n" +
-			"v_tc = vec2(a_mtl.x, 1.0 - a_mtl.y);\n" +
-			"vec3 normal = (transform * vec4(a_normal, 0.0)).xyz;\n" +
-			"float brightness = max((dot(a_normal, u_lightVec) + 1.0) / 2.0, 0.0);\n" +
-			"vec3 color = (u_lightColor * brightness + 0.2);\n" +
+			"gl_Position = (u_viewProj * u_model) * vec4(a_pos, 1.0);" +
 			
-			"v_lightColor = min(color, vec3(1.0));\n";
+			"v_tc = vec2(a_mtl.x, 1.0 - a_mtl.y);" +
+			
+			"vec3 normal = mat3(u_model) * a_normal;" +
+			"v_brightness = (dot(normal, u_lightVec) + 1.0) / 2.0;";
 	
 	private static final String VARYINGS =
-			"varying vec2 v_tc;\n" +
-			"varying vec3 v_lightColor;\n";
+			"varying vec2 v_tc;" +
+			"varying float v_brightness;";
 	
 	private static final String FRAG_VARS =
-			"uniform sampler2D s_baseMap;\n";
+			"uniform sampler2D s_baseMap;" +
+			"uniform vec3 u_lightColor;";
 	
 	private static final String FRAG_MAIN =
-			"gl_FragColor = vec4(texture2D(s_baseMap, v_tc).rgb, 1.0) * vec4(v_lightColor, 1.0);\n";
+			"vec3 texColor = texture2D(s_baseMap, v_tc).rgb;" +
+			"float brightness = v_brightness;" + 
+			"if (brightness > .6) {" +
+			"  brightness = 1.0;" +
+			"} else if (brightness > .4) {" +
+			"  brightness = .6;" +
+			"} else {" +
+			"  brightness = .4;" +
+			"}" +
+			"gl_FragColor = vec4(texColor * brightness, 1.0);";
 	
 	private Texture texture;
 	
-	public TexturedMaterial(String textureName) {
+	public CelShadedMaterial(String textureName) {
 		try {
 			texture = TextureLib.getTexture(textureName);
 		} catch (IOException e) {

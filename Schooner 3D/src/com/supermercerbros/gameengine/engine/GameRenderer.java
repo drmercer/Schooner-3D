@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
-import java.util.Arrays;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -25,7 +24,7 @@ import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
 	private static final String TAG = GameRenderer.class.getName();
-	private static final boolean alwaysDebug = true; 
+	private static final boolean alwaysDebug = false; 
 	private static final int framesToDebug = -1;
 
 	/**
@@ -149,7 +148,25 @@ public class GameRenderer implements Renderer {
 			}
 			
 			useProgram(primitive.mtl.getProgram());
-			loadUniforms(in.viewMatrix, in.light);
+			Light light = in.light;
+			
+			// Load World View-Projection matrix
+			Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, in.viewMatrix, 0);
+			
+			GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
+			logError("glUniformMatrix4fv (wvpMatrix)");
+			
+			// Load directional light
+			if (u_lightVec != -1) {
+				GLES20.glUniform3f(u_lightVec, light.x, light.y, light.z);
+				logError("glUniform3fv (light vector)");
+			}
+			if (u_lightColor != -1) {
+				GLES20.glUniform3f(u_lightColor, light.r, light.g, light.b);
+				logError("glUniform3fv (light color)");
+			}
+			
+			// Material-specific stuff
 			
 			int size = primitive.mtl.attachAttribs(primitive, vboOffset,
 					in.modelMatrices.get(matrixNumber));
@@ -243,24 +260,5 @@ public class GameRenderer implements Renderer {
 			}
 		}
 		return false;
-	}
-
-	private void loadUniforms(float[] viewMatrix, Light light) {
-		
-		// Load World View-Projection matrix
-		Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, viewMatrix, 0);
-
-		GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
-		logError("glUniformMatrix4fv (wvpMatrix)");
-
-		// Load directional light
-		if (u_lightVec != -1) {
-			GLES20.glUniform3f(u_lightVec, light.x, light.y, light.z);
-			logError("glUniform3fv (light vector)");
-		}
-		if (u_lightColor != -1) {
-			GLES20.glUniform3f(u_lightColor, light.r, light.g, light.b);
-			logError("glUniform3fv (light color)");
-		}
 	}
 }

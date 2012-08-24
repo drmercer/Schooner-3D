@@ -13,8 +13,8 @@ import android.view.View;
 import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.TextureLib;
+import com.supermercerbros.gameengine.material.TexturedMaterial;
 import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
 public class TestActivity extends GameActivity {
 	private static String TAG = GameActivity.class.getSimpleName();

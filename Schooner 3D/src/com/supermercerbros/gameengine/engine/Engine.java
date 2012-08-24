@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.DelayQueue;
 
+import android.util.FloatMath;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.collision.CollisionDetector;
@@ -249,6 +250,10 @@ public class Engine extends LoopingThread implements
 	 *            The blue value of the light's color
 	 */
 	public void setLight(float x, float y, float z, float r, float g, float b) {
+		final float length = FloatMath.sqrt(x*x + y*y + z*z);
+		x /= length;
+		y /= length;
+		z /= length;
 		synchronized (light) {
 			light.x = x;
 			light.y = y;

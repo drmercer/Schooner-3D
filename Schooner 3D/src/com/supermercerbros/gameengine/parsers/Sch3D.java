@@ -75,7 +75,6 @@ public class Sch3D {
 			final short[][] doubles;
 			final float[] uvs;
 			if (textured) {
-				Log.d(TAG, "Object is textured");
 				final short sharpCount = data.readShort();
 				if (sharpCount > 0) {
 					final short[] sharpVerts = new short[sharpCount];
@@ -138,7 +137,6 @@ public class Sch3D {
 				}
 				uvs = new float[vertCount * 2];
 				data.readFloatArray(uvs, 0, vertCount * 2);
-				Log.d(TAG, "uvs = " + Arrays.toString(uvs));
 			} else {
 				doubles = null;
 				uvs = null;

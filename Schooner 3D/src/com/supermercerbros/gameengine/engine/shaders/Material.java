@@ -96,21 +96,19 @@ public abstract class Material {
 		final String vertex;
 		final String fragment;
 		if (modifier != null) {
-			//@formatter:off
-			vertex = 
-					source.vertPrecision +
-					source.vertVars +
-					modifier.getVars() +
-					source.varyings +
-					source.vertMethods +
-					modifier.getMethods() +
-					ProgramSource.MAIN_HEADER +
-					modifier.getCode() +
-					source.vertMain
-						.replaceAll("\\ba_pos\\b", "pos")
-						.replaceAll("\\ba_normal\\b", "normal") + 
-					ProgramSource.MAIN_FOOTER;
+			StringBuilder vertSB = new StringBuilder(source.vertPrecision);
+			vertSB.append(source.vertVars);
+			modifier.getVars(vertSB);
+			vertSB.append(source.varyings);
+			vertSB.append(source.vertMethods);
+			modifier.getMethods(vertSB);
+			vertSB.append(ProgramSource.MAIN_HEADER);
+			modifier.getCode(vertSB);
+			vertSB.append(source.vertMain.replaceAll("\\ba_pos\\b", "pos").replaceAll("\\ba_normal\\b", "normal"));
+			vertSB.append(ProgramSource.MAIN_FOOTER);
+			vertex = vertSB.toString();
 			
+			//@formatter:off
 			fragment =
 					source.fragPrecision +
 					source.fragVars +

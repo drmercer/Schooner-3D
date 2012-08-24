@@ -11,11 +11,12 @@ public abstract class VertexModifier {
 	public abstract void onAttachAttribs(Material mtl, Program program);
 	
 	/**
+	 * @param sb 
 	 * @return Additional variables (uniforms and attributes) for the vertex
 	 *         shader. These should all be set in
 	 *         {@link #onAttachAttribs(Material)}.
 	 */
-	public abstract String getVars();
+	public abstract void getVars(StringBuilder sb);
 	
 	/**
 	 * @return The vertex position modifier code to be inserted at the
@@ -24,13 +25,13 @@ public abstract class VertexModifier {
 	 *         position and
 	 *         normal respectively.
 	 */
-	public abstract String getCode();
+	public abstract void getCode(StringBuilder sb);
 	
 	/**
 	 * @return Methods declared (and used) by the modifier. Inserted before the main
 	 *         method declaration.
 	 */
-	public abstract String getMethods();
+	public abstract void getMethods(StringBuilder sb);
 	
 	/**
 	 * @return The number of additional floats per vertex.

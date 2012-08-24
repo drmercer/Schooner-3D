@@ -8,10 +8,10 @@ import com.supermercerbros.gameengine.animation.MeshAnimation;
 import com.supermercerbros.gameengine.collision.Bounds;
 import com.supermercerbros.gameengine.collision.Polyhedron;
 import com.supermercerbros.gameengine.engine.shaders.Material;
+import com.supermercerbros.gameengine.material.TexturedMaterial;
 import com.supermercerbros.gameengine.objects.AnimatedMeshObject;
 import com.supermercerbros.gameengine.objects.BasicMaterial;
 import com.supermercerbros.gameengine.objects.GameObject;
-import com.supermercerbros.gameengine.objects.TexturedMaterial;
 
 /**
  * Contains methods to create test objects.

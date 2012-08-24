@@ -40,7 +40,7 @@ public class GameObject implements Collider {
 	 * @see <a href="http://en.wikipedia.org/wiki/UV_mapping">UV Mapping</a>
 	 *      (Wikipedia)
 	 */
-	protected final float[] mtl;
+	public final float[] mtl;
 	
 	/**
 	 * Contains the normals of the vertices of this <code>GameObject</code>.
