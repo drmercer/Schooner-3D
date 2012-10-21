@@ -10,9 +10,10 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.collision.CollisionDetector;
 import com.supermercerbros.gameengine.collision.OnCollisionCheckFinishedListener;
-import com.supermercerbros.gameengine.debug.JankCatcher;
 import com.supermercerbros.gameengine.debug.LoopLog;
+import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.objects.GameObject;
+import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.DelayedRunnable;
 import com.supermercerbros.gameengine.util.LoopingThread;
 import com.supermercerbros.gameengine.util.Toggle;
@@ -280,18 +281,14 @@ public class Engine extends LoopingThread implements
 		cd.go();
 		
 		for (GameObject object : objects) {
-			if (!object.isMarkedForDeletion()) {
-				object.drawVerts(time);
-			}
+			object.drawVerts(time);
 		}
 		cam.update(time);
 		
 		waitOnToggle(cdIsFinished, true);
 		
 		for (GameObject object : objects) {
-			if (!object.isMarkedForDeletion()) {
-				object.drawMatrix(time);
-			}
+			object.drawMatrix(time);
 		}
 		
 	}
@@ -319,33 +316,50 @@ public class Engine extends LoopingThread implements
 		flush.setState(false);
 	}
 	
-	private int loadToIBO(short[] ibo, GameObject object, int offset,
-			int vertexOffset) {
-		if (object.isMarkedForDeletion()) {
-			return 0;
-		}
-		System.arraycopy(object.indices, 0, ibo, offset, object.info.size);
-		return object.info.size;
-	}
-	
 	private void updatePipe(RenderData out) {
-		JankCatcher.instance().onBeginUpdate(out.index);
+		final int outIndexOffset = out.index * 2;
 		out.primitives.clear();
 		
-		int vOffset = 0, iOffset = 0, vertexOffset = 0, index = 0;
+		int vOffset = 0, iOffset = 0, index = 0;
 		for (GameObject object : objects) {
+			final Metadata objData = object.info;
+			final int[] objBufferLocations = objData.bufferLocations;
+			final Material objMaterial = objData.mtl;
+			
 			synchronized (object) {
-				int bufferSize = object.info.mtl.loadObjectToVBO(object,
-						out.vbo, vOffset);
-				vOffset += bufferSize;
-				
-				iOffset += loadToIBO(out.ibo, object, iOffset, vertexOffset);
-				
-				vertexOffset += object.info.count;
-				
-				object.writeMatrices(out.modelMatrices.get(index++));
-				
-				out.primitives.add(object.info);
+				if (!object.isMarkedForDeletion()) {
+					final boolean vertsAreDirty = objBufferLocations[outIndexOffset] == -1;
+					final boolean indicesAreDirty = objBufferLocations[outIndexOffset + 1] == -1;
+					
+					// Load verts
+					if (vertsAreDirty) {
+						objBufferLocations[outIndexOffset] = vOffset;
+						if (object.isInstance) {
+							final GameObject objParent = object.parent;
+							vOffset += objParent.info.mtl.loadObjectToVBO(objParent, out.vbo, vOffset);
+						} else {
+							vOffset += objMaterial.loadObjectToVBO(object,
+									out.vbo, vOffset);
+						}
+					} else {
+						vOffset = objBufferLocations[outIndexOffset] + objData.count * objMaterial.getStride();
+					}
+					
+					// Load indices
+					final int size = objData.size;
+					if (indicesAreDirty) {
+						System.arraycopy(object.indices, 0, out.ibo, iOffset, size);
+						objBufferLocations[outIndexOffset + 1] = iOffset;
+						iOffset += size;
+					} else {
+						iOffset = objBufferLocations[outIndexOffset + 1] + size;
+					}
+					
+					// Load matrices
+					object.writeMatrices(out.modelMatrices.get(index++));
+					
+					out.primitives.add(objData);
+				}
 			}
 		}
 		
@@ -355,7 +369,6 @@ public class Engine extends LoopingThread implements
 			light.copyTo(out.light);
 		}
 		
-		JankCatcher.instance().onFinishUpdate(out.index);
 		time = pipe.putData(this, out);
 	}
 	

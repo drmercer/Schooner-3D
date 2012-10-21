@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.LinkedList;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -15,7 +16,7 @@ import android.opengl.GLSurfaceView.Renderer;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
-import com.supermercerbros.gameengine.debug.JankCatcher;
+import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.engine.shaders.Program;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 import com.supermercerbros.gameengine.objects.Metadata;
@@ -24,8 +25,6 @@ import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
 	private static final String TAG = GameRenderer.class.getName();
-	private static final boolean alwaysDebug = false; 
-	private static final int framesToDebug = -1;
 
 	/**
 	 * @param location
@@ -74,7 +73,6 @@ public class GameRenderer implements Renderer {
 	private int u_lightVec = -1;
 	private int u_lightColor = -1;
 
-	private int drawFrameCount = 0;
 	private float near, far;
 	private float aspect;
 
@@ -107,20 +105,12 @@ public class GameRenderer implements Renderer {
 
 	@Override
 	public void onDrawFrame(GL10 unused) {
-		drawFrameCount++;
 		GLES20.glClearColor(Schooner3D.backgroundColor[0],
 				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
 				Schooner3D.backgroundColor[3]);
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
 		final RenderData in = pipe.retrieveData();
-		if (in == null) {
-			Log.e(TAG, "in == null");
-			drawFrameCount--;
-			return;
-		}
-		JankCatcher.instance().onBeginRender(in.index);
-		// long startFrame = System.nanoTime();
 
 		vbo.clear();
 		ibo.clear();
@@ -139,24 +129,27 @@ public class GameRenderer implements Renderer {
 				vbo);
 		
 		// Render each primitive
-		int matrixNumber = 0, iboOffset = 0, vboOffset = 0;
-		for (final Metadata primitive : in.primitives) {
+		int matrixNumber = 0;
+		final LinkedList<Metadata> primitives = in.primitives;
+		for (final Metadata primitive : primitives) {
 			if (primitive == null) {
 				Log.e(TAG, "primitive == null");
-			} else if (primitive.mtl == null){
+			}
+			
+			final Material material = primitive.mtl;
+			if (material == null){
 				Log.e(TAG, "primitive.mtl == null");
 			}
 			
-			useProgram(primitive.mtl.getProgram());
-			Light light = in.light;
+			useProgram(material.getProgram());
 			
 			// Load World View-Projection matrix
 			Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, in.viewMatrix, 0);
-			
 			GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
 			logError("glUniformMatrix4fv (wvpMatrix)");
 			
 			// Load directional light
+			Light light = in.light;
 			if (u_lightVec != -1) {
 				GLES20.glUniform3f(u_lightVec, light.x, light.y, light.z);
 				logError("glUniform3fv (light vector)");
@@ -167,30 +160,23 @@ public class GameRenderer implements Renderer {
 			}
 			
 			// Material-specific stuff
-			
-			int size = primitive.mtl.attachAttribs(primitive, vboOffset,
+			final int inIndexOffset = in.index * 2;
+			final int[] bufferLocations = primitive.bufferLocations;
+			material.attachAttribs(primitive, bufferLocations[inIndexOffset] * 4,
 					in.modelMatrices.get(matrixNumber));
-			vboOffset += size;
-			if (drawFrameCount <= framesToDebug || alwaysDebug) {
-				Log.d("GameRenderer", "object size = " + size + " bytes");
-				Log.d(TAG, "primitve.size = " + primitive.size + ", primitive.count = " + primitive.count);
-			}
-			
 			
 			// Render primitive!
-			GLES2.glDrawElements(primitive.mtl.getGeometryType(),
-					primitive.size, GLES20.GL_UNSIGNED_SHORT, iboOffset);
+			GLES2.glDrawElements(material.getGeometryType(),
+					primitive.size, GLES20.GL_UNSIGNED_SHORT, bufferLocations[inIndexOffset + 1] * 2);
 			logError("DrawElements");
 			
+			// Re-enable depth test
 			if (!GLES20.glIsEnabled(GLES2.GL_DEPTH_TEST)){
 				GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 				logError("glEnable (DEPTH)");
 			}
-			
-			iboOffset += primitive.size * 2;
 			matrixNumber++;
 		}
-		JankCatcher.instance().onFinishRender(in.index);
 	}
 
 	@Override

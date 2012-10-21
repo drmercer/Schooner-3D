@@ -33,14 +33,14 @@ public class Metadata {
 	 * The material to render this object with.
 	 */
 	public Material mtl;
+	
+	public final int[] bufferLocations;
 
 	Metadata() {
+		bufferLocations = new int[]{ -1, -1, -1, -1};
 	}
-
-	public void prep() {
-		// When I put a dynamic variable in this class, I will need to make a
-		// duplicate variable for the renderer to use. I'll update that
-		// duplicate here.
+	
+	Metadata(int[] bufferOffsets) {
+		this.bufferLocations = bufferOffsets;
 	}
-
 }

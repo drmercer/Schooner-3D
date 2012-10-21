@@ -82,7 +82,7 @@ public class GameFactory {
 	}
 	
 	public GameObject bakeGameObject() {
-		if (skeleton != null && data.isArmatureIndexed()) {
+		if (skeleton != null && data.boneIndices != null) {
 			BonedObject object = new BonedObject(data, material, skeleton);
 			material.makeProgram();
 			return object;
@@ -108,7 +108,7 @@ public class GameFactory {
 	 * Closes the GameFactory
 	 */
 	public void close() {
-		am.close();
+		clear();
 	}
 	
 }

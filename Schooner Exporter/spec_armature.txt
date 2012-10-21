@@ -7,16 +7,34 @@ for each bone (b)
 for each action
 	null-terminated UTF-8 string: action name
 	byte: {moveLoc, moveRot, moveScaleAxis, moveScale} 
-	unsigned byte: n (number of keyframes - 1)
-	for each component of the movement (3 for position if moveLoc, 4 for quaternion if moveRot, and ((1 for scale if moveScale) or (3 for scale if moveScaleAxis))) 
-				for n*3 + 1: (keyframes and control points)
-					float: frame
-					float: value
+	if moveLoc
+		unsigned byte: n (number of keyframes)
+		for 3:
+			for (n - 1) *3 + 1: (keyframes and control points)
+				float: frame
+				float: value
+	if moveRot
+		unsigned byte: n (number of keyframes)
+		for 4:
+			for (n - 1) *3 + 1: (keyframes and control points)
+				float: frame
+				float: value
+	if moveScale
+		unsigned byte: n (number of keyframes)
+		for 1:
+			for (n - 1) *3 + 1: (keyframes and control points)
+				float: frame
+				float: value
+	else if moveScaleAxis
+		unsigned byte: n (number of keyframes)
+		for 3:
+			for (n - 1) *3 + 1: (keyframes and control points)
+				float: frame
+				float: value
+	
 	for each bone (b)
-		if bone has no animation,
-			float: 0.0f
-		else
-			for each component of quaternion (w, x, y, and z)
-				for n*3 + 1: (keyframes and control points)
-					float: frame
-					float: value
+		unsigned byte: n (number of bone keyframes)
+		for 4: (w, x, y, z)
+			for (n - 1)*3 + 1: (keyframes and control points)
+				float: frame
+				float: value

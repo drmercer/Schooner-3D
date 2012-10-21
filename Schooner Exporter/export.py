@@ -298,15 +298,22 @@ class ArmatureExporter:
 		file = BinFile(directory, name + ".sch3Darmature")
 		file.writeInt(1)
 		
-		file.writeByte(len(self.bones))
+		file.writeByte(len(self.bones) - 1)
 		
+		# For each bone
 		for bone in self.bones:
-			file.writeAllFloats([bone.head_local[i] for i in range(3)])
+			# Write bone Center of Rotation coordinates
+			file.writeFloat(bone.head_local[0])
+			file.writeFloat(bone.head_local[1])
+			file.writeFloat(bone.head_local[2])
+			
+			# Write bone parent index + 1, or 0 if bone has no parent.
 			if bone.parent:
 				file.writeByte(self.bones.index(bone.parent) + 1)
 			else:
-				file.writeByte(0) # Root parent
+				file.writeByte(0)
 		
+		# For each action
 		for action in self.actions:
 			if options.moveScale:
 				scale='UNIFORM'
@@ -315,17 +322,20 @@ class ArmatureExporter:
 			else:
 				scale='NONE'
 			
+			# write movement part of action
 			writeMovementToFile(action, file, options.moveLoc, options.moveRot, scale)
 			
-			boneCurves = ["rotation_quaternion",]
+			# write bones part of action
 			for bone in self.bones:
 				group = action.groups.get(bone.name)
 				if group:
 					for fcurve in group.channels:
-						if boneCurves.count(fcurve.data_path):
+						if fcurve.data_path == "rotation_quaternion":
+							if fcurve.array_index == 0:
+								file.writeByte(len(fcurve.keyframe_points))
 							writeFCurveToFile(fcurve, file)
 				else:
-					file.writeFloat(0.0)
+					file.writeByte(0)
 				
 		file.close()
 
@@ -397,12 +407,16 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 		warn("Action " + action.name + " has no second part. Will be named in file as \"" + name + "\".")
 	else:
 		name = nameParts[1]
+	file.writeString(name) # write name
+	print("NAME: " + name)
 	
 	# flags
 	flags = (loc, rot, scale=='UNIFORM', scale=='AXIS')
+	file.writeFlags(flags) # write flags
+	print("FLAGS: " + str(flags))
 	
 	# FCurve data_paths and array_indices to export
-	curveNames = {}
+	curveNames = []
 	curveKeys = []
 	if loc:
 		curveNames["location"] = (0, 1, 2)
@@ -416,29 +430,26 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	elif scale=='AXIS':
 		curveNames["scale"] = (0, 1, 2)
 		curveKeys.append("scale")
-	
-	# FCurves to export, and number of keyframes - 1
-	curves = []
-	keyframeCount = -1;
+			
+	# For each data path...
 	for key in curveKeys:
+		keyframe_count = 0
+		curves = []
+		# Get the curves for that path
 		for index in curveNames[key]:
 			for fcurve in action.fcurves:
 				if fcurve.data_path==key and fcurve.array_index==index:
-					if keyframeCount < 0:
-						keyframeCount = len(fcurve.keyframe_points)-1
-					elif keyframeCount != len(fcurve.keyframe_points)-1:
-						raise RuntimeError("Number of keyframes in FCurves is not uniform for Action \'" + action.name + "\'")
+					if index == 0:
+						keyframe_count = len(fcurve.keyframe_points)
 					curves.append(fcurve)
-	
-	file.writeString(name)
-	print("NAME: " + name)
-	file.writeFlags(flags)
-	print("FLAGS: " + str(flags))
-	file.writeByte(keyframeCount)
-	print("KEYFRAMECOUNT " + str(keyframeCount))
-	for curve in curves:
-		writeFCurveToFile(curve, file)
-		print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
+					print("write curve " + fcurve.data_path + "[" + str(fcurve.array_index) + "]")
+		# write the curves to the file
+		if len(curves) == len(curveNames):
+			file.writeByte(keyframe_count)
+			for curve in curves:
+				writeFCurveToFile(curve, file)
+		else:
+			file.writeByte(0)
 
 def writeFCurveToFile(fcurve, file):
 	counter = 0

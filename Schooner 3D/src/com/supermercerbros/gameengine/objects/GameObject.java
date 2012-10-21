@@ -62,6 +62,10 @@ public class GameObject implements Collider {
 	 * The model transformation matrix for this GameObject
 	 */
 	public final float[] modelMatrix;
+	
+	public final GameObject parent;
+	public final boolean isInstance;
+	
 	/**
 	 * The current Movement of the GameObject
 	 */
@@ -94,18 +98,27 @@ public class GameObject implements Collider {
 		this.normals = (normals != null) ? normals : new float[verts.length];
 		this.doubles = doubles;
 		
+		// Instance information
+		this.isInstance = false;
+		this.parent = null;
+		
+		// Metadata
 		info = new Metadata();
 		info.size = indices.length;
 		info.count = verts.length / 3;
 		info.mtl = mtl;
 		
+		// Movements
 		motionData = new MovementData();
 		
+		// Collision detection
 		collisions = new HashMap<Collision, Collider>();
 		
+		// Model Matrix
 		modelMatrix = new float[16];
 		Matrix.setIdentityM(modelMatrix, 0);
 		
+		// Normals
 		if (normals == null) {
 			Normals.calculate(this);
 		}
@@ -119,15 +132,28 @@ public class GameObject implements Collider {
 		this.doubles = data.doubles;
 		Normals.calculate(this);
 		
-		info = new Metadata();
+		// Instance information
+		this.parent = data.parent;
+		if (parent != null) {
+			isInstance = true;
+			info = new Metadata(parent.info.bufferLocations);
+		} else {
+			isInstance = false;
+			info = new Metadata();
+		}
+		
+		// Metadata
 		info.size = indices.length;
 		info.count = verts.length / 3;
 		info.mtl = material;
 		
+		// Movements
 		motionData = new MovementData();
 		
+		// Collision Detection
 		collisions = new HashMap<Collision, Collider>();
 		
+		// Model matrix
 		if (data.matrix == null) {
 			modelMatrix = new float[16];
 			Matrix.setIdentityM(modelMatrix, 0);
@@ -144,20 +170,48 @@ public class GameObject implements Collider {
 	 *            An array of the Materials to use for the instances.
 	 * @return a LinkedList of GameObjects, or null if no materials are given.
 	 */
-	public LinkedList<GameObject> instance(Material... materials) {
+	public LinkedList<GameObject> instances(Material... materials) {
 		if (materials.length == 0) {
 			return null;
 		}
 		LinkedList<GameObject> instances = new LinkedList<GameObject>();
-		for (Material material : materials) {
-			instances.add(getInstance(material));
+		if (isInstance) {
+			for (Material material : materials) {
+				final GameObject instance = parent.getInstance(material);
+				material.makeProgram();
+				instances.add(instance);
+			}
+		} else {
+			for (Material material : materials) {
+				final GameObject instance = getInstance(material);
+				material.makeProgram();
+				instances.add(instance);
+			}
 		}
 		return instances;
 	}
 	
-	private GameObject getInstance(Material material) {
-		// TODO GO.getInstance()
-		return null;
+	public GameObject instance(Material material) {
+		if (isInstance) {
+			final GameObject instance = parent.getInstance(material);
+			material.makeProgram();
+			return instance;
+		} else {
+			final GameObject instance = getInstance(material);
+			material.makeProgram();
+			return instance;
+		}
+	}
+	
+	/**
+	 * Subclasses should override this to return an instance of that class.
+	 * @param material
+	 * @return
+	 */
+	protected GameObject getInstance(Material material) {
+		PreObjectData preData = new PreObjectData(verts, indices, mtl, doubles, null, null);
+		preData.parent = this;
+		return new GameObject(preData, material);
 	}
 
 	/**
@@ -185,7 +239,7 @@ public class GameObject implements Collider {
 	 * <p>
 	 * The default implementation does nothing. To do something with the
 	 * object-space (local) vertices every frame, override this method in a
-	 * <code>GameObject</code> subclass.
+	 * subclass.
 	 * </p>
 	 * 
 	 * @param time
@@ -197,6 +251,7 @@ public class GameObject implements Collider {
 	}
 	
 	/**
+	 * TODO change to isVisible()
 	 * @return true if this GameObject has been marked for deletion.
 	 * 
 	 * @see #markForDeletion()

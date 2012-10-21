@@ -3,15 +3,15 @@ package com.supermercerbros.gameengine.math;
 import android.util.Log;
 
 /**
- * Represents a piecwise Bezier curve, used for interpolation
+ * Represents a piecewise Bezier curve, used for interpolation
  */
-public class Bezier {
-	private static final String TAG = Bezier.class.getSimpleName();
+public class BezierCurve implements Curve {
+	private static final String TAG = BezierCurve.class.getSimpleName();
 	private final float[] values;
 	private final float[] times;
 	private final int lastIndex;
 	
-	public Bezier(float[] x, float[] y) {
+	public BezierCurve(float[] x, float[] y) {
 		if (x.length != y.length) {
 			throw new IllegalArgumentException(
 					"x and y arrays must be of equal length.");
@@ -25,13 +25,10 @@ public class Bezier {
 		lastIndex = times.length - 1;
 	}
 	
-	/**
-	 * Maps a value representing the elapsed fraction of an animation to the
-	 * value corresponding to that fraction.
-	 * 
-	 * @param x
-	 *            The elapsed fraction.
+	/* (non-Javadoc)
+	 * @see com.supermercerbros.gameengine.math.Curve#getInterpolation(float)
 	 */
+	@Override
 	public float getInterpolation(float x) {
 		if (x >= 1) {
 			return values[lastIndex];
@@ -102,9 +99,10 @@ public class Bezier {
 				(t * t * t * p3);
 	}
 	
-	/**
-	 * @return The value of the first keyframe of this Bezier
+	/* (non-Javadoc)
+	 * @see com.supermercerbros.gameengine.math.Curve#getStartValue()
 	 */
+	@Override
 	public float getStartValue() {
 		return values[0];
 	}

@@ -1,6 +1,5 @@
 package com.supermercerbros.gameengine.parsers;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -14,7 +13,8 @@ import android.util.SparseArray;
 import com.supermercerbros.gameengine.armature.Action;
 import com.supermercerbros.gameengine.armature.Bone;
 import com.supermercerbros.gameengine.armature.Skeleton;
-import com.supermercerbros.gameengine.math.Bezier;
+import com.supermercerbros.gameengine.math.BezierCurve;
+import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.motion.CurveMovement;
 import com.supermercerbros.gameengine.util.BetterDataInputStream;
 import com.supermercerbros.gameengine.util.Utils;
@@ -192,44 +192,44 @@ public class Sch3D {
 	 */
 	private static CurveMovement readMovement(final BetterDataInputStream data) throws IOException {
 		CurveMovement movement;
-		try {
-			byte flagsByte = data.readByte();
-			boolean[] flags = Utils.checkBits(flagsByte, 4);
-			Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
-			int curveCount = 0;
-			if (flags[0]) {
-				curveCount += 3;
-			}
-			if (flags[1]) {
-				curveCount += 4;
-			}
-			if (flags[2]) {
-				curveCount += 1;
-			} else if (flags[3]) {
-				curveCount += 3;
-			}
-			Log.d(TAG, "CURVE COUNT: " + curveCount);
-			final int pointCount = (data.readByte() & 0x00FF) * 3 + 1;
-			Log.d(TAG, "POINT COUNT: " + pointCount);
-			
-			Bezier[] curves = new Bezier[curveCount];
-			for (int curveIndex = 0; curveIndex < curveCount; curveIndex++) {
-				Log.d(TAG, "Curve " + curveIndex);
-				float[] frames = new float[pointCount];
-				float[] values = new float[pointCount];
-				
-				for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-					frames[pointIndex] = data.readFloat();
-					values[pointIndex] = data.readFloat();
-					Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
-				}
-				
-				curves[curveIndex] = new Bezier(frames, values);
-			}
-			movement = new CurveMovement(flagsByte, curves);
-		} catch (EOFException e) {
-			throw new IOException("EOF reached while reading Movement", e);
+		byte flagsByte = data.readByte();
+		boolean[] flags = Utils.checkBits(flagsByte, 4);
+		Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
+		int curveCount = 0;
+		if (flags[0]) {
+			curveCount += 3;
 		}
+		if (flags[1]) {
+			curveCount += 4;
+		}
+		if (flags[2]) {
+			curveCount += 1;
+		} else if (flags[3]) {
+			curveCount += 3;
+		}
+		Log.d(TAG, "CURVE COUNT: " + curveCount);
+
+		Curve[] curves = new Curve[curveCount];
+		for (int curveIndex = 0; curveIndex < curveCount; curveIndex++) {
+			final int pointCount = ((data.readByte() & 0x00FF) - 1) * 3 + 1;
+			Log.d(TAG, "Curve " + curveIndex + " has "+ pointCount + " points.");
+			if (pointCount == 1) {
+				data.readFloat(); // Frame is not necessary
+				curves[curveIndex] = new ConstantCurve(data.readFloat());
+			}
+
+			float[] frames = new float[pointCount];
+			float[] values = new float[pointCount];
+
+			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+				frames[pointIndex] = data.readFloat();
+				values[pointIndex] = data.readFloat();
+				Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+			}
+
+			curves[curveIndex] = new BezierCurve(frames, values);
+		}
+		movement = new CurveMovement(flagsByte, curves);
 		return movement;
 	}
 
@@ -261,16 +261,16 @@ public class Sch3D {
 			final HashMap<String, Action> actions = new HashMap<String, Action>();
 			
 			while (data.hasNext()) {
-				String name = data.readString();
+				final String name = data.readString();
 				
 				CurveMovement movement;
-				byte flagsByte = data.readByte();
-				final int pointCount = (data.readByte() & 0x00FF) * 3 + 1;
-				Log.d(TAG, "POINT COUNT: " + pointCount);
+				final byte flagsByte = data.readByte();
 				
+				// Parse Movement
 				if (flagsByte != 0) { // If Movement exists for this Action...
 					boolean[] flags = Utils.checkBits(flagsByte, 4);
 					Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
+					
 					int curveCount = 0;
 					if (flags[0]) {
 						curveCount += 3;
@@ -284,9 +284,11 @@ public class Sch3D {
 						curveCount += 3;
 					}
 					Log.d(TAG, "CURVE COUNT: " + curveCount);
-					Bezier[] curves = new Bezier[curveCount];
+					
+					Curve[] curves = new Curve[curveCount];
 					for (int curveIndex = 0; curveIndex < curveCount; curveIndex++) {
-						Log.d(TAG, "Curve " + curveIndex);
+						final int pointCount = ((data.readByte() & 0x00FF) - 1) * 3 + 1;
+						Log.d(TAG, "Curve " + curveIndex + " has "+ pointCount + " points.");
 						float[] frames = new float[pointCount];
 						float[] values = new float[pointCount];
 						
@@ -296,47 +298,50 @@ public class Sch3D {
 							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 						}
 						
-						curves[curveIndex] = new Bezier(frames, values);
+						curves[curveIndex] = new BezierCurve(frames, values);
 					}
 					movement = new CurveMovement(flagsByte, curves);
 				} else {
 					movement = null;
 				}
 				
-				SparseArray<Bezier> curves = new SparseArray<Bezier>();
+				// Parse Action
+				SparseArray<BezierCurve> curves = new SparseArray<BezierCurve>();
 				for (byte i = 0; i < boneCount; i++) {
-					float firstFrame = data.readFloat();
-					if (firstFrame == 0.0f) {
-						continue;
+					// For each bone
+					final int pointCount = ((data.readByte() & 0x00FF) - 1) * 3 + 1;
+					Log.d(TAG, "Bone " + i + " has " + pointCount + " points.");
+					if (pointCount < 1) {
+						continue; // Bone has no points
 					} else {
 						final int offset = i * 4;
 						final float[] wFrames = new float[pointCount], wValues = new float[pointCount];
 						for (int index = 0; index < pointCount; index++) {
-							wFrames[index] = (index == 0) ? firstFrame : data.readFloat();
+							wFrames[index] = data.readFloat();
 							wValues[index] = data.readFloat();
 						}
-						curves.append(offset, new Bezier(wFrames, wValues));
+						curves.append(offset, new BezierCurve(wFrames, wValues));
 						
 						final float[] xFrames = new float[pointCount], xValues = new float[pointCount];
 						for (int index = 0; index < pointCount; index++) {
 							xFrames[index] = data.readFloat();
 							xValues[index] = data.readFloat();
 						}
-						curves.append(offset, new Bezier(xFrames, xValues));
+						curves.append(offset, new BezierCurve(xFrames, xValues));
 						
 						final float[] yFrames = new float[pointCount], yValues = new float[pointCount];
 						for (int index = 0; index < pointCount; index++) {
 							yFrames[index] = data.readFloat();
 							yValues[index] = data.readFloat();
 						}
-						curves.append(offset, new Bezier(yFrames, yValues));
+						curves.append(offset, new BezierCurve(yFrames, yValues));
 						
 						final float[] zFrames = new float[pointCount], zValues = new float[pointCount];
 						for (int index = 0; index < pointCount; index++) {
 							zFrames[index] = data.readFloat();
 							zValues[index] = data.readFloat();
 						}
-						curves.append(offset, new Bezier(zFrames, zValues));
+						curves.append(offset, new BezierCurve(zFrames, zValues));
 					}
 				}
 				actions.put(name, new Action(movement, curves));

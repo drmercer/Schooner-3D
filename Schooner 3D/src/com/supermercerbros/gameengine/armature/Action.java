@@ -4,14 +4,15 @@ import java.util.Iterator;
 
 import android.util.SparseArray;
 
-import com.supermercerbros.gameengine.math.Bezier;
+import com.supermercerbros.gameengine.math.BezierCurve;
+import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.motion.Movement;
 
 public class Action {
-	protected final SparseArray<Bezier> boneCurves;
+	protected final SparseArray<BezierCurve> boneCurves;
 	public final Movement movement;
 	
-	public Action(Movement movement, SparseArray<Bezier> curves) {
+	public Action(Movement movement, SparseArray<BezierCurve> curves) {
 		this.boneCurves = curves;
 		this.movement = movement;
 	}
@@ -32,11 +33,11 @@ public class Action {
 				final float sz = data.callState.boneStates[offset + 3];
 				
 				final float fw, fx, fy, fz;
-				Bezier wCurve = boneCurves.get(offset    );
+				Curve wCurve = boneCurves.get(offset    );
 				if (wCurve != null) {
-					Bezier xCurve = boneCurves.get(offset + 1);
-					Bezier yCurve = boneCurves.get(offset + 2);
-					Bezier zCurve = boneCurves.get(offset + 3);
+					Curve xCurve = boneCurves.get(offset + 1);
+					Curve yCurve = boneCurves.get(offset + 2);
+					Curve zCurve = boneCurves.get(offset + 3);
 					fw = wCurve.getStartValue();
 					fx = xCurve.getStartValue();
 					fy = yCurve.getStartValue();
@@ -62,11 +63,11 @@ public class Action {
 				final int offset = i*4;
 				final Bone bone = iter.next();
 				
-				Bezier wCurve = boneCurves.get(offset    );
+				Curve wCurve = boneCurves.get(offset    );
 				if (wCurve != null) {
-					Bezier xCurve = boneCurves.get(offset + 1);
-					Bezier yCurve = boneCurves.get(offset + 2);
-					Bezier zCurve = boneCurves.get(offset + 3);
+					Curve xCurve = boneCurves.get(offset + 1);
+					Curve yCurve = boneCurves.get(offset + 2);
+					Curve zCurve = boneCurves.get(offset + 3);
 					
 					final float w = wCurve.getInterpolation(framePoint);
 					final float x = xCurve.getInterpolation(framePoint);

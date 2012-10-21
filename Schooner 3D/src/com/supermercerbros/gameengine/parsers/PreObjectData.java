@@ -1,5 +1,7 @@
 package com.supermercerbros.gameengine.parsers;
 
+import com.supermercerbros.gameengine.objects.GameObject;
+
 /**
  * Contains GameObject data before it is made into a GameObject.
  */
@@ -11,10 +13,11 @@ public class PreObjectData {
 	
 	public final byte[][] boneIndices;
 	public final float[][] boneWeights;
+	public GameObject parent;
 	
 	public float[] matrix;
 	
-	PreObjectData(float[] verts, short[] indices, float[] uvs,
+	public PreObjectData(float[] verts, short[] indices, float[] uvs,
 			short[][] doubles, byte[][] boneIndices, float[][] boneWeights) {
 		this.verts = verts;
 		this.doubles = doubles;
@@ -23,13 +26,4 @@ public class PreObjectData {
 		this.boneIndices = boneIndices;
 		this.boneWeights = boneWeights;
 	}
-	
-	public boolean isArmatureIndexed() {
-		return boneIndices != null;
-	}
-	
-	public boolean isTextured() {
-		return doubles != null;
-	}
-	
 }

@@ -25,12 +25,4 @@ public class RenderData {
 		primitives = new LinkedList<Metadata>();
 		modelMatrices = new CopyOnWriteArrayList<float[]>();
 	}
-	
-	protected RenderData prep(){
-		for (Metadata primitive : primitives){
-			primitive.prep();
-		}
-		return this;
-	}
-
 }

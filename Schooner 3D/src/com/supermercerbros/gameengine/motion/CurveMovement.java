@@ -4,25 +4,25 @@ import java.util.Arrays;
 
 import android.util.Log;
 
-import com.supermercerbros.gameengine.math.Bezier;
+import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.math.MatrixUtils;
 import com.supermercerbros.gameengine.objects.GameObject;
 
 public class CurveMovement implements Movement {
 	private static final String TAG = CurveMovement.class.getSimpleName();
-	private final Bezier xPos, yPos, zPos, wRot, xRot, yRot, zRot,
+	private final Curve xPos, yPos, zPos, wRot, xRot, yRot, zRot,
 			xScl, yScl, zScl;
 
 	/**
 	 * @param flags
 	 * @param curves
 	 * 
-	 * @throws ArrayIndexOutOfBoundsException if not enough Beziers are supplied for the given flags
+	 * @throws ArrayIndexOutOfBoundsException if not enough Curves are supplied for the given flags
 	 */
-	public CurveMovement(int flags, Bezier... curves) {
+	public CurveMovement(int flags, Curve... curves) {
 		short index = 0;
 		
-		if ((flags & POSITION) != 0) {
+		if ((flags & POSITION) != 0 && curves[index] != null) {
 			xPos = curves[index++];
 			yPos = curves[index++];
 			zPos = curves[index++];
@@ -32,7 +32,7 @@ public class CurveMovement implements Movement {
 			zPos = null;
 		}
 		
-		if ((flags & ROTATION) != 0) {
+		if ((flags & ROTATION) != 0 && curves[index] != null) {
 			wRot = curves[index++];
 			xRot = curves[index++];
 			yRot = curves[index++];
@@ -44,11 +44,11 @@ public class CurveMovement implements Movement {
 			zRot = null;
 		}
 		
-		if ((flags & SCALE) != 0) {
+		if ((flags & SCALE) != 0 && curves[index] != null) {
 			xScl = curves[index++];
 			yScl = null;
 			zScl = null;
-		} else if ((flags & SCALE_AXIS) != 0) {
+		} else if ((flags & SCALE_AXIS) != 0 && curves[index] != null) {
 			xScl = curves[index++];
 			yScl = curves[index++];
 			zScl = curves[index++];

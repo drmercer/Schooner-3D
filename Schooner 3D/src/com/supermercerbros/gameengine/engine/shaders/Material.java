@@ -160,7 +160,7 @@ public abstract class Material {
 	 * @return The byte size of the object's data in the VBO (
 	 *         <code>primitive.count * stride * 4</code>)
 	 */
-	public int attachAttribs(Metadata primitive, int vboOffset, float[] matrices) {
+	public void attachAttribs(Metadata primitive, int vboOffset, float[] matrices) {
 		if (a_pos == -2) {
 			a_pos = program.getAttribLocation(ShaderLib.A_POS);
 			a_normal = program.getAttribLocation(ShaderLib.A_NORMAL);
@@ -184,7 +184,6 @@ public abstract class Material {
 		if (modifier != null) {
 			modifier.onAttachAttribs(this, program);
 		}
-		return primitive.count * stride * 4;
 	}
 	
 	/**
@@ -193,6 +192,13 @@ public abstract class Material {
 	 */
 	public int getGeometryType() {
 		return GLES20.GL_TRIANGLES;
+	}
+	
+	/**
+	 * @return The number of floats per vertex
+	 */
+	public int getStride(){
+		return stride;
 	}
 	
 	/**
@@ -209,11 +215,12 @@ public abstract class Material {
 	 */
 	public int loadObjectToVBO(GameObject obj, int[] vbo, int offset) {
 		inPos = offset;
-		onLoadObject(obj, vbo, obj.verts.length / 3);
+		final int vertCount = obj.info.count;
+		onLoadObject(obj, vbo, vertCount);
 		if (modifier != null) {
 			modifier.onLoadObject(this, obj, vbo);
 		}
-		return obj.info.count * stride;
+		return vertCount * stride;
 	}
 	
 	protected abstract void onLoadObject(GameObject obj, int[] vbo,
