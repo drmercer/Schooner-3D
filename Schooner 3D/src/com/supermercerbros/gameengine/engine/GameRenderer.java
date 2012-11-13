@@ -35,6 +35,7 @@ import com.supermercerbros.gameengine.Schooner3D;
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.engine.shaders.Program;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
+import com.supermercerbros.gameengine.hud.GameHud;
 import com.supermercerbros.gameengine.objects.Metadata;
 import com.supermercerbros.gameengine.util.GLES2;
 import com.supermercerbros.gameengine.util.Utils;
@@ -91,6 +92,8 @@ public class GameRenderer implements Renderer {
 
 	private float near, far;
 	private float aspect;
+	
+	private boolean hasHud;
 
 	/**
 	 * Constructs a new GameRenderer.
@@ -262,5 +265,13 @@ public class GameRenderer implements Renderer {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * @param hud
+	 */
+	public void setHud(GameHud hud) {
+		// TODO GameRenderer.setHud()
+		
 	}
 }

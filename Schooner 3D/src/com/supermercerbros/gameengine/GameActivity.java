@@ -29,6 +29,7 @@ import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.DataPipe;
 import com.supermercerbros.gameengine.engine.Engine;
 import com.supermercerbros.gameengine.engine.GameRenderer;
+import com.supermercerbros.gameengine.hud.GameHud;
 
 /**
  * An Activity that handles much of setting up the Engine and Renderer. At the
@@ -46,7 +47,7 @@ import com.supermercerbros.gameengine.engine.GameRenderer;
  */
 public abstract class GameActivity extends Activity implements OnTouchListener {
 	private static final String TAG = "com.supermercerbros.gameengine.GameActivity";
-	private GLSurfaceView gameView;
+	private GameView gameView;
 	private GameRenderer renderer;
 	private DataPipe pipe;
 	private Camera cam;
@@ -70,7 +71,7 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		cam = new Camera();
 		engine = new Engine(pipe, cam);
 
-		gameView = new GLSurfaceView(this);
+		gameView = new GameView(this);
 		gameView.setEGLContextClientVersion(2);
 		gameView.setOnTouchListener(this);
 	}
@@ -161,6 +162,13 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		pipe.close();
 		pipe = null;
 	}
+	
+	protected void setHud(GameHud hud) {
+		final int width = getWindowManager().getDefaultDisplay().getWidth();
+		hud.setDimensions() // FIXME Left off here
+		renderer.setHud(hud);
+		gameView.setHud(hud);
+	}
 
 	/**
 	 * Sets the render background color.
@@ -174,4 +182,5 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		Schooner3D.backgroundColor[2] = (float) Color.blue(color) / 256;
 		Schooner3D.backgroundColor[3] = (float) Color.alpha(color) / 256;
 	}
+	
 }
