@@ -59,7 +59,8 @@ public class TestActivity extends GameActivity {
 		
 		engine.setLight(0.0f, 0.0f, 1.0f, ((float) Color.red(bg) / 256 + 1.0f) / 2.0f, ((float) Color.green(bg) / 256 + 1.0f) / 2.0f, ((float) Color.blue(bg) / 256 + 1.0f) / 2.0f);
 		engine.addObject(object);
-		start(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
+		setClipDistances(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
+		start();
 	}
 
 	protected GameObject getObject() {
@@ -74,7 +75,7 @@ public class TestActivity extends GameActivity {
 		return object;
 	}
 
-	@Override
+//	@Override
 	public boolean onTouch(View v, MotionEvent event) {
 		if (event.getAction() != MotionEvent.ACTION_DOWN) return false;
 		switchCamPosition();
@@ -98,14 +99,6 @@ public class TestActivity extends GameActivity {
 		bg = Color.argb(255, (int) (255 * r), (int) (255 * g), (int) (255 * b));
 		engine.setLight(0.0f, 0.0f, 1.0f, 1 - r/2, 1 - g/2, 1 - b/2);
 		setBackgroundColor(bg);
-	}
-	
-	private int getWidth(){
-		return getWindowManager().getDefaultDisplay().getWidth(); 
-	}
-	
-	private int getHeight(){
-		return getWindowManager().getDefaultDisplay().getHeight();
 	}
 	
 	@Override

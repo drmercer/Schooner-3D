@@ -15,21 +15,66 @@
  */
 package com.supermercerbros.gameengine.hud;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.LinkedList;
 
+import android.opengl.GLES20;
+import android.util.Log;
 import android.view.MotionEvent;
+
+import com.supermercerbros.gameengine.engine.GameRenderer;
 
 /**
  * Represents the Heads-Up-Display-style UI of a game.
  */
 public class GameHud {
+	// Constants
+	private static final int DEFAULT_VBO_SIZE = 8000; // 400 verts
+	private static final int DEFAULT_IBO_SIZE = 2400; // 800 verts
+
+	private final int vboSize;
+	private final int iboSize;
 	private final LinkedList<HudElement> elements;
+
+	// Coordinate converter
+	private CoordsConverter converter;
+
+	// Buffer handles
+	private int arrayBuffer;
+	private int elementBuffer;
+
+	// Buffers
+	private final ByteBuffer vbo;
+	private final ByteBuffer ibo;
 
 	/**
 	 * Constructs a new GameHud.
 	 */
 	public GameHud() {
 		this.elements = new LinkedList<HudElement>();
+		this.vboSize = DEFAULT_VBO_SIZE;
+		this.iboSize = DEFAULT_IBO_SIZE;
+
+		vbo = ByteBuffer.allocateDirect(DEFAULT_VBO_SIZE).order(
+				ByteOrder.nativeOrder());
+		ibo = ByteBuffer.allocateDirect(DEFAULT_IBO_SIZE).order(
+				ByteOrder.nativeOrder());
+	}
+
+	/**
+	 * Constructs a new GameHud.
+	 * 
+	 * @param vboSize
+	 * @param iboSize
+	 */
+	public GameHud(int vboSize, int iboSize) {
+		this.elements = new LinkedList<HudElement>();
+		this.vboSize = vboSize;
+		this.iboSize = iboSize;
+
+		vbo = ByteBuffer.allocateDirect(vboSize).order(ByteOrder.nativeOrder());
+		ibo = ByteBuffer.allocateDirect(iboSize).order(ByteOrder.nativeOrder());
 	}
 
 	/**
@@ -49,22 +94,77 @@ public class GameHud {
 	 * Called by GameRenderer
 	 */
 	public void render() {
+		// GL Buffer stuff
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+		
+		// Disable depth test and face culling
+		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+		GLES20.glDisable(GLES20.GL_CULL_FACE); // TODO delete this line
+		GameRenderer.logError("debugging");
+
+		// Render elements
 		final LinkedList<HudElement> localElements = this.elements;
-		// TODO GL Buffer stuff
 		synchronized (localElements) {
 			for (HudElement element : localElements) {
-				element.writeIndicesToBuffer()
+				element.render();
 			}
 		}
 	}
 
+	public void init() {
+		// Generate buffers
+		final int[] buffers = new int[2];
+		GLES20.glGenBuffers(2, buffers, 0);
+		final int localArrayBuffer = buffers[0];
+		final int localElementBuffer = buffers[1];
+		arrayBuffer = localArrayBuffer;
+		elementBuffer = localElementBuffer;
+
+		// Bind buffers
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, localArrayBuffer);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, localElementBuffer);
+
+		// Fill Buffers and load Programs
+		final LinkedList<HudElement> localElements = this.elements;
+		synchronized (localElements) {
+			for (HudElement element : localElements) {
+				element.writeIndicesToBuffer(ibo);
+				element.writeVertsToBuffer(vbo);
+				element.loadProgram();
+			}
+		}
+		
+		vbo.rewind();
+		ibo.rewind();
+
+		// Initialize buffers
+		GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vboSize, vbo,
+				GLES20.GL_STATIC_DRAW);
+		GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, iboSize, ibo,
+				GLES20.GL_STATIC_DRAW);
+
+	}
+
 	/**
+	 * Called when a MotionEvent occurs
 	 * @param event
 	 * @return
 	 */
 	public boolean onTouchEvent(MotionEvent event) {
-		event.
-		// TODO GameHud.onTouchEvent()
+		for (HudElement element : elements) {
+			if (element.onTouchEvent(event, converter)){
+				return true;
+			}
+		}
 		return false;
+	}
+
+	/**
+	 * @param width
+	 * @param height
+	 */
+	public void setDimensions(int width, int height) {
+		this.converter = new CoordsConverter(width, height);
 	}
 }

@@ -16,12 +16,13 @@
 
 package com.supermercerbros.gameengine;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Color;
-import android.opengl.GLSurfaceView;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View.OnTouchListener;
+import android.view.Display;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -34,7 +35,7 @@ import com.supermercerbros.gameengine.hud.GameHud;
 /**
  * An Activity that handles much of setting up the Engine and Renderer. At the
  * end of {@link #onCreate(Bundle)}, subclasses should call
- * {@link #start(float, float)} like so:
+ * {@link #setClipDistances(float, float)} and {@link #start()} like so:
  * 
  * <pre>
  * public void onCreate(Bundle savedInstanceState) {
@@ -42,10 +43,15 @@ import com.supermercerbros.gameengine.hud.GameHud;
  *     
  *     ... // Set Camera, load objects, textures, etc.
  *     
- *     start(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
+ *     setClipDistances(NEAR_CLIP_DISTANCE, FAR_CLIP_DISTANCE);
+ *     
+ *     ... // Set GameHud if desired
+ *     
+ *     start();
  * }
+ * </pre>
  */
-public abstract class GameActivity extends Activity implements OnTouchListener {
+public abstract class GameActivity extends Activity {
 	private static final String TAG = "com.supermercerbros.gameengine.GameActivity";
 	private GameView gameView;
 	private GameRenderer renderer;
@@ -60,10 +66,10 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		super.onCreate(savedInstanceState);
 		final Window window = getWindow();
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
-                                WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        window.setBackgroundDrawable(null);
-        
+		window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+				WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		window.setBackgroundDrawable(null);
+
 		created = true;
 		Log.d(TAG, "onCreate");
 
@@ -73,7 +79,6 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 
 		gameView = new GameView(this);
 		gameView.setEGLContextClientVersion(2);
-		gameView.setOnTouchListener(this);
 	}
 
 	/**
@@ -105,21 +110,45 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 	/**
 	 * Subclasses must call this at the end of their onCreate() call.
 	 * 
+	 * @deprecated Use {@link #setClipDistances(float, float)} and
+	 *             {@link #start()} instead.
+	 * 
 	 * @param near
 	 *            The near clipping distance.
 	 * @param far
 	 *            The far clipping distance.
 	 */
 	protected void start(float near, float far) {
+		// TODO remove for first release version
+		setClipDistances(near, far);
+		start();
+	}
+
+	protected void start() {
 		if (!created) {
 			throw new IllegalStateException(
-					"GameActivity subclass must call super.onCreate() first!");
+					"GameActivity subclass must call super.onCreate() first");
+		} else if (renderer == null) {
+			throw new IllegalStateException(
+					"GameActivity subclass must call setClipDistances() first");
 		}
 		Log.d(TAG, "GameActivity Start!");
-		renderer = new GameRenderer(pipe, near, far);
 		gameView.setRenderer(renderer);
 		setContentView(gameView);
 		engine.start();
+	}
+
+	/**
+	 * Sets the near and far clipping distances. Calling this method initializes
+	 * the renderer.
+	 * 
+	 * @param near
+	 *            The near clipping distance.
+	 * @param far
+	 *            The far clipping distance.
+	 */
+	protected void setClipDistances(float near, float far) {
+		renderer = new GameRenderer(pipe, near, far);
 	}
 
 	@Override
@@ -162,12 +191,19 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		pipe.close();
 		pipe = null;
 	}
-	
+
+	/**
+	 * Sets the GameHud to superimpose over the game.
+	 * 
+	 * @param hud The GameHud to use.
+	 */
 	protected void setHud(GameHud hud) {
-		final int width = getWindowManager().getDefaultDisplay().getWidth();
-		hud.setDimensions() // FIXME Left off here
 		renderer.setHud(hud);
 		gameView.setHud(hud);
+		int width = getWidth();
+		int height = getHeight();
+		Log.d("GameActivity", "(" + width + ", " + height + ")");
+		hud.setDimensions(width, height);
 	}
 
 	/**
@@ -183,4 +219,42 @@ public abstract class GameActivity extends Activity implements OnTouchListener {
 		Schooner3D.backgroundColor[3] = (float) Color.alpha(color) / 256;
 	}
 	
+	/**
+	 * Utility function to get the width of the display.
+	 * @return
+	 */
+	@SuppressLint("NewApi")
+	public int getWidth() {
+		final Display display = getWindowManager().getDefaultDisplay();
+		int width;
+		try {
+			Point size = new Point();
+			display.getSize(size);
+			width = size.x;
+		} catch (NoSuchMethodError e){
+			// Deprecated in API 13
+			width = display.getWidth();			
+		}
+		return width;
+	}
+	
+	/**
+	 * Utility function to get the height of the display.
+	 * @return
+	 */
+	@SuppressLint("NewApi")
+	public int getHeight() {
+		final Display display = getWindowManager().getDefaultDisplay();
+		int height;
+		try {
+			Point size = new Point();
+			display.getSize(size);
+			height = size.y;
+		} catch (NoSuchMethodError e){
+			// Deprecated in API 13
+			height = display.getHeight();			
+		}
+		return height;
+	}
+
 }

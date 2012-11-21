@@ -73,13 +73,12 @@ public class GameRenderer implements Renderer {
 		return error;
 	}
 
-	private DataPipe pipe;
-	private IntBuffer vbo; // Vertex Buffer Object to hold dynamic data
-	private ShortBuffer ibo; // Index Buffer Object
-	/**
-	 * [0] = vbo handle, [1] = ibo handle
-	 */
-	private int[] buffers = new int[2];
+	private final DataPipe pipe;
+	private final IntBuffer vbo; // Vertex Buffer Object to hold dynamic data
+	private final ShortBuffer ibo; // Index Buffer Object
+
+	private int arrayBuffer;
+	private int elementBuffer;
 
 	private Program activeProgram;
 	private float[] wvpMatrix = new float[16];
@@ -92,14 +91,20 @@ public class GameRenderer implements Renderer {
 
 	private float near, far;
 	private float aspect;
-	
+
+	// HUD stuff
+	private GameHud hud;
 	private boolean hasHud;
 
 	/**
 	 * Constructs a new GameRenderer.
-	 * @param pipe The DataPipe to use to communicate with an Engine
-	 * @param near The near clipping distance
-	 * @param far The far clipping distance
+	 * 
+	 * @param pipe
+	 *            The DataPipe to use to communicate with an Engine
+	 * @param near
+	 *            The near clipping distance
+	 * @param far
+	 *            The far clipping distance
 	 */
 	public GameRenderer(DataPipe pipe, float near, float far) {
 		Log.d(TAG, "Constructing GameRenderer...");
@@ -107,16 +112,12 @@ public class GameRenderer implements Renderer {
 
 		Matrix.setIdentityM(projMatrix, 0);
 		Matrix.setIdentityM(wvpMatrix, 0);
-		
-		if (vbo == null) {
-			vbo = ByteBuffer.allocateDirect(pipe.VBO_capacity).order(
-					ByteOrder.nativeOrder()).asIntBuffer();
-		}
-		if (ibo == null) {
-			ibo = ByteBuffer.allocateDirect(pipe.IBO_capacity).order(
-					ByteOrder.nativeOrder()).asShortBuffer();
-		}
-		
+
+		vbo = ByteBuffer.allocateDirect(pipe.VBO_capacity)
+				.order(ByteOrder.nativeOrder()).asIntBuffer();
+		ibo = ByteBuffer.allocateDirect(pipe.IBO_capacity)
+				.order(ByteOrder.nativeOrder()).asShortBuffer();
+
 		this.near = near;
 		this.far = far;
 		Log.d(TAG, "GameRenderer constructed!");
@@ -133,40 +134,49 @@ public class GameRenderer implements Renderer {
 
 		vbo.clear();
 		ibo.clear();
-		
+
 		// Load VBO data
 		vbo.put(in.vbo);
 		vbo.position(0);
-		
+
 		// Load index data to IBO
 		ibo.put(in.ibo);
 		ibo.position(0);
-		
+
+		// Bind buffers
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+
+		// Update buffer data
 		GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0,
 				in.ibo.length * 2, ibo);
 		GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, in.vbo.length * 4,
 				vbo);
-		
+
 		// Render each primitive
 		int matrixNumber = 0;
 		final LinkedList<Metadata> primitives = in.primitives;
 		for (final Metadata primitive : primitives) {
+			// Ensure depth test is enabled
+			GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+			logError("glEnable (DEPTH)");
+			
 			if (primitive == null) {
 				Log.e(TAG, "primitive == null");
 			}
-			
+
 			final Material material = primitive.mtl;
-			if (material == null){
+			if (material == null) {
 				Log.e(TAG, "primitive.mtl == null");
 			}
-			
+
 			useProgram(material.getProgram());
-			
+
 			// Load World View-Projection matrix
 			Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, in.viewMatrix, 0);
 			GLES20.glUniformMatrix4fv(u_viewProj, 1, false, wvpMatrix, 0);
 			logError("glUniformMatrix4fv (wvpMatrix)");
-			
+
 			// Load directional light
 			Light light = in.light;
 			if (u_lightVec != -1) {
@@ -177,24 +187,26 @@ public class GameRenderer implements Renderer {
 				GLES20.glUniform3f(u_lightColor, light.r, light.g, light.b);
 				logError("glUniform3fv (light color)");
 			}
-			
+
 			// Material-specific stuff
 			final int inIndexOffset = in.index * 2;
 			final int[] bufferLocations = primitive.bufferLocations;
-			material.attachAttribs(primitive, bufferLocations[inIndexOffset] * 4,
+			material.attachAttribs(primitive,
+					bufferLocations[inIndexOffset] * 4,
 					in.modelMatrices.get(matrixNumber));
-			
+
 			// Render primitive!
-			GLES2.glDrawElements(material.getGeometryType(),
-					primitive.size, GLES20.GL_UNSIGNED_SHORT, bufferLocations[inIndexOffset + 1] * 2);
+			GLES2.glDrawElements(material.getGeometryType(), primitive.size,
+					GLES20.GL_UNSIGNED_SHORT,
+					bufferLocations[inIndexOffset + 1] * 2);
 			logError("DrawElements");
-			
-			// Re-enable depth test
-			if (!GLES20.glIsEnabled(GLES2.GL_DEPTH_TEST)){
-				GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-				logError("glEnable (DEPTH)");
-			}
+
 			matrixNumber++;
+		}
+
+		// Render HUD
+		if (hasHud) {
+			hud.render();
 		}
 	}
 
@@ -215,26 +227,37 @@ public class GameRenderer implements Renderer {
 	@Override
 	public void onSurfaceCreated(GL10 unused, EGLConfig config) {
 		EGLContextLostHandler.contextLost();
-		GLES20.glGenBuffers(2, buffers, 0);
-		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, buffers[0]);
-		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
 
+		// Generate buffers
+		final int[] buffers = new int[2];
+		GLES20.glGenBuffers(2, buffers, 0);
+		final int localArrayBuffer = buffers[0];
+		final int localElementBuffer = buffers[1];
+
+		// Bind buffers
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, localArrayBuffer);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, localElementBuffer);
+
+		// Initialize buffers
 		GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, pipe.VBO_capacity, vbo,
 				GLES20.GL_DYNAMIC_DRAW);
 		GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, pipe.IBO_capacity,
 				ibo, GLES20.GL_DYNAMIC_DRAW);
 
-		GLES20.glClearColor(Schooner3D.backgroundColor[0],
-				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
-				Schooner3D.backgroundColor[3]);
-		GLES20.glEnable(GLES20.GL_CULL_FACE);
-		GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+		// Store handles as fields
+		arrayBuffer = localArrayBuffer;
+		elementBuffer = localElementBuffer;
 
+		// Initialize HUD
+		if (hasHud) {
+			hud.init();
+		}
 	}
 
 	/**
 	 * @param name
-	 * @return True if a new program has been loaded
+	 * @return True if a new program has been loaded // TODO remove this and
+	 *         inline
 	 */
 	private boolean useProgram(Program program) {
 		if (program == null) {
@@ -242,7 +265,7 @@ public class GameRenderer implements Renderer {
 			throw new NullPointerException("program == null");
 		}
 		boolean success = true;
-		if (!program.isLoaded() || activeProgram == null || !activeProgram.equals(program)) {
+		if (!program.isLoaded()) {
 			try {
 				program.load();
 			} catch (GLException e) {
@@ -252,26 +275,28 @@ public class GameRenderer implements Renderer {
 				success = false;
 			}
 			logError("Program.load()");
-			if (success) {
-				GLES20.glUseProgram(program.getHandle());
-
-				u_viewProj = program.getUniformLocation(ShaderLib.U_VIEWPROJ);
-				u_lightVec = program.getUniformLocation(ShaderLib.U_LIGHTVEC);
-				u_lightColor = program
-						.getUniformLocation(ShaderLib.U_LIGHTCOLOR);
-
-				activeProgram = program;
-				return true;
-			}
 		}
-		return false;
+		if (success) {
+			GLES20.glUseProgram(program.getHandle());
+
+			u_viewProj = program.getUniformLocation(ShaderLib.U_VIEWPROJ);
+			u_lightVec = program.getUniformLocation(ShaderLib.U_LIGHTVEC);
+			u_lightColor = program
+					.getUniformLocation(ShaderLib.U_LIGHTCOLOR);
+
+			activeProgram = program;
+		}
+		return success;
 	}
 
 	/**
+	 * Sets the GameHud to render over the game. Must be called before the
+	 * renderer is started.
+	 * 
 	 * @param hud
 	 */
 	public void setHud(GameHud hud) {
-		// TODO GameRenderer.setHud()
-		
+		this.hud = hud;
+		this.hasHud = hud != null;
 	}
 }

@@ -15,23 +15,23 @@
  */
 package com.supermercerbros.gameengine;
 
-import com.supermercerbros.gameengine.hud.GameHud;
-
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.view.MotionEvent;
 
+import com.supermercerbros.gameengine.hud.GameHud;
+
 /**
  * 
  */
-public class GameView extends GLSurfaceView {
+class GameView extends GLSurfaceView {
 	private static final String TAG = "GameView";
 	private GameHud hud;
 
 	/**
 	 * @see GLSurfaceView#GLSurfaceView(Context)
 	 */
-	public GameView(Context context) {
+	GameView(Context context) {
 		super(context);
 	}
 	
@@ -45,8 +45,11 @@ public class GameView extends GLSurfaceView {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		return hud.onTouchEvent(event);
+		if (hud == null) {
+			return false;
+		} else {
+			hud.onTouchEvent(event);
+			return true;
+		}
 	}
-	
-	// TODO: HUD stuff
 }
