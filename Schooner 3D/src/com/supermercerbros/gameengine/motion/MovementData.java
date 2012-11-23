@@ -16,7 +16,10 @@
 
 package com.supermercerbros.gameengine.motion;
 
-public class MovementData {
+import com.supermercerbros.gameengine.engine.Time;
+import com.supermercerbros.gameengine.engine.Time.Pausable;
+
+public class MovementData implements Pausable {
 	
 	/**
 	 * The duration of the movement, in milliseconds.
@@ -38,6 +41,7 @@ public class MovementData {
 	 */
 	public MovementData() {
 		matrix = new float[16];
+		Time.getInstance().addPausable(this);
 	}
 	
 	/**
@@ -52,5 +56,10 @@ public class MovementData {
 		this.startTime = startTime;
 		this.duration = duration;
 		System.arraycopy(modelMatrix, 0, matrix, 0, 16);
+	}
+
+	@Override
+	public void onResume(long millis) {
+		this.startTime += millis;
 	}
 }

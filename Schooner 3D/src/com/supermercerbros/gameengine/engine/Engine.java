@@ -63,6 +63,7 @@ public class Engine extends LoopingThread implements
 	private final Toggle flush = new Toggle(false);
 	private final Light light = new Light();
 	
+	// TODO: remove these queues
 	/**
 	 * Used for passing commands from the UI thread to the {@link Engine}
 	 * thread. This <b>should not</b> be polled by any thread other than the
@@ -237,7 +238,6 @@ public class Engine extends LoopingThread implements
 			}
 		}
 		
-		doSpecialStuff(time);
 		computeFrame();
 		final RenderData out;
 		if (aBufs) {
@@ -248,6 +248,14 @@ public class Engine extends LoopingThread implements
 		updatePipe(out);
 		aBufs = !aBufs;
 		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
+	}
+	
+	protected void onPause() {
+		Time.getInstance().pause();
+	}
+	
+	protected void onResume() {
+		Time.getInstance().resume();
 	}
 	
 	/**
@@ -279,18 +287,6 @@ public class Engine extends LoopingThread implements
 			light.g = g;
 			light.b = b;
 		}
-	}
-	
-	/**
-	 * This method is called every frame, before objects are redrawn. The
-	 * default implementation does nothing; subclasses should override this if
-	 * they wish to do anything special each frame.
-	 * 
-	 * @param time
-	 *            The time of the current frame.
-	 */
-	protected void doSpecialStuff(long time) {
-		// Nothing here. Implement in subclass.
 	}
 	
 	private void computeFrame() {

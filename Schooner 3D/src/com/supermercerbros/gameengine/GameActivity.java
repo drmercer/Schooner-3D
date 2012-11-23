@@ -53,6 +53,7 @@ import com.supermercerbros.gameengine.hud.GameHud;
  */
 public abstract class GameActivity extends Activity {
 	private static final String TAG = "com.supermercerbros.gameengine.GameActivity";
+
 	private GameView gameView;
 	private GameRenderer renderer;
 	private DataPipe pipe;
@@ -78,7 +79,6 @@ public abstract class GameActivity extends Activity {
 		engine = new Engine(pipe, cam);
 
 		gameView = new GameView(this);
-		gameView.setEGLContextClientVersion(2);
 	}
 
 	/**
@@ -155,25 +155,34 @@ public abstract class GameActivity extends Activity {
 	public void onPause() {
 		super.onPause();
 		Log.d(TAG, "onPause");
+		pauseGame();
+	}
+
+	/**
+	 * Call this to pause the game (this is called by GameActivity during
+	 * {@link #onPause()}).
+	 */
+	protected void pauseGame() {
 		if (gameView != null) {
+			// Pause the GameView if it exists
 			gameView.onPause();
 		} else {
 			Log.w(TAG, "pausing while gameView is null!");
 		}
+		// Pause the Engine
 		engine.pause();
 	}
 
-	@Override
-	public void onResume() {
-		super.onResume();
-		Log.d(TAG, "onResume");
-		if (engine.isAlive()) {
-			engine.resumeLooping();
-		}
+	/**
+	 * Call this to resume the paused game.
+	 */
+	protected void resumeGame() {
+		// Resume the Engine
+		engine.resumeLooping();
 		if (gameView != null) {
+			// Resume the GameView if it exists
 			gameView.onResume();
 		}
-		Log.d(TAG, "finished resuming");
 	}
 
 	@Override
@@ -195,7 +204,8 @@ public abstract class GameActivity extends Activity {
 	/**
 	 * Sets the GameHud to superimpose over the game.
 	 * 
-	 * @param hud The GameHud to use.
+	 * @param hud
+	 *            The GameHud to use.
 	 */
 	protected void setHud(GameHud hud) {
 		renderer.setHud(hud);
@@ -218,41 +228,45 @@ public abstract class GameActivity extends Activity {
 		Schooner3D.backgroundColor[2] = (float) Color.blue(color) / 256;
 		Schooner3D.backgroundColor[3] = (float) Color.alpha(color) / 256;
 	}
-	
+
 	/**
 	 * Utility function to get the width of the display.
+	 * 
 	 * @return
 	 */
 	@SuppressLint("NewApi")
 	public int getWidth() {
 		final Display display = getWindowManager().getDefaultDisplay();
 		int width;
-		try {
+		if (android.os.Build.VERSION.SDK_INT >= 13) {
+			// Only available in API 13+
 			Point size = new Point();
 			display.getSize(size);
 			width = size.x;
-		} catch (NoSuchMethodError e){
-			// Deprecated in API 13
-			width = display.getWidth();			
+		} else {
+			// Deprecated in API 13+
+			width = display.getWidth();
 		}
 		return width;
 	}
-	
+
 	/**
 	 * Utility function to get the height of the display.
+	 * 
 	 * @return
 	 */
 	@SuppressLint("NewApi")
 	public int getHeight() {
 		final Display display = getWindowManager().getDefaultDisplay();
 		int height;
-		try {
+		if (android.os.Build.VERSION.SDK_INT >= 13) {
+			// Only available in API 13+
 			Point size = new Point();
 			display.getSize(size);
 			height = size.y;
-		} catch (NoSuchMethodError e){
-			// Deprecated in API 13
-			height = display.getHeight();			
+		} else {
+			// Deprecated in API 13+
+			height = display.getHeight();
 		}
 		return height;
 	}

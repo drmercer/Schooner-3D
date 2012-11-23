@@ -16,9 +16,11 @@
 
 package com.supermercerbros.gameengine.armature;
 
+import com.supermercerbros.gameengine.engine.Time;
+import com.supermercerbros.gameengine.engine.Time.Pausable;
 import com.supermercerbros.gameengine.objects.BonedObject;
 
-public class ActionData {
+public class ActionData implements Pausable {
 	static class ArmatureState {
 		final float[] boneStates;
 		
@@ -56,6 +58,7 @@ public class ActionData {
 	
 	public ActionData(int boneCount) {
 		this.callState = new ArmatureState(boneCount);
+		Time.getInstance().addPausable(this);
 	}
 	
 	public void writeState(long time, long start, long duration,
@@ -66,5 +69,11 @@ public class ActionData {
 		if (start > time) {
 			callState.setState(current);
 		}
+	}
+
+	@Override
+	public void onResume(long millis) {
+		this.startTime += millis;
+		this.callTime += millis;
 	}
 }

@@ -16,7 +16,9 @@
 
 package com.supermercerbros.gameengine.animation;
 
-public class AnimationData {
+import com.supermercerbros.gameengine.engine.Time.Pausable;
+
+public class AnimationData implements Pausable {
 
 	/**
 	 * The duration of one loop of the Animation, in milliseconds.
@@ -58,7 +60,7 @@ public class AnimationData {
 	 * @param duration
 	 *            The duration of the Animation, in milliseconds.
 	 */
-	public void setDuration(long duration) {
+	public synchronized void setDuration(long duration) {
 		this.duration = duration;
 	}
 
@@ -82,7 +84,12 @@ public class AnimationData {
 	 * @param startTime
 	 *            The time at which the animation should start.
 	 */
-	public void setStartTime(long startTime) {
+	public synchronized void setStartTime(long startTime) {
 		this.startTime = startTime;
+	}
+
+	@Override
+	public synchronized void onResume(long millis) {
+		this.startTime += millis;
 	}
 }

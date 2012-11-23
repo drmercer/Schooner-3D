@@ -111,13 +111,17 @@ public abstract class LoopingThread extends Thread {
 			loop();
 			if (intermittent) {
 				pause();
-				afterPause();
 			}
 
 			if (ending) {
 				break;
 			}
-			waitOnToggle(paused, false);
+			final boolean isPaused = paused.getState();
+			if (isPaused && !ending) {
+				onPause();
+				waitOnToggle(paused, false);
+				onResume();
+			}
 		}
 
 		// Thread ends
@@ -163,10 +167,18 @@ public abstract class LoopingThread extends Thread {
 	}
 
 	/**
-	 * This method is called after the Thread pauses if it is intermittent.
+	 * This method is called when the Thread pauses if it is intermittent.
 	 * Override it to do something at that point.
 	 */
-	public void afterPause() {
+	protected void onPause() {
+		// This is overridden by subclasses
+	}
+	
+	/**
+	 * This method is called when the Thread resumes after being paused.
+	 * Override it to do something at that point.
+	 */
+	protected void onResume() {
 		// This is overridden by subclasses
 	}
 

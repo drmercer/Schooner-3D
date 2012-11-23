@@ -59,6 +59,7 @@ public class BonedObject extends GameObject {
 	public void setAction(Action action, long time, long duration) {
 		if (action != null) {
 			currentAction = action;
+			actionData.writeState(time, time, duration, skeleton); // TODO: "time, time"?
 			super.startMovement(action.movement, time, duration);
 		} else {
 			throw new IllegalArgumentException("action == null");

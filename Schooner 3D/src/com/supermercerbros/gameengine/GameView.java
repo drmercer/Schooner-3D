@@ -33,6 +33,7 @@ class GameView extends GLSurfaceView {
 	 */
 	GameView(Context context) {
 		super(context);
+		setEGLContextClientVersion(2);
 	}
 	
 	/**

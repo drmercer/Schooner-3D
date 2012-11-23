@@ -110,4 +110,10 @@ public class TestActivity extends GameActivity {
 
 	protected void onMenuButtonClick() {
 	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		resumeGame();
+	}
 }

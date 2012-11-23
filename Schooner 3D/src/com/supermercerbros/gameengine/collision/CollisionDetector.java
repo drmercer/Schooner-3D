@@ -140,7 +140,7 @@ public class CollisionDetector extends LoopingThread {
 	}
 
 	@Override
-	public void afterPause() {
+	public void onPause() {
 		listener.onCollisionCheckFinished();
 	}
 
