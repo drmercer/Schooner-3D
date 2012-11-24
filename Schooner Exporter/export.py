@@ -44,6 +44,8 @@ def warn(text=""):
 	bpy.ops.ui.warn('EXEC_DEFAULT', text=text)
 
 class BinFile:
+	DEBUG = False
+	
 	endian = '>'
 	
 	signedByte = Struct(endian + 'b')
@@ -57,6 +59,13 @@ class BinFile:
 	signedInt = Struct(endian + 'i')
 	
 	def __init__(self, directory, name):
+		# store directory and filename for debugging
+		self.DIRECTORY = directory
+		self.NAME = name
+		if BinFile.DEBUG:
+			print("## OPEN " + name)
+		
+		# open file
 		filepath = directory + name
 		import os
 		if not os.path.exists(directory):
@@ -67,6 +76,8 @@ class BinFile:
 			self.file = open(filepath, "ab")
 		
 	def writeFlags(self, bools, bytecount=1):
+		if BinFile.DEBUG:
+			print("#bool[] : " + str(bools))
 		written = 0
 		while bytecount > 0:
 			flags = 0
@@ -80,48 +91,62 @@ class BinFile:
 			bytecount -= 1
 	
 	def writeByte(self, b, signed=False):
+		if BinFile.DEBUG:
+			if signed:
+				print("#byte   : " + str(b))
+			else:
+				print("#ubyte  : " + str(b))
 		if signed:
 			self.file.write(BinFile.signedByte.pack(b))
 		else:
 			self.file.write(BinFile.unsignedByte.pack(b))
 	
 	def writeShort(self, s, signed=False):
+		if BinFile.DEBUG:
+			if signed:
+				print("#short  : " + str(s))
+			else:
+				print("#ushort : " + str(s))
 		if signed:
 			self.file.write(BinFile.signedShort.pack(s))
 		else:
 			self.file.write(BinFile.unsignedShort.pack(s))
 	
 	def writeInt(self, i):
+		if BinFile.DEBUG:
+			print("#int    : " + str(i))
 		self.file.write(BinFile.signedInt.pack(i))
 		
 	def writeFloat(self, f):
+		if BinFile.DEBUG:
+			print("#float  : " + str(f))
 		self.file.write(BinFile.signedFloat.pack(f))
 		
 	def writeString(self, string):
+		if BinFile.DEBUG:
+			print("#string : " + string)
 		self.file.write(bytes(string + chr(0), "UTF-8"))
 		
 	def writeAllShorts(self, shorts, signed=False):
 		for s in shorts:
-			if signed:
-				self.file.write(BinFile.unsignedShort.pack(s))
-			else:
-				self.file.write(BinFile.signedShort.pack(s))
+			self.writeShort(s, signed=signed)
 	
 	def writeAllShortPairs(self, shortPairs, signed=False):
 		for pair in shortPairs:
 			for s in pair:
-				if signed:
-					self.file.write(BinFile.unsignedShort.pack(s))
-				else:
-					self.file.write(BinFile.signedShort.pack(s))
+				self.writeShort(s, signed=signed)
 	
 	def writeAllFloats(self, floats):
 		for f in floats:
-			self.file.write(BinFile.signedFloat.pack(f))
+			self.writeFloat(f)
 	
 	def close(self):
 		self.file.close()
 		self.file=None
+		if BinFile.DEBUG:
+			print("## CLOSE " + self.NAME)
+		self.DIRECTORY = None
+		self.NAME = None
 
 class MeshExporter:
 	def __init__(self, mesh_object, tris=True, textured=False, armature_indexed=False):
@@ -158,10 +183,10 @@ class MeshExporter:
 		# get the vertex indices in the sharp edges
 		self.sharps = []
 		for edge in mesh.edges:
-		    if edge.use_edge_sharp:
-		        for index in edge.vertices:
-		            if not self.sharps.count(index):
-		                self.sharps.append(index)
+			if edge.use_edge_sharp:
+				for index in edge.vertices:
+					if not self.sharps.count(index):
+						self.sharps.append(index)
 		self.sharps.sort()
 		
 		bpy.ops.mesh.select_all(action='DESELECT')
@@ -262,11 +287,11 @@ class MeshExporter:
 		#tessface = mesh.tessface_uv_textures.active
 		#face_data = tessface.data[faceIndex]
 		#if uvIndex == 0:
-		#	return face_data.uv1
+		#   return face_data.uv1
 		#elif uvIndex == 1:
-		#	return face_data.uv2
+		#   return face_data.uv2
 		#elif uvIndex == 2:
-		#	return face_data.uv3
+		#   return face_data.uv3
 		
 		uv_data = mesh.uv_layers.active.data
 		return uv_data[faceIndex * 3 + uvIndex].uv
@@ -328,13 +353,16 @@ class ArmatureExporter:
 			# write bones part of action
 			for bone in self.bones:
 				group = action.groups.get(bone.name)
-				if group:
+				noCurves = True
+				if group and len(group.channels):
+					print("  " + bone.name + " group exists and has channels")
 					for fcurve in group.channels:
-						if fcurve.data_path == "rotation_quaternion":
+						if fcurve.data_path.find("rotation_quaternion"):
 							if fcurve.array_index == 0:
 								file.writeByte(len(fcurve.keyframe_points))
+								noCurves = False
 							writeFCurveToFile(fcurve, file)
-				else:
+				if noCurves:
 					file.writeByte(0)
 				
 		file.close()
@@ -362,8 +390,9 @@ def getActionsOfArmature(armature_object):
 		for group in action.groups:
 			if verbose:
 				print("Check group " + group.name)
-			if not armature.bones.get(group.name):
-				break
+			if (not armature.bones.get(group.name)) or (not len(group.channels)):
+				# If group does not represent bone or group has no curves,
+				continue # Skip to next group
 			for fcurve in group.channels:
 				if fcurve.data_path.find('quaternion') + 1:
 					if verbose:
@@ -416,7 +445,7 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	print("FLAGS: " + str(flags))
 	
 	# FCurve data_paths and array_indices to export
-	curveNames = []
+	curveNames = {}
 	curveKeys = []
 	if loc:
 		curveNames["location"] = (0, 1, 2)
@@ -442,37 +471,31 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 					if index == 0:
 						keyframe_count = len(fcurve.keyframe_points)
 					curves.append(fcurve)
-					print("write curve " + fcurve.data_path + "[" + str(fcurve.array_index) + "]")
+		print("key: " + key)
 		# write the curves to the file
 		if len(curves) == len(curveNames):
 			file.writeByte(keyframe_count)
 			for curve in curves:
+				print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
 				writeFCurveToFile(curve, file)
 		else:
 			file.writeByte(0)
 
 def writeFCurveToFile(fcurve, file):
-	counter = 0
 	i = 0
 	
 	for keyframe in fcurve.keyframe_points:
 		# Write left handle
 		if i > 0:
+			#print("left handle: " + str(keyframe.handle_left))
 			file.writeAllFloats(keyframe.handle_left)
-			if verbose and False:
-				print(str(keyframe.handle_left))
-			counter += 1
 		# Write point
+		#print("point: " + str(keyframe.co))
 		file.writeAllFloats(keyframe.co)
-		if verbose and False:
-			print(str(keyframe.co))
-		counter += 1
 		# Write right handle
 		if i < len(fcurve.keyframe_points)-1:
+			#print("right handle: " + str(keyframe.handle_right))
 			file.writeAllFloats(keyframe.handle_right)
-			if verbose and False:
-				print(str(keyframe.handle_left))
-			counter += 1
 		i+= 1
 
 print("\n\n\n\n\n\n")
@@ -515,7 +538,7 @@ bpy.ops.object.mode_set(mode='OBJECT')
 for obj in mesh_objects:
 	obj.select=False
 for obj in mesh_objects:
-	exporter = MeshExporter(obj, tris=True, textured=True, armature_indexed=False)
+	exporter = MeshExporter(obj, tris=True, textured=False, armature_indexed=False)
 	exporter.export(directory, obj.name.rsplit(".",1)[0])
 #bpy.ops.scene.delete()
 scene = originalScene #bpy.context.scene

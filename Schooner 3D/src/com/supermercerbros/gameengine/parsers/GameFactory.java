@@ -36,12 +36,12 @@ import com.supermercerbros.gameengine.objects.GameObject;
 public class GameFactory {
 	private final AssetManager am;
 	private final Resources res;
-	
+
 	private HashMap<String, Action> actions;
 	private PreObjectData data;
 	private Skeleton skeleton;
 	private Material material;
-	
+
 	/**
 	 * Creates a new GameFactory for the given Context.
 	 * 
@@ -51,7 +51,7 @@ public class GameFactory {
 		this.am = context.getAssets();
 		this.res = context.getResources();
 	}
-	
+
 	protected void setActions(HashMap<String, Action> actions) {
 		this.actions = actions;
 	}
@@ -68,23 +68,24 @@ public class GameFactory {
 			throws IOException {
 		return Sch3D.parseMovements(am.open(fileName));
 	}
-	
+
 	public void setObjectData(String filename) throws IOException {
 		data = Sch3D.parseMesh(am.open(filename));
 	}
-	
+
 	public void setObjectData(int resId) throws IOException {
 		data = Sch3D.parseMesh(res.openRawResource(resId));
 	}
-	
+
 	public void setSkeleton(String filename) throws IOException {
 		if (filename != null) {
-			skeleton = Sch3D.parseSkeleton(this, am.open(filename), "@a:" + filename);
+			skeleton = Sch3D.parseSkeleton(this, am.open(filename), "@a:"
+					+ filename);
 		} else {
 			skeleton = null;
 		}
 	}
-	
+
 	public void setMatrixSource(GameObject obj) {
 		if (obj != null) {
 			data.matrix = obj.modelMatrix;
@@ -92,11 +93,18 @@ public class GameFactory {
 			data.matrix = null;
 		}
 	}
-	
+
 	public void setMaterial(Material material) {
 		this.material = material;
 	}
-	
+
+	/**
+	 * Bakes the data in the GameFactory into a GameObject.
+	 * 
+	 * @return The GameObject created from the data. This is a
+	 *         {@link BonedObject} if a skeleton was provided and the mesh data
+	 *         includes bone weights and indices.
+	 */
 	public GameObject bakeGameObject() {
 		if (skeleton != null && data.boneIndices != null) {
 			BonedObject object = new BonedObject(data, material, skeleton);
@@ -108,23 +116,23 @@ public class GameFactory {
 			return object;
 		}
 	}
-	
+
 	public HashMap<String, Action> getActions() {
 		return actions;
 	}
-	
+
 	public void clear() {
 		data = null;
 		material = null;
 		actions = null;
 		skeleton = null;
 	}
-	
+
 	/**
 	 * Closes the GameFactory
 	 */
 	public void close() {
 		clear();
 	}
-	
+
 }
