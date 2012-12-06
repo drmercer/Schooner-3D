@@ -25,15 +25,15 @@ import com.supermercerbros.gameengine.parsers.PreObjectData;
 
 public class BonedObject extends GameObject {
 	public static final int BONES_PER_VERTEX = 4;
-	
+
 	public final float[] boneWeights;
 	public final byte[] boneIndices;
 	private final Skeleton skeleton;
-	
+
 	private Action currentAction;
 	private final ActionData actionData;
 	private final int boneCount;
-	
+
 	public BonedObject(PreObjectData data, Material material, Skeleton skeleton) {
 		super(data, material);
 		this.skeleton = skeleton;
@@ -41,11 +41,28 @@ public class BonedObject extends GameObject {
 		int vertCount = verts.length / 3;
 		boneCount = skeleton.boneCount();
 		
+		// Init boneIndices and boneWeights
 		this.boneIndices = new byte[BONES_PER_VERTEX * vertCount];
 		this.boneWeights = new float[BONES_PER_VERTEX * vertCount];
 		
-		// TODO: fill boneIndices and boneWeights
+		// Fill boneIndices and boneWeights
+		final byte[][] localIndices = data.boneIndices;
+		final float[][] localWeights = data.boneWeights;
+		if (localIndices[0].length != localWeights[0].length){
+			throw new IllegalArgumentException("weights and indices have different count per vertex");
+		}
+		final int vertexWeightCount = Math.min(BONES_PER_VERTEX, localIndices[0].length);
 		
+		for (int vert = 0; vert < vertCount; vert++) {
+			final int vertOffset = vert * 4;
+			for (int j = 0; j < vertexWeightCount; j++) {
+				int offset = vertOffset + j;
+				boneIndices[offset] = localIndices[vert][j];
+				boneWeights[offset] = localWeights[vert][j];
+			}
+		}
+		
+		// Init VertexModifier and ActionData
 		material.setVertexModifier(new SkeletalVertexModifier(BONES_PER_VERTEX, boneCount));
 		actionData = new ActionData(boneCount);
 	}
@@ -59,25 +76,26 @@ public class BonedObject extends GameObject {
 	public void setAction(Action action, long time, long duration) {
 		if (action != null) {
 			currentAction = action;
-			actionData.writeState(time, time, duration, skeleton); // TODO: "time, time"?
+			actionData.writeState(time, time, duration, skeleton); 
+			// TODO: "time, time"?
 			super.startMovement(action.movement, time, duration);
 		} else {
 			throw new IllegalArgumentException("action == null");
 		}
 	}
-	
+
 	@Override
 	public void drawVerts(long time) {
 		if (currentAction != null) {
 			currentAction.getFrame(actionData, skeleton, time);
 		}
 	}
-	
+
 	@Override
 	public int getExtraMatrixCount() {
 		return boneCount;
 	}
-	
+
 	@Override
 	public void writeMatrices(float[] matrixArray) {
 		super.writeMatrices(matrixArray);

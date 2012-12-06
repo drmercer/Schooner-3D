@@ -20,7 +20,6 @@ import java.nio.ByteOrder;
 import java.util.LinkedList;
 
 import android.opengl.GLES20;
-import android.util.Log;
 import android.view.MotionEvent;
 
 import com.supermercerbros.gameengine.engine.GameRenderer;
@@ -44,10 +43,6 @@ public class GameHud {
 	private int arrayBuffer;
 	private int elementBuffer;
 
-	// Buffers
-	private final ByteBuffer vbo;
-	private final ByteBuffer ibo;
-
 	/**
 	 * Constructs a new GameHud.
 	 */
@@ -55,11 +50,6 @@ public class GameHud {
 		this.elements = new LinkedList<HudElement>();
 		this.vboSize = DEFAULT_VBO_SIZE;
 		this.iboSize = DEFAULT_IBO_SIZE;
-
-		vbo = ByteBuffer.allocateDirect(DEFAULT_VBO_SIZE).order(
-				ByteOrder.nativeOrder());
-		ibo = ByteBuffer.allocateDirect(DEFAULT_IBO_SIZE).order(
-				ByteOrder.nativeOrder());
 	}
 
 	/**
@@ -72,9 +62,6 @@ public class GameHud {
 		this.elements = new LinkedList<HudElement>();
 		this.vboSize = vboSize;
 		this.iboSize = iboSize;
-
-		vbo = ByteBuffer.allocateDirect(vboSize).order(ByteOrder.nativeOrder());
-		ibo = ByteBuffer.allocateDirect(iboSize).order(ByteOrder.nativeOrder());
 	}
 
 	/**
@@ -124,6 +111,10 @@ public class GameHud {
 		// Bind buffers
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, localArrayBuffer);
 		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, localElementBuffer);
+		
+		// Construct ByteBuffers
+		final ByteBuffer vbo = ByteBuffer.allocateDirect(vboSize).order(ByteOrder.nativeOrder());
+		final ByteBuffer ibo = ByteBuffer.allocateDirect(iboSize).order(ByteOrder.nativeOrder());
 
 		// Fill Buffers and load Programs
 		final LinkedList<HudElement> localElements = this.elements;

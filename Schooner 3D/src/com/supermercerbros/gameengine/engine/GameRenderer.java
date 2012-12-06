@@ -255,9 +255,9 @@ public class GameRenderer implements Renderer {
 	}
 
 	/**
+	 * // TODO remove returned boolean stuff (it's never used) and inline
 	 * @param name
-	 * @return True if a new program has been loaded // TODO remove this and
-	 *         inline
+	 * @return True if a new program has been loaded 
 	 */
 	private boolean useProgram(Program program) {
 		if (program == null) {

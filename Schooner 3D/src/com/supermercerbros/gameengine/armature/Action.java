@@ -20,15 +20,14 @@ import java.util.Iterator;
 
 import android.util.SparseArray;
 
-import com.supermercerbros.gameengine.math.BezierCurve;
 import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.motion.Movement;
 
 public class Action {
-	protected final SparseArray<BezierCurve> boneCurves;
+	protected final SparseArray<Curve> boneCurves;
 	public final Movement movement;
 	
-	public Action(Movement movement, SparseArray<BezierCurve> curves) {
+	public Action(Movement movement, SparseArray<Curve> curves) {
 		this.boneCurves = curves;
 		this.movement = movement;
 	}
@@ -38,7 +37,7 @@ public class Action {
 		if (time < data.startTime) {
 			// Interpolating to the action
 			framePoint = (time - data.callTime) / (data.startTime - data.callTime);
-			Iterator<Bone> iter = skeleton.bones.iterator();
+			final Iterator<Bone> iter = skeleton.bones.iterator();
 			for (int i = 0; iter.hasNext(); i++) {
 				final int offset = i*4;
 				final Bone bone = iter.next();
@@ -73,8 +72,8 @@ public class Action {
 		} else {
 			// Interpolating in the action
 			framePoint = (time - data.startTime) / data.duration;
-			//TODO: check if action has ended. See MeshAnimation, line 56
-			Iterator<Bone> iter = skeleton.bones.iterator();
+			//TODO: check if action has ended. See MeshAnimation, line 74-ish
+			final Iterator<Bone> iter = skeleton.bones.iterator();
 			for (int i = 0; iter.hasNext(); i++) {
 				final int offset = i*4;
 				final Bone bone = iter.next();

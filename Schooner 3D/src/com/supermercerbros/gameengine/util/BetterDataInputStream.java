@@ -48,7 +48,6 @@ public class BetterDataInputStream extends DataInputStream {
 		for (int i = 0; i < length; i++){
 			out[offset+i] = super.readShort();
 		}
-		return;
 	}
 
 	public void readFloatArray(float[] out, int offset, int length) 

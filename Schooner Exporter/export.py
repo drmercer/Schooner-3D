@@ -7,6 +7,7 @@
 # - Bone scale is ignored
 
 import bpy
+import sys
 
 from struct import Struct
 
@@ -44,7 +45,8 @@ def warn(text=""):
 	bpy.ops.ui.warn('EXEC_DEFAULT', text=text)
 
 class BinFile:
-	DEBUG = False
+	DEBUG = True
+	roundToZeroWithin = 0.0001
 	
 	endian = '>'
 	
@@ -114,10 +116,13 @@ class BinFile:
 	
 	def writeInt(self, i):
 		if BinFile.DEBUG:
-			print("#int    : " + str(i))
+			print("#int : " + str(i))
 		self.file.write(BinFile.signedInt.pack(i))
 		
 	def writeFloat(self, f):
+		import math
+		if math.abs(f) < BinFile.roundToZeroWithin:
+			f = 0.0
 		if BinFile.DEBUG:
 			print("#float  : " + str(f))
 		self.file.write(BinFile.signedFloat.pack(f))
@@ -128,17 +133,32 @@ class BinFile:
 		self.file.write(bytes(string + chr(0), "UTF-8"))
 		
 	def writeAllShorts(self, shorts, signed=False):
+		if BinFile.DEBUG:
+			print("#shorts : " + str(shorts))
+		temp = BinFile.DEBUG
+		BinFile.DEBUG = False
 		for s in shorts:
 			self.writeShort(s, signed=signed)
+		BinFile.DEBUG = temp
 	
 	def writeAllShortPairs(self, shortPairs, signed=False):
+		if BinFile.DEBUG:
+			print("#shorts : " + str(shortPairs))
+		temp = BinFile.DEBUG
+		BinFile.DEBUG = False
 		for pair in shortPairs:
 			for s in pair:
 				self.writeShort(s, signed=signed)
+		BinFile.DEBUG = temp
 	
 	def writeAllFloats(self, floats):
+		if BinFile.DEBUG:
+			print("#floats : " + str(floats))
+		temp = BinFile.DEBUG
+		BinFile.DEBUG = False
 		for f in floats:
 			self.writeFloat(f)
+		BinFile.DEBUG = temp
 	
 	def close(self):
 		self.file.close()
@@ -354,12 +374,15 @@ class ArmatureExporter:
 			for bone in self.bones:
 				group = action.groups.get(bone.name)
 				noCurves = True
-				if group and len(group.channels):
+				if group and len(group.channels) >= 4:
 					print("  " + bone.name + " group exists and has channels")
 					for fcurve in group.channels:
-						if fcurve.data_path.find("rotation_quaternion"):
+						if fcurve.data_path.find("rotation_quaternion") + 1:
 							if fcurve.array_index == 0:
-								file.writeByte(len(fcurve.keyframe_points))
+								if noCurves:
+									file.writeByte(len(fcurve.keyframe_points))
+								else:
+									err("ERROR! See line 385")
 								noCurves = False
 							writeFCurveToFile(fcurve, file)
 				if noCurves:
@@ -439,10 +462,59 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	file.writeString(name) # write name
 	print("NAME: " + name)
 	
+	# Check to make sure that necessary curves for location, rotation and scale exist.
+	# Note that this messes up if the curves are out of order. Hopefully that'll never happen.
+	# It may be neater to do this with filter(function, iterable)
+	if loc:
+		index = 0
+		for fcurve in action.fcurves:
+			if fcurve.data_path == "location" and fcurve.array_index == index:
+				if index == 2:
+					break # All three components have been found
+				else:
+					index += 1
+		else: # Not all three components were found
+			print("Curves don't exist for all three components of location.")
+			loc = False
+	
+	if rot:
+		index = 0
+		for fcurve in action.fcurves:
+			if fcurve.data_path == "rotation_quaternion" and fcurve.array_index == index:
+				if index == 3:
+					break # All four components have been found
+				else:
+					index += 1
+		else: # Not all four components were found
+			print("Curves don't exist for all four components of rotation.")
+			rot = False
+	
+	if scale == 'AXIS':
+		index = 0
+		for fcurve in action.fcurves:
+			if fcurve.data_path == "scale" and fcurve.array_index == index:
+				if index == 2:
+					break # All three components have been found
+				else:
+					index += 1
+		else: # Not all three components were found
+			print("Curves don't exist for all three components of scale.")
+			scale = 'UNIFORM'
+	
+	if scale == 'UNIFORM':
+		for fcurve in action.fcurves:
+			if fcurve.data_path == "scale" and fcurve.array_index == 0:
+				break # Component 0 was found
+		else: # Component 0 was not found
+			print("A curve does not exist for component 0 of scale.")
+			scale = ''
+	
 	# flags
 	flags = (loc, rot, scale=='UNIFORM', scale=='AXIS')
 	file.writeFlags(flags) # write flags
 	print("FLAGS: " + str(flags))
+	if not flags:
+		return # If flags == 0, movement is empty.
 	
 	# FCurve data_paths and array_indices to export
 	curveNames = {}
@@ -498,9 +570,12 @@ def writeFCurveToFile(fcurve, file):
 			file.writeAllFloats(keyframe.handle_right)
 		i+= 1
 
-print("\n\n\n\n\n\n")
+print("\n\n")
 # Begin script.
+logToFile = True
+logFileName = "log.txt"
 verbose = True
+
 if verbose:
 	print("BEGIN SCRIPT.")
 scene = bpy.context.scene
@@ -511,6 +586,12 @@ directory = bpy.data.filepath.rsplit("\\",1)[0] + "\\"  + blendFileName + "_expo
 
 if verbose:
 	print("Exporting to directory: " + directory)
+if logToFile:
+	print("Writing log data to " + directory + logFileName)
+	log = open(directory + logFileName, "w")
+	print(log)
+	sys.stdout = log
+	
 
 bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -540,8 +621,8 @@ for obj in mesh_objects:
 for obj in mesh_objects:
 	exporter = MeshExporter(obj, tris=True, textured=False, armature_indexed=False)
 	exporter.export(directory, obj.name.rsplit(".",1)[0])
-#bpy.ops.scene.delete()
-scene = originalScene #bpy.context.scene
+bpy.ops.scene.delete()
+scene = originalScene
 
 verbose = True
 
@@ -554,6 +635,10 @@ for obj in armature_objects:
 	if actions:
 		exporter = ArmatureExporter(obj, actions)
 		exporter.export(directory, obj.name, ArmatureOptions())
+
+if logToFile:
+	sys.stdout.close()
+	sys.stdout = sys.__stdout__
 
 # End script	
 if verbose:

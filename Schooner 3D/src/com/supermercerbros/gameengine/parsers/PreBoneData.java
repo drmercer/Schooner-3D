@@ -23,19 +23,28 @@ import com.supermercerbros.gameengine.armature.Bone;
 class PreBoneData {
 	final byte index, parentIndex;
 	final float x, y, z;
-	private final LinkedList<PreBoneData> children;
+	private LinkedList<PreBoneData> children;
 	
+	/**
+	 * Constructs a new PreBoneData object
+	 * @param index The index of the bone
+	 * @param x The x-coordinate of the bone.
+	 * @param y The y-coordinate of the bone.
+	 * @param z The z-coordinate of the bone.
+	 * @param parent The index of the bone to which this bone is parented.
+	 */
 	PreBoneData(byte index, float x, float y, float z, byte parent) {
 		this.index = index;
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.parentIndex = parent;
-		
-		this.children = new LinkedList<PreBoneData>();
 	}
 	
 	void addChild(PreBoneData child) {
+		if (children == null) {
+			children = new LinkedList<PreBoneData>();
+		}
 		children.add(child);
 	}
 	
@@ -44,7 +53,7 @@ class PreBoneData {
 	}
 	
 	Bone toBone() {
-		if (!children.isEmpty()) {
+		if (children != null && !children.isEmpty()) {
 			LinkedList<Bone> boneChildren = new LinkedList<Bone>();
 			for (PreBoneData child : children) {
 				boneChildren.add(child.toBone());
