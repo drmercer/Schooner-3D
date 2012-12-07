@@ -14,44 +14,50 @@
  * limitations under the License.
  */
 
-package com.supermercerbros.gameengine.engine;
+package com.supermercerbros.gameengine.texture;
 
-import android.opengl.ETC1Util.ETC1Texture;
+import android.content.res.Resources;
 
 public class ETC1CompressedTexture extends Texture {
 	@SuppressWarnings("unused")
-	private ETC1Texture tex;
+	private final Resources res;
 	@SuppressWarnings("unused")
-	private boolean mipmaps;
+	private final int resID;
+	@SuppressWarnings("unused")
+	private final boolean mipmaps;
 
 	/**
-	 * Creates a Texture from the given ETC1Texture. Mipmaps are enabled by
-	 * default.
+	 * Creates an Texture from the given ETC1-compressed texture file. Mipmaps
+	 * are enabled by default.
 	 * 
-	 * @param tex
-	 *            The bitmap to make into a texture.
+	 * @param res
+	 *            The Resources to load the file from.
+	 * @param id
+	 *            The resource identifier of the file.
 	 */
-	ETC1CompressedTexture(ETC1Texture tex) {
-		this.tex = tex;
-		mipmaps = true;
+	public ETC1CompressedTexture(Resources res, int id) {
+		this(res, id, true);
 	}
 
 	/**
 	 * Creates a Texture from the given ETC1Texture.
 	 * 
-	 * @param tex
-	 *            The bitmap to make into a texture.
+	 * @param res
+	 *            The Resources to load the file from.
+	 * @param id
+	 *            The resource identifier of the file.
 	 * @param useMipmaps
 	 *            true if mipmaps should be used, false if not.
 	 */
-	ETC1CompressedTexture(ETC1Texture tex, boolean useMipmaps) {
-		this.tex = tex;
+	public ETC1CompressedTexture(Resources res, int id, boolean useMipmaps) {
+		this.res = res;
+		this.resID = id;
 		mipmaps = useMipmaps;
 	}
 
 	@Override
 	protected void load() {
-		//TODO write ETC1 loading code and remove @SuppressWarnings
+		// TODO write ETC1 loading code and remove @SuppressWarnings
 	}
 
 }

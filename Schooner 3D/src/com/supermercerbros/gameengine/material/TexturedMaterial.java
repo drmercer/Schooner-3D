@@ -16,14 +16,11 @@
 
 package com.supermercerbros.gameengine.material;
 
-import java.io.IOException;
-
-import com.supermercerbros.gameengine.engine.Texture;
-import com.supermercerbros.gameengine.engine.TextureLib;
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.shaders.ProgramSource;
+import com.supermercerbros.gameengine.texture.Texture;
 
 /**
  * This is a basic textured material. Use it for smooth-shaded, uv-mapped
@@ -64,12 +61,8 @@ public class TexturedMaterial extends Material {
 	
 	private Texture texture;
 	
-	public TexturedMaterial(String textureName) {
-		try {
-			texture = TextureLib.getTexture(textureName);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public TexturedMaterial(Texture texture) {
+		this.texture = texture;
 	}
 	
 	@Override

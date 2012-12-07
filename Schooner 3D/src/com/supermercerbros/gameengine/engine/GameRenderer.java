@@ -169,8 +169,27 @@ public class GameRenderer implements Renderer {
 			if (material == null) {
 				Log.e(TAG, "primitive.mtl == null");
 			}
+			Program program = material.getProgram();
+			if (program == null) {
+				Log.e(TAG, "program == null");
+				continue;
+			}
+			if (!program.isLoaded()) {
+				try {
+					program.load();
+				} catch (GLException e) {
+					Log.e(TAG, "Program could not be loaded.", e);
+					continue; // Is there something better to do here?
+				}
+			}
+			GLES20.glUseProgram(program.getHandle());
 
-			useProgram(material.getProgram());
+			u_viewProj = program.getUniformLocation(ShaderLib.U_VIEWPROJ);
+			u_lightVec = program.getUniformLocation(ShaderLib.U_LIGHTVEC);
+			u_lightColor = program
+					.getUniformLocation(ShaderLib.U_LIGHTCOLOR);
+
+			activeProgram = program;
 
 			// Load World View-Projection matrix
 			Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, in.viewMatrix, 0);
@@ -252,41 +271,6 @@ public class GameRenderer implements Renderer {
 		if (hasHud) {
 			hud.init();
 		}
-	}
-
-	/**
-	 * // TODO remove returned boolean stuff (it's never used) and inline
-	 * @param name
-	 * @return True if a new program has been loaded 
-	 */
-	private boolean useProgram(Program program) {
-		if (program == null) {
-			Log.e(TAG, "program == null");
-			throw new NullPointerException("program == null");
-		}
-		boolean success = true;
-		if (!program.isLoaded()) {
-			try {
-				program.load();
-			} catch (GLException e) {
-				Log.e(TAG, "Program could not be loaded.", e);
-				if (activeProgram != null)
-					activeProgram.load();
-				success = false;
-			}
-			logError("Program.load()");
-		}
-		if (success) {
-			GLES20.glUseProgram(program.getHandle());
-
-			u_viewProj = program.getUniformLocation(ShaderLib.U_VIEWPROJ);
-			u_lightVec = program.getUniformLocation(ShaderLib.U_LIGHTVEC);
-			u_lightColor = program
-					.getUniformLocation(ShaderLib.U_LIGHTCOLOR);
-
-			activeProgram = program;
-		}
-		return success;
 	}
 
 	/**

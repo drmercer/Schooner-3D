@@ -36,6 +36,8 @@ public class GameHud {
 	private final int iboSize;
 	private final LinkedList<HudElement> elements;
 
+	private volatile boolean initialized = false;
+
 	// Coordinate converter
 	private CoordsConverter converter;
 
@@ -71,6 +73,10 @@ public class GameHud {
 	 *            The <code>HudElement</code> to add.
 	 */
 	public void addElement(HudElement element) {
+		if (initialized) {
+			throw new IllegalStateException(
+					"Cannot addElement to already initialized gameHud");
+		}
 		final LinkedList<HudElement> localElements = this.elements;
 		synchronized (localElements) {
 			localElements.add(element);
@@ -84,7 +90,7 @@ public class GameHud {
 		// GL Buffer stuff
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
 		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-		
+
 		// Disable depth test and face culling
 		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 		GLES20.glDisable(GLES20.GL_CULL_FACE); // TODO delete this line
@@ -99,6 +105,9 @@ public class GameHud {
 		}
 	}
 
+	/**
+	 * Called by GameRenderer
+	 */
 	public void init() {
 		// Generate buffers
 		final int[] buffers = new int[2];
@@ -111,10 +120,12 @@ public class GameHud {
 		// Bind buffers
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, localArrayBuffer);
 		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, localElementBuffer);
-		
+
 		// Construct ByteBuffers
-		final ByteBuffer vbo = ByteBuffer.allocateDirect(vboSize).order(ByteOrder.nativeOrder());
-		final ByteBuffer ibo = ByteBuffer.allocateDirect(iboSize).order(ByteOrder.nativeOrder());
+		final ByteBuffer vbo = ByteBuffer.allocateDirect(vboSize).order(
+				ByteOrder.nativeOrder());
+		final ByteBuffer ibo = ByteBuffer.allocateDirect(iboSize).order(
+				ByteOrder.nativeOrder());
 
 		// Fill Buffers and load Programs
 		final LinkedList<HudElement> localElements = this.elements;
@@ -125,7 +136,7 @@ public class GameHud {
 				element.loadProgram();
 			}
 		}
-		
+
 		vbo.rewind();
 		ibo.rewind();
 
@@ -138,13 +149,15 @@ public class GameHud {
 	}
 
 	/**
-	 * Called when a MotionEvent occurs
+	 * Called when a MotionEvent occurs. This calls <code>onTouchEvent</code> on
+	 * all elements contained in this GameHud.
+	 * 
 	 * @param event
 	 * @return
 	 */
 	public boolean onTouchEvent(MotionEvent event) {
 		for (HudElement element : elements) {
-			if (element.onTouchEvent(event, converter)){
+			if (element.onTouchEvent(event, converter)) {
 				return true;
 			}
 		}

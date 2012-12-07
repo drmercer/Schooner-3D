@@ -28,6 +28,7 @@ import com.supermercerbros.gameengine.material.TexturedMaterial;
 import com.supermercerbros.gameengine.objects.AnimatedMeshObject;
 import com.supermercerbros.gameengine.objects.BasicMaterial;
 import com.supermercerbros.gameengine.objects.GameObject;
+import com.supermercerbros.gameengine.texture.Texture;
 
 /**
  * Contains methods to create test objects.
@@ -40,7 +41,7 @@ public class TestObjects {
 	 */
 	public static GameObject tetra() {
 		ArrayList<Keyframe> keyframesA = new ArrayList<Keyframe>();
-		// @formatter:off
+		//@formatter:off
 		short[] indices = { 
 				0, 1, 2, 
 				0, 1, 3, 
@@ -64,7 +65,7 @@ public class TestObjects {
 				0.0f, 0.0f, 3.0f, 
 				0.0f, 0.0f, 0.0f, };
 		//@formatter:on
-		
+
 		keyframesA.add(new Keyframe(frameA1));
 		keyframesA.add(new Keyframe(frameA2));
 		float[] times = { 0, 3000 };
@@ -77,14 +78,13 @@ public class TestObjects {
 
 	/**
 	 * Creates a textured cube.
-	 * @param texName
-	 *            The name of the texture to apply to the cube (as loaded into
-	 *            {@link com.supermercerbros.gameengine.engine.TextureLib
-	 *            TextureLib}).
+	 * 
+	 * @param tex
+	 *            The Texture to apply.
 	 * @return A textured cube.
 	 */
 	public static GameObject cube(Material mtl) {
-		// @formatter:off
+		//@formatter:off
 		final float[] verts = { 
 				1.0f, 1.0f, 1.0f, 
 				1.0f, 0.0f, 1.0f, 
@@ -131,23 +131,22 @@ public class TestObjects {
 				4, 5, 6, 
 				5, 7, 6, };
 		float[] normals = null;
-		// formatter:on
+		//@formatter:on
 
-		GameObject cube = new GameObject(verts, indices, normals, uvs,
-				null, mtl);
+		GameObject cube = new GameObject(verts, indices, normals, uvs, null,
+				mtl);
 		mtl.makeProgram();
 		return cube;
 	}
 
 	/**
 	 * Creates a textured quadrangle.
-	 * @param texName
-	 *            The name of the texture to apply to the quad (as loaded into
-	 *            {@link com.supermercerbros.gameengine.engine.TextureLib
-	 *            TextureLib}).
+	 * 
+	 * @param tex
+	 *            The Texture to apply.
 	 * @return A textured quad.
 	 */
-	public static GameObject quad(String texName) {
+	public static GameObject quad(Texture tex) {
 		float depth = -2.84f;
 		//@formatter:off
 		float[] verts = { 
@@ -167,14 +166,16 @@ public class TestObjects {
 		float[] normals = null;
 		//@formatter:on
 
-		GameObject obj = new GameObject(verts, indices, normals, uvs,
-				null, new TexturedMaterial(texName));
+		GameObject obj = new GameObject(verts, indices, normals, uvs, null,
+				new TexturedMaterial(tex));
 		return obj;
 	}
 
 	/**
 	 * Creates a vertex-colored triangle.
-	 * @param mtl The Material to use
+	 * 
+	 * @param mtl
+	 *            The Material to use
 	 * 
 	 * @return A colored triangle.
 	 */
@@ -195,18 +196,18 @@ public class TestObjects {
 		float[] normals = null;
 		
 		//@formatter:on
-		
+
 		final Material material;
 		if (mtl == null) {
 			material = new BasicMaterial();
 		} else {
 			material = mtl;
 		}
-		GameObject tri = new GameObject(verts, indices, normals, colors,
-				null, material);
+		GameObject tri = new GameObject(verts, indices, normals, colors, null,
+				material);
 		return tri;
 	}
-	
+
 	public static Bounds cubeBounds() {
 		//@formatter:off
 		final float[] cubeV = { 
@@ -229,9 +230,10 @@ public class TestObjects {
 			2, 0, 4, 6, // X one
 		};
 		//@formatter:on
-		
+
 		final LinkedList<Polyhedron> parts = new LinkedList<Polyhedron>();
-		final Polyhedron poly = new Polyhedron(Polyhedron.featureMesh(cubeV, cubeI));
+		final Polyhedron poly = new Polyhedron(Polyhedron.featureMesh(cubeV,
+				cubeI));
 		parts.add(poly);
 		return new Bounds(parts, 0.0);
 	}

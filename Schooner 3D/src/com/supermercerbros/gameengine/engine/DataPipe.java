@@ -17,7 +17,6 @@
 package com.supermercerbros.gameengine.engine;
 
 
-import android.content.Context;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
@@ -40,20 +39,12 @@ public class DataPipe {
 
 	/**
 	 * Constructs a new DataPipe. This also initializes <code>ShaderLib</code>
-	 * and <code>TextureLib</code>
-	 * 
-	 * @param context
-	 *            The app Context
-	 * @param mtl
-	 *            The material to render GameObjects with.
 	 */
-	public DataPipe(Context context) {
+	public DataPipe() {
 		ShaderLib.init();
-		TextureLib.init(context);
 	}
 
 	public void close() {
-		TextureLib.close();
 		ShaderLib.close();
 		EGLContextLostHandler.clear();
 	}

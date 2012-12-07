@@ -16,7 +16,6 @@
 
 package com.supermercerbros.gameengine;
 
-import java.io.IOException;
 import java.util.Random;
 
 import android.graphics.Color;
@@ -28,9 +27,10 @@ import android.view.View;
 
 import com.supermercerbros.gameengine.engine.Camera;
 import com.supermercerbros.gameengine.engine.Engine;
-import com.supermercerbros.gameengine.engine.TextureLib;
 import com.supermercerbros.gameengine.material.TexturedMaterial;
 import com.supermercerbros.gameengine.objects.GameObject;
+import com.supermercerbros.gameengine.texture.BitmapTexture;
+import com.supermercerbros.gameengine.texture.Texture;
 
 public class TestActivity extends GameActivity {
 	private static String TAG = GameActivity.class.getSimpleName();
@@ -64,15 +64,9 @@ public class TestActivity extends GameActivity {
 	}
 
 	protected GameObject getObject() {
-		String testTexture2 = "";
-		try {
-			testTexture2 = TextureLib.loadTexture(R.drawable.test_texture2);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		GameObject object = TestObjects.cube(new TexturedMaterial(testTexture2));
+		final Texture testTexture2 = new BitmapTexture(getResources(), R.drawable.test_texture2);
+		return TestObjects.cube(new TexturedMaterial(testTexture2));
 		
-		return object;
 	}
 
 //	@Override

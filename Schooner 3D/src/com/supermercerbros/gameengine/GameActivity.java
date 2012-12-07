@@ -74,7 +74,7 @@ public abstract class GameActivity extends Activity {
 		created = true;
 		Log.d(TAG, "onCreate");
 
-		pipe = new DataPipe(this);
+		pipe = new DataPipe();
 		cam = new Camera();
 		engine = new Engine(pipe, cam);
 
