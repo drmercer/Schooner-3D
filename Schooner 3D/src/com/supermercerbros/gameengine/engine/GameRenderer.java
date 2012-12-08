@@ -18,8 +18,10 @@ package com.supermercerbros.gameengine.engine;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -74,13 +76,12 @@ public class GameRenderer implements Renderer {
 	}
 
 	private final DataPipe pipe;
-	private final IntBuffer vbo; // Vertex Buffer Object to hold dynamic data
+	private final FloatBuffer vbo; // Vertex Buffer Object
 	private final ShortBuffer ibo; // Index Buffer Object
 
 	private int arrayBuffer;
 	private int elementBuffer;
 
-	private Program activeProgram;
 	private float[] wvpMatrix = new float[16];
 	private float[] projMatrix = new float[16];
 
@@ -114,7 +115,7 @@ public class GameRenderer implements Renderer {
 		Matrix.setIdentityM(wvpMatrix, 0);
 
 		vbo = ByteBuffer.allocateDirect(pipe.VBO_capacity)
-				.order(ByteOrder.nativeOrder()).asIntBuffer();
+				.order(ByteOrder.nativeOrder()).asFloatBuffer();
 		ibo = ByteBuffer.allocateDirect(pipe.IBO_capacity)
 				.order(ByteOrder.nativeOrder()).asShortBuffer();
 
@@ -154,26 +155,30 @@ public class GameRenderer implements Renderer {
 				vbo);
 
 		// Render each primitive
-		int matrixNumber = 0;
+		Iterator<float[]> matrixIter = in.modelMatrices.iterator();
 		final LinkedList<Metadata> primitives = in.primitives;
 		for (final Metadata primitive : primitives) {
 			// Ensure depth test is enabled
 			GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 			logError("glEnable (DEPTH)");
 			
+			// Error checks
 			if (primitive == null) {
 				Log.e(TAG, "primitive == null");
+				continue;
 			}
-
 			final Material material = primitive.mtl;
 			if (material == null) {
 				Log.e(TAG, "primitive.mtl == null");
+				continue;
 			}
-			Program program = material.getProgram();
+			final Program program = material.getProgram();
 			if (program == null) {
 				Log.e(TAG, "program == null");
 				continue;
 			}
+			
+			// Load program
 			if (!program.isLoaded()) {
 				try {
 					program.load();
@@ -183,13 +188,12 @@ public class GameRenderer implements Renderer {
 				}
 			}
 			GLES20.glUseProgram(program.getHandle());
-
+			
+			// Load uniforms
 			u_viewProj = program.getUniformLocation(ShaderLib.U_VIEWPROJ);
 			u_lightVec = program.getUniformLocation(ShaderLib.U_LIGHTVEC);
 			u_lightColor = program
 					.getUniformLocation(ShaderLib.U_LIGHTCOLOR);
-
-			activeProgram = program;
 
 			// Load World View-Projection matrix
 			Matrix.multiplyMM(wvpMatrix, 0, projMatrix, 0, in.viewMatrix, 0);
@@ -197,7 +201,7 @@ public class GameRenderer implements Renderer {
 			logError("glUniformMatrix4fv (wvpMatrix)");
 
 			// Load directional light
-			Light light = in.light;
+			final Light light = in.light;
 			if (u_lightVec != -1) {
 				GLES20.glUniform3f(u_lightVec, light.x, light.y, light.z);
 				logError("glUniform3fv (light vector)");
@@ -212,15 +216,13 @@ public class GameRenderer implements Renderer {
 			final int[] bufferLocations = primitive.bufferLocations;
 			material.attachAttribs(primitive,
 					bufferLocations[inIndexOffset] * 4,
-					in.modelMatrices.get(matrixNumber));
+					matrixIter.next());
 
 			// Render primitive!
 			GLES2.glDrawElements(material.getGeometryType(), primitive.size,
 					GLES20.GL_UNSIGNED_SHORT,
 					bufferLocations[inIndexOffset + 1] * 2);
 			logError("DrawElements");
-
-			matrixNumber++;
 		}
 
 		// Render HUD

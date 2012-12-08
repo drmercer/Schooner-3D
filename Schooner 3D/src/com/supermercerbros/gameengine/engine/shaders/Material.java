@@ -229,7 +229,7 @@ public abstract class Material {
 	 * @return The size of the object's data in the vbo (
 	 *         <code>obj.info.count * stride</code>)
 	 */
-	public int loadObjectToVBO(GameObject obj, int[] vbo, int offset) {
+	public int loadObjectToVBO(GameObject obj, float[] vbo, int offset) {
 		inPos = offset;
 		final int vertCount = obj.info.count;
 		onLoadObject(obj, vbo, vertCount);
@@ -239,7 +239,7 @@ public abstract class Material {
 		return vertCount * stride;
 	}
 	
-	protected abstract void onLoadObject(GameObject obj, int[] vbo,
+	protected abstract void onLoadObject(GameObject obj, float[] vbo,
 			int vertCount);
 	
 	/**
@@ -268,18 +268,15 @@ public abstract class Material {
 	 * @param count
 	 *            The number of vertices represented
 	 */
-	public void loadArrayToVbo(float[] data, int[] vbo, int size,
+	public void loadArrayToVbo(float[] data, float[] vbo, int size,
 			int count) {
 		for (int i = 0; i < count; i++) {
-			for (int j = 0; j < size; j++) {
-				vbo[inPos + i * stride + j] = Float.floatToRawIntBits(data[i
-						* size + j]);
-			}
+			System.arraycopy(data, i * size, vbo, inPos + i * stride, size);
 		}
 		inPos += size;
 	}
 	
-	public void loadArrayToVbo(byte[] data, int[] vbo, int intSize,
+	public void loadArrayToVbo(byte[] data, float[] vbo, int intSize,
 			int count) {
 		final int byteSize = intSize * 4;
 		for (int i = 0; i < count; i++) {
@@ -293,7 +290,7 @@ public abstract class Material {
 				for (int index = byteIndex, counter = 3; counter >= 0; index++, counter--) {
 					value |= data[index] << (8 * counter);
 				}
-				vbo[intIndex] = value;
+				vbo[intIndex] = Float.intBitsToFloat(value);
 			}
 		}
 		inPos += intSize;

@@ -92,7 +92,7 @@ public class SkeletalVertexModifier extends VertexModifier {
 	}
 	
 	@Override
-	public void onLoadObject(Material mtl, GameObject object, int[] vbo) {
+	public void onLoadObject(Material mtl, GameObject object, float[] vbo) {
 		BonedObject bonedObject = (BonedObject) object;
 		mtl.loadArrayToVbo(bonedObject.boneWeights, vbo, bonesPerVertex, object.info.count);
 		mtl.loadArrayToVbo(bonedObject.boneIndices, vbo, (bonesPerVertex + 3) / 4, object.info.count);

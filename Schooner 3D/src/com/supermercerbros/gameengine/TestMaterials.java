@@ -39,7 +39,7 @@ public class TestMaterials {
 		private static final int STRIDE = 3;
 
 		@Override
-		public void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+		public void onLoadObject(GameObject obj, float[] vbo, int vertCount) {
 			loadArrayToVbo(obj.verts, vbo, 3, vertCount);
 		}
 		
@@ -73,7 +73,7 @@ public class TestMaterials {
 		private static final int STRIDE = 3;
 		
 		@Override
-		protected void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+		protected void onLoadObject(GameObject obj, float[] vbo, int vertCount) {
 			loadArrayToVbo(obj.verts, vbo, 3, vertCount);
 		}
 
@@ -120,7 +120,7 @@ public class TestMaterials {
 		private static final int STRIDE = 6;
 
 		@Override
-		public void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+		public void onLoadObject(GameObject obj, float[] vbo, int vertCount) {
 			loadArrayToVbo(obj.verts, vbo, 3, vertCount);
 			loadArrayToVbo(obj.normals, vbo, 3, vertCount);
 		}

@@ -22,7 +22,7 @@ import com.supermercerbros.gameengine.objects.GameObject;
  * Represents a vertex position modifier that is applied in the GPU
  */
 public abstract class VertexModifier {
-	public abstract void onLoadObject(Material mtl, GameObject object, int[] vbo);
+	public abstract void onLoadObject(Material mtl, GameObject object, float[] vbo);
 	
 	public abstract void onAttachAttribs(Material mtl, Program program);
 	

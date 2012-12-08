@@ -25,7 +25,7 @@ public class RenderData {
 	public final int index;
 	
 	public final LinkedList<Metadata> primitives;
-	public final int[] vbo;
+	public final float[] vbo;
 	public final short[] ibo;
 
 	public CopyOnWriteArrayList<float[]> modelMatrices;
@@ -36,7 +36,7 @@ public class RenderData {
 	public RenderData(int index, final int vboLength, final int iboLength) {
 		this.index = index;
 		
-		vbo = new int[vboLength];
+		vbo = new float[vboLength];
 		ibo = new short[iboLength];
 		primitives = new LinkedList<Metadata>();
 		modelMatrices = new CopyOnWriteArrayList<float[]>();
