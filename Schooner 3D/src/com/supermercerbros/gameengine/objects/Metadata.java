@@ -21,16 +21,7 @@ import com.supermercerbros.gameengine.engine.shaders.Material;
 public class Metadata {
 	@SuppressWarnings("unused")
 	private static final String TAG = "com.supermercerbros.gameengine.objects.GameObject.Metadata";
-
-	public static final int SHADELESS = 0;
-	public static final int SMOOTH_SHADING = 1;
-	public static final int NORMAL_MAP = 2;
-
-	public static final int SINGLE_COLOR = 3;
-	public static final int MULTICOLOR = 4;
-	public static final int ETC1 = 5;
-	public static final int BITMAP = 6;
-
+	
 	/**
 	 * Contains the number of indices in the described GameObject. Used by the
 	 * renderer.
@@ -43,6 +34,7 @@ public class Metadata {
 	public int count;
 	/**
 	 * True if the described GameObject is marked for deletion.
+	 * TODO: Remove this, and put a visibility boolean in GameObject.
 	 */
 	public boolean delete = false;
 	/**

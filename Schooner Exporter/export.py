@@ -121,7 +121,7 @@ class BinFile:
 		
 	def writeFloat(self, f):
 		import math
-		if math.abs(f) < BinFile.roundToZeroWithin:
+		if math.fabs(f) < BinFile.roundToZeroWithin:
 			f = 0.0
 		if BinFile.DEBUG:
 			print("#float  : " + str(f))
@@ -373,21 +373,24 @@ class ArmatureExporter:
 			# write bones part of action
 			for bone in self.bones:
 				group = action.groups.get(bone.name)
-				noCurves = True
 				if group and len(group.channels) >= 4:
 					print("  " + bone.name + " group exists and has channels")
-					for fcurve in group.channels:
-						if fcurve.data_path.find("rotation_quaternion") + 1:
-							if fcurve.array_index == 0:
-								if noCurves:
+					for array_index in range(4):
+						for fcurve in group.channels:
+							if fcurve.data_path.find("rotation_quaternion") + 1:
+								if fcurve.array_index == array_index:
 									file.writeByte(len(fcurve.keyframe_points))
-								else:
-									err("ERROR! See line 385")
-								noCurves = False
-							writeFCurveToFile(fcurve, file)
-				if noCurves:
+									writeFCurveToFile(fcurve, file)
+									break
+						else:
+							file.writeByte(0)
+				else:
+					print("  " + bone.name + " group does not exist")
+					# no points for w, x, y, or z curves
 					file.writeByte(0)
-				
+					file.writeByte(0)
+					file.writeByte(0)
+					file.writeByte(0)
 		file.close()
 
 class ArmatureOptions:

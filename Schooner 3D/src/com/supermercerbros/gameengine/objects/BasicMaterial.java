@@ -48,7 +48,7 @@ public class BasicMaterial extends Material {
 	}
 
 	@Override
-	public void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+	public void onLoadObject(GameObject obj, float[] vbo, int vertCount) {
 		loadArrayToVbo(obj.verts, vbo, 3, vertCount); // Vertex position data
 		loadArrayToVbo(obj.mtl, vbo, 3, vertCount);   // Vertex color data
 	}

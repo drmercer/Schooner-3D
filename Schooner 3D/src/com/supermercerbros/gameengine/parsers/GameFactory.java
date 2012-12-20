@@ -22,6 +22,7 @@ import java.util.HashMap;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.util.Log;
 
 import com.supermercerbros.gameengine.armature.Action;
 import com.supermercerbros.gameengine.armature.Skeleton;
@@ -34,6 +35,7 @@ import com.supermercerbros.gameengine.objects.GameObject;
  * Creates Movements and GameObjects, including BonedObjects.
  */
 public class GameFactory {
+	private static final String TAG = GameFactory.class.getSimpleName();
 	private final AssetManager am;
 	private final Resources res;
 
@@ -107,10 +109,18 @@ public class GameFactory {
 	 */
 	public GameObject bakeGameObject() {
 		if (skeleton != null && data.boneIndices != null) {
+			Log.i(TAG, "Baking BonedObject");
 			BonedObject object = new BonedObject(data, material, skeleton);
 			material.makeProgram();
 			return object;
 		} else {
+			Log.i(TAG, "Baking GameObject");
+			if (skeleton == null) {
+				Log.i(TAG, "Skeleton == null");
+			}
+			if (data.boneIndices == null) {
+				Log.i(TAG, "data.boneIndices == null");
+			}
 			GameObject object = new GameObject(data, material);
 			material.makeProgram();
 			return object;

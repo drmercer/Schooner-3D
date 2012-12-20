@@ -83,7 +83,7 @@ public class CelShadedMaterial extends Material {
 	}
 	
 	@Override
-	public void onLoadObject(GameObject obj, int[] vbo, int vertCount) {
+	public void onLoadObject(GameObject obj, float[] vbo, int vertCount) {
 		loadArrayToVbo(obj.verts, vbo, 3, vertCount);
 		loadArrayToVbo(obj.normals, vbo, 3, vertCount);
 		loadArrayToVbo(obj.mtl, vbo, 2, vertCount);

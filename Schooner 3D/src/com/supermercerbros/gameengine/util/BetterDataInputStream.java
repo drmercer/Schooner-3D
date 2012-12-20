@@ -23,7 +23,6 @@ import java.io.InputStream;
 
 /**
  * Subclass of {@link DataInputStream} that adds array-reading functions.
- *
  */
 public class BetterDataInputStream extends DataInputStream {
 
@@ -31,12 +30,22 @@ public class BetterDataInputStream extends DataInputStream {
 		super(in);
 	}
 	
+	public float readFloatDebug() throws IOException {
+		final float f = readFloat();
+//		System.out.println(String.format("#float  : %.4f", f));
+		return f;
+	}
+	
+	public byte readByteDebug() throws IOException {
+		final byte b = readByte();
+//		System.out.println("#byte   : " + b);
+		return b;
+	}
+	
 	/**
 	 * Reads at most <code>length</code> shorts from this stream and stores them
 	 * in the <code>short</code> array <code>out</code> starting at
-	 * <code>offset</code>. Returns the number of shorts that have been read or
-	 * -1 if no shorts have been read and the end of the stream has been
-	 * reached.
+	 * <code>offset</code>. 
 	 * 
 	 * @param out
 	 * @param offset
@@ -94,7 +103,9 @@ public class BetterDataInputStream extends DataInputStream {
 				builder.append((char) next);
 			}
 		}
-		return builder.toString();
+		final String string = builder.toString();
+//		System.out.println("#string : " + string);
+		return string;
 	}
 	
 	@Override

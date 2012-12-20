@@ -233,16 +233,16 @@ public class Sch3D {
 			final int pointCount = ((data.readByte() & 0x00FF) - 1) * 3 + 1;
 			Log.d(TAG, "Curve " + curveIndex + " has "+ pointCount + " points.");
 			if (pointCount == 1) {
-				data.readFloat(); // Frame is not necessary
-				curves[curveIndex] = new ConstantCurve(data.readFloat());
+				data.readFloatDebug(); // Frame is not necessary
+				curves[curveIndex] = new ConstantCurve(data.readFloatDebug());
 			}
 
 			float[] frames = new float[pointCount];
 			float[] values = new float[pointCount];
 
 			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-				frames[pointIndex] = data.readFloat();
-				values[pointIndex] = data.readFloat();
+				frames[pointIndex] = data.readFloatDebug();
+				values[pointIndex] = data.readFloatDebug();
 				Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 			}
 
@@ -258,14 +258,14 @@ public class Sch3D {
 		if (version == 1) {
 			
 			// Parse Skeleton
-			final short boneCount = (short) (data.readByte() + 1);
+			final short boneCount = (short) (((short) data.readByteDebug()) + 1);
 			ArrayList<PreBoneData> preBones = new ArrayList<PreBoneData>();
 			for (byte i = 0; i < boneCount; i++) {
-				final float x = data.readFloat(),
-						y = data.readFloat(),
-						z = data.readFloat();
+				final float x = data.readFloatDebug(),
+						y = data.readFloatDebug(),
+						z = data.readFloatDebug();
 				preBones.add(new PreBoneData(i, x, y, z, 
-						(byte) (data.readByte() - 1)));
+						(byte) (data.readByteDebug() - 1)));
 				Log.d(TAG, "Bone " + i + " coords: " + x + ", " + y + ", " + z);
 			}
 			
@@ -285,7 +285,7 @@ public class Sch3D {
 				Log.d(TAG, "NAME: " + name);
 				
 				CurveMovement movement;
-				final byte flagsByte = data.readByte();
+				final byte flagsByte = data.readByteDebug();
 				
 				// Parse Movement
 				if (flagsByte != 0) { // If Movement exists for this Action...
@@ -314,7 +314,7 @@ public class Sch3D {
 					int curveIndex = 0;
 					// Parse location curves
 					if (moveLoc) {
-						final int pointCount = ((data.readByte() & 0xFFFF) - 1) * 3 + 1;
+						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
 						if (pointCount > 0) {
 							Log.d(TAG, "Location curves have "+ pointCount + " points.");
 							for (int i = 0; i < 3; i++) { 
@@ -322,8 +322,8 @@ public class Sch3D {
 								float[] values = new float[pointCount];
 								
 								for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-									frames[pointIndex] = data.readFloat();
-									values[pointIndex] = data.readFloat();
+									frames[pointIndex] = data.readFloatDebug();
+									values[pointIndex] = data.readFloatDebug();
 									Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 								}
 								curves[curveIndex + i] = new BezierCurve(frames, values);
@@ -338,7 +338,7 @@ public class Sch3D {
 					}
 					// Parse rotation curves
 					if (moveRot) {
-						final int pointCount = ((data.readByte() & 0xFFFF) - 1) * 3 + 1;
+						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
 						if (pointCount > 0) {
 							Log.d(TAG, "Location curves have "+ pointCount + " points.");
 							for (int i = 0; i < 4; i++) { 
@@ -346,8 +346,8 @@ public class Sch3D {
 								float[] values = new float[pointCount];
 								
 								for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-									frames[pointIndex] = data.readFloat();
-									values[pointIndex] = data.readFloat();
+									frames[pointIndex] = data.readFloatDebug();
+									values[pointIndex] = data.readFloatDebug();
 									Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 								}
 								
@@ -365,15 +365,15 @@ public class Sch3D {
 					// Parse scale curves
 					if (moveScale) {
 						// Uniform scale (1 curve)
-						final int pointCount = ((data.readByte() & 0xFFFF) - 1) * 3 + 1;
+						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
 						if (pointCount > 0) {
 							Log.d(TAG, "Scale curve (uniform) has "+ pointCount + " points.");
 							float[] frames = new float[pointCount];
 							float[] values = new float[pointCount];
 
 							for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-								frames[pointIndex] = data.readFloat();
-								values[pointIndex] = data.readFloat();
+								frames[pointIndex] = data.readFloatDebug();
+								values[pointIndex] = data.readFloatDebug();
 								Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 							}
 
@@ -385,7 +385,7 @@ public class Sch3D {
 						//curveIndex += 1; Don't need to increment after last curve
 					} else if (moveScaleAxis) {
 						// Per-axis scale (3 curves)
-						final int pointCount = ((data.readByte() & 0xFFFF) - 1) * 3 + 1;
+						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
 						if (pointCount > 0) {
 							Log.d(TAG, "Scale curves (per-axis) have "+ pointCount + " points.");
 							for (int i = 0; i < 3; i++) {
@@ -393,8 +393,8 @@ public class Sch3D {
 								float[] values = new float[pointCount];
 								
 								for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-									frames[pointIndex] = data.readFloat();
-									values[pointIndex] = data.readFloat();
+									frames[pointIndex] = data.readFloatDebug();
+									values[pointIndex] = data.readFloatDebug();
 									Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 								}
 								
@@ -419,20 +419,25 @@ public class Sch3D {
 				SparseArray<Curve> curves = new SparseArray<Curve>();
 				for (byte i = 0; i < boneCount; i++) {
 					// For each bone
-					final int pointCount = ((data.readByte() & 0x00FF) - 1) * 3 + 1;
-					if (pointCount < 1) {
-						Log.d(TAG, "Bone " + i + " has 0 points.");
-						continue; // Bone has no points
-					} else {
-						Log.d(TAG, "Bone " + i + " has " + pointCount + " points.");
-						final int offset = i * 4;
-						for(int j = 0; j < 4; j++) { // Read curves
+					final int offset = i * 4;
+					
+					for(int j = 0; j < 4; j++) {
+						// For each curve
+						final int pointCount = ((data.readByteDebug() & 0x00FF) - 1) * 3 + 1;
+						
+						if (pointCount > 0) { // If the curve has keyframes
+//							Log.d(TAG, name + "[" + i + "]." + j + " has " + pointCount + " points");
 							final float[] frames = new float[pointCount], values = new float[pointCount];
 							for (int index = 0; index < pointCount; index++) {
-								frames[index] = data.readFloat();
-								values[index] = data.readFloat();
+								if (name.equals("Turn") && i == 1) {
+									Log.d(TAG, "debug");
+								}
+								frames[index] = data.readFloatDebug();
+								values[index] = data.readFloatDebug();
 							}
 							curves.append(offset + j, new BezierCurve(frames, values));
+						} else {
+//							Log.d(TAG, name + "[" + i + "]." + j + " has no points");
 						}
 					}
 				}
