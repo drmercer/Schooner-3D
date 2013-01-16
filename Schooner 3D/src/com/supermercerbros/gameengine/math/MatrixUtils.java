@@ -113,4 +113,39 @@ public class MatrixUtils extends Matrix {
 		m[mOffset + 14] = 0;
 		m[mOffset + 15] = 1;
 	}
+
+	/**
+	 * Makes a String representation of a matrix.
+	 * @param mat The <code>float</code> array containing the matrix.
+	 * @param matOffset The offset into <code>mat</code> where the matrix starts.
+	 * @return The String representation of the matrix, with all numbers printed to 4 digits of precision.
+	 */
+	public static String matrixToString(float[] mat, int matOffset) {
+		final String rowFormat = "% .8f, % .8f, % .8f, % .8f\n";
+		final StringBuilder sb = new StringBuilder();
+		
+		for (int row = 0; row < 4; row++) { // For each row
+			sb.append(String.format(rowFormat, 
+					mat[matOffset + row     ], 
+					mat[matOffset + row + 4 ], 
+					mat[matOffset + row + 8 ], 
+					mat[matOffset + row + 12]));
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * @param mat
+	 * @param matOffset
+	 * @param x
+	 * @param y
+	 * @param z
+	 */
+	public static void setTranslateM(float[] mat, int matOffset,
+			float x, float y, float z) {
+		setIdentityM(mat, matOffset);
+		mat[matOffset + 12] = x;
+		mat[matOffset + 13] = y;
+		mat[matOffset + 14] = z;
+	}
 }

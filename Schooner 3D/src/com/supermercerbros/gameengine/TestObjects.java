@@ -65,7 +65,7 @@ public class TestObjects {
 				0.0f, 0.0f, 3.0f, 
 				0.0f, 0.0f, 0.0f, };
 		//@formatter:on
-
+		
 		keyframesA.add(new Keyframe(frameA1));
 		keyframesA.add(new Keyframe(frameA2));
 		float[] times = { 0, 3000 };
@@ -75,7 +75,7 @@ public class TestObjects {
 		tetra.setAnimation(anim1, System.currentTimeMillis() + 1000, 3000, 1);
 		return tetra;
 	}
-
+	
 	/**
 	 * Creates a textured cube.
 	 * 
@@ -84,6 +84,13 @@ public class TestObjects {
 	 * @return A textured cube.
 	 */
 	public static GameObject cube(Material mtl) {
+		final Material material;
+		if (mtl == null) {
+			material = new BasicMaterial();
+		} else {
+			material = mtl;
+		}
+		
 		//@formatter:off
 		final float[] verts = { 
 				1.0f, 1.0f, 1.0f, 
@@ -95,7 +102,7 @@ public class TestObjects {
 				0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, };
 		final float[] uvs;
-		if (mtl instanceof TexturedMaterial) {
+		if (material instanceof TexturedMaterial) {
 			uvs = new float[] { 
 					0.0f, 0.0f, 
 					0.0f, 1.0f, 
@@ -107,14 +114,14 @@ public class TestObjects {
 					0.0f, 0.0f, };
 		} else {
 			uvs = new float[] { 
-					0.0f, 0.0f, 0.0f, 
+					1.0f, 1.0f, 1.0f, 
 					1.0f, 0.0f, 0.0f, 
 					0.0f, 1.0f, 0.0f,
 					0.0f, 0.0f, 1.0f,
 					1.0f, 1.0f, 0.0f, 
 					1.0f, 0.0f, 1.0f, 
 					0.0f, 1.0f, 1.0f,
-					1.0f, 1.0f, 1.0f
+					0.0f, 0.0f, 0.0f
 			};
 		}
 		final short[] indices = { 
@@ -132,13 +139,13 @@ public class TestObjects {
 				5, 7, 6, };
 		float[] normals = null;
 		//@formatter:on
-
+		
 		GameObject cube = new GameObject(verts, indices, normals, uvs, null,
-				mtl);
-		mtl.makeProgram();
+				material);
+		material.makeProgram();
 		return cube;
 	}
-
+	
 	/**
 	 * Creates a textured quadrangle.
 	 * 
@@ -165,17 +172,18 @@ public class TestObjects {
 				1, 2, 3 };
 		float[] normals = null;
 		//@formatter:on
-
+		
 		GameObject obj = new GameObject(verts, indices, normals, uvs, null,
 				new TexturedMaterial(tex));
 		return obj;
 	}
-
+	
 	/**
 	 * Creates a vertex-colored triangle.
 	 * 
 	 * @param mtl
-	 *            The Material to use
+	 *            The Material to use. If null, will be replaced by a new
+	 *            {@link BasicMaterial}
 	 * 
 	 * @return A colored triangle.
 	 */
@@ -196,7 +204,7 @@ public class TestObjects {
 		float[] normals = null;
 		
 		//@formatter:on
-
+		
 		final Material material;
 		if (mtl == null) {
 			material = new BasicMaterial();
@@ -205,9 +213,10 @@ public class TestObjects {
 		}
 		GameObject tri = new GameObject(verts, indices, normals, colors, null,
 				material);
+		material.makeProgram();
 		return tri;
 	}
-
+	
 	public static Bounds cubeBounds() {
 		//@formatter:off
 		final float[] cubeV = { 
@@ -230,12 +239,12 @@ public class TestObjects {
 			2, 0, 4, 6, // X one
 		};
 		//@formatter:on
-
+		
 		final LinkedList<Polyhedron> parts = new LinkedList<Polyhedron>();
 		final Polyhedron poly = new Polyhedron(Polyhedron.featureMesh(cubeV,
 				cubeI));
 		parts.add(poly);
 		return new Bounds(parts, 0.0);
 	}
-
+	
 }

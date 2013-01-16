@@ -79,13 +79,14 @@ public class GameFactory {
 		data = Sch3D.parseMesh(res.openRawResource(resId));
 	}
 
-	public void setSkeleton(String filename) throws IOException {
+	public Skeleton setSkeleton(String filename) throws IOException {
 		if (filename != null) {
 			skeleton = Sch3D.parseSkeleton(this, am.open(filename), "@a:"
 					+ filename);
 		} else {
 			skeleton = null;
 		}
+		return skeleton;
 	}
 
 	public void setMatrixSource(GameObject obj) {

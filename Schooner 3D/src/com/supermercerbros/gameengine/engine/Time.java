@@ -20,7 +20,9 @@ import java.util.LinkedList;
 /**
  * This singleton class handles pausing in the game engine.
  */
-public class Time {
+public enum Time {
+	INSTANCE;
+	
 	/**
 	 * Represents an object that should be notified when the game engine resumes
 	 * after being paused.
@@ -32,18 +34,8 @@ public class Time {
 		 */
 		void onResume(long millis);
 	}
-
-	// Static stuff
-	private static Time instance;
-
-	public static synchronized Time getInstance() {
-		if (instance == null) {
-			instance = new Time();
-		}
-		return instance;
-	}
-
-	// Non-static stuff
+	
+	// Fields
 	private final LinkedList<Pausable> pausables;
 	private boolean paused = false;
 	private long pauseTime = 0L;

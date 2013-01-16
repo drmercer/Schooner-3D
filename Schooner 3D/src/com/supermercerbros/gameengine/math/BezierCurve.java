@@ -16,7 +16,6 @@
 
 package com.supermercerbros.gameengine.math;
 
-import android.util.Log;
 
 /**
  * Represents a piecewise Bezier curve, used for interpolation
@@ -46,12 +45,12 @@ public class BezierCurve implements Curve {
 	 */
 	@Override
 	public float getInterpolation(float x) {
+		final float frame = x * times[lastIndex];
 		if (x >= 1) {
 			return values[lastIndex];
 		} else if (x <= 0) {
 			return values[0];
 		}
-		final float frame = times[0] + x * (times[lastIndex] - times[0]);
 		
 		// Get index of lower keyframe
 		int keyframe = 0;
@@ -59,7 +58,7 @@ public class BezierCurve implements Curve {
 			keyframe++;
 		}
 		
-		Log.d(TAG, "keyframe: " + keyframe + ", frame: " + frame + ", x: " + x);
+//		Log.d(TAG, "keyframe: " + keyframe + ", frame: " + frame + ", x: " + x);
 		// Point frame coordinates
 		final float fp0 = times[(keyframe * 3) + 0];
 		final float fp1 = times[(keyframe * 3) + 1];

@@ -17,6 +17,7 @@
 package com.supermercerbros.gameengine.engine;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.DelayQueue;
@@ -26,7 +27,6 @@ import android.util.Log;
 
 import com.supermercerbros.gameengine.collision.CollisionDetector;
 import com.supermercerbros.gameengine.collision.OnCollisionCheckFinishedListener;
-import com.supermercerbros.gameengine.debug.LoopLog;
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Metadata;
@@ -39,8 +39,7 @@ import com.supermercerbros.gameengine.util.Toggle;
  * 
  * @version 1.0
  */
-public class Engine extends LoopingThread implements
-		OnCollisionCheckFinishedListener {
+public class Engine extends LoopingThread {
 	static final String TAG = "Engine";
 	private final DataPipe pipe;
 	private final RenderData outA;
@@ -48,7 +47,7 @@ public class Engine extends LoopingThread implements
 	private final Camera cam;
 	
 	private final CollisionDetector cd;
-	private final Toggle cdIsFinished = new Toggle(false);
+	final Toggle cdIsFinished = new Toggle(false);
 	
 	private boolean aBufs = true;
 	
@@ -103,7 +102,16 @@ public class Engine extends LoopingThread implements
 		this.cam = cam;
 		this.objects = new LinkedList<GameObject>();
 		
-		this.cd = new CollisionDetector(this);
+		final OnCollisionCheckFinishedListener listener = new OnCollisionCheckFinishedListener() {
+			@Override
+			public void onCollisionCheckFinished() {
+				synchronized (cdIsFinished) {
+					cdIsFinished.setState(true);
+					cdIsFinished.notify();
+				}
+			}
+		};
+		this.cd = new CollisionDetector(listener);
 		
 		outA = new RenderData(0, pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
 		outB = new RenderData(1, pipe.VBO_capacity / 4, pipe.IBO_capacity / 2);
@@ -247,15 +255,15 @@ public class Engine extends LoopingThread implements
 		}
 		updatePipe(out);
 		aBufs = !aBufs;
-		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
+//		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
 	}
 	
 	protected void onPause() {
-		Time.getInstance().pause();
+		Time.INSTANCE.pause();
 	}
 	
 	protected void onResume() {
-		Time.getInstance().resume();
+		Time.INSTANCE.resume();
 	}
 	
 	/**
@@ -332,7 +340,8 @@ public class Engine extends LoopingThread implements
 		final int outIndexOffset = out.index * 2;
 		out.primitives.clear();
 		
-		int vOffset = 0, iOffset = 0, index = 0;
+		final Iterator<float[]> matrixIter = out.modelMatrices.iterator();
+		int vOffset = 0, iOffset = 0;
 		for (GameObject object : objects) {
 			final Metadata objData = object.info;
 			final int[] objBufferLocations = objData.bufferLocations;
@@ -368,7 +377,7 @@ public class Engine extends LoopingThread implements
 					}
 					
 					// Load matrices
-					object.writeMatrices(out.modelMatrices.get(index++));
+					object.writeMatrices(matrixIter.next());
 					
 					out.primitives.add(objData);
 				}
@@ -384,11 +393,12 @@ public class Engine extends LoopingThread implements
 		time = pipe.putData(this, out);
 	}
 	
+	/* (non-Javadoc)
+	 *  Sets time to System.currentTimeMillis() for first iteration
+	 */
 	@Override
-	public void onCollisionCheckFinished() {
-		synchronized (cdIsFinished) {
-			cdIsFinished.setState(true);
-			cdIsFinished.notify();
-		}
+	public void start() {
+		time = System.currentTimeMillis();
+		super.start();
 	}
 }

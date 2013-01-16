@@ -16,15 +16,20 @@
 
 package com.supermercerbros.gameengine.armature;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 
+import android.util.Log;
+
 public class Skeleton {
+	private static final String TAG = "Skeleton";
 	private final String id;
 	private final LinkedList<Bone> rootParents;
 	/**
 	 * A LinkedList of the Bones in this Skeleton. It is recommended that you do not modify this list.
 	 */
-	protected final LinkedList<Bone> bones;
+	public final LinkedList<Bone> bones;
 	
 	public Skeleton(String id, LinkedList<Bone> roots){
 		this.id = id;
@@ -33,6 +38,19 @@ public class Skeleton {
 		for (Bone root : roots) {
 			root.getChildren(bones);
 		}
+
+		// sort Bones by index
+		final Comparator<Bone> c = new Comparator<Bone>() {
+			@Override
+			public int compare(Bone lhs, Bone rhs) {
+				return lhs.index - rhs.index;
+			}
+		};
+		Collections.sort(roots, c);
+		Collections.sort(bones, c);
+		
+		Log.d(TAG, "roots.size() = " + roots.size());
+		Log.d(TAG, "bones.size() = " + bones.size());
 	}
 	
 	public int boneCount() {

@@ -19,15 +19,20 @@ package com.supermercerbros.gameengine.armature;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.supermercerbros.gameengine.collision.Point;
+import android.util.Log;
+
 import com.supermercerbros.gameengine.math.MatrixUtils;
-import com.supermercerbros.gameengine.math.Quaternion;
 
 public class Bone {
-	private final byte index;
+	// TODO After skeletal anim. works, Remove debugging stuff
+	private static final boolean DEBUG = false;
+	private static final String TAG = "Bone";
+	public final byte index;
 	private final LinkedList<Bone> children;
-	private final float locX, locY, locZ;
-	private float w = 1, x = 0, y = 0, z = 0;
+	public final float locX, locY, locZ; 
+	public float w = 1, x = 0, y = 0, z = 0; // TODO: change these two lines back to private
+	
+	private boolean printMatrix = false; // TODO: remove after debug
 	
 	/**
 	 * Creates a new Bone
@@ -57,7 +62,7 @@ public class Bone {
 	 * 
 	 * @param array
 	 */
-	void getRotation(float[] array) {
+	public void getRotation(float[] array) { // TODO: remove "public"
 		array[index * 4    ] = w;
 		array[index * 4 + 1] = x;
 		array[index * 4 + 2] = y;
@@ -76,25 +81,42 @@ public class Bone {
 	 * @param z
 	 *            The z-component of the quaternion.
 	 */
-	void setRotation(float w, float x, float y, float z) {
+	public void setRotation(float w, float x, float y, float z) { // TODO change back to "default"
 		this.w = w;
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		printMatrix = true;
 	}
 
 	public void writeMatrix(float[] matrixArray, int offset, int parentIndex) {
 		final int boneOffset = offset + index * 16;
-		final Point r = Quaternion.rotate(w, x, y, z, locX, locY, locZ);
+		if (printMatrix && DEBUG) {
+			Log.d(TAG, "Writing bone " + index + " (parent " + parentIndex + ")");
+			Log.d(TAG, "Rotation: " + w + ", " + x + ", " + y + ", " + z);
+		}
+		
 		if (parentIndex != -1) {
 			// Bone has a parent bone
-			final int parentOffset = offset + parentIndex * 12;
-			MatrixUtils.rotateQuaternionM(matrixArray, boneOffset, matrixArray, parentOffset, w, x, y, z);
-			MatrixUtils.translateM(matrixArray, boneOffset, x - r.x, y - r.y, z - r.z);
+			final int parentOffset = offset + parentIndex * 16;
+			MatrixUtils.translateM(matrixArray, boneOffset, matrixArray, parentOffset, -locX, -locY, -locZ);
 		} else {
 			// Bone is a root bone
-			MatrixUtils.setRotateQuaternionM(matrixArray, boneOffset, w, x, y, z);
-			MatrixUtils.translateM(matrixArray, boneOffset, x - r.x, y - r.y, z - r.z);
+			MatrixUtils.setTranslateM(matrixArray, boneOffset, -locX, -locY, -locZ);
+			
+		}
+		if (printMatrix && DEBUG) {
+			Log.d(TAG + " A", MatrixUtils.matrixToString(matrixArray, boneOffset));
+		}
+		MatrixUtils.rotateQuaternionM(matrixArray, boneOffset, w, x, y, z);
+		if (printMatrix && DEBUG) {
+			Log.d(TAG + " B", MatrixUtils.matrixToString(matrixArray, boneOffset));
+		}
+		MatrixUtils.translateM(matrixArray, boneOffset, locX, locY, locZ);
+		
+		if (printMatrix && DEBUG) {
+			Log.d(TAG + " C", MatrixUtils.matrixToString(matrixArray, boneOffset));
+			printMatrix = false;
 		}
 		
 		if (children != null) {

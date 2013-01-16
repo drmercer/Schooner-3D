@@ -1,8 +1,6 @@
 # USAGE NOTES:
 # - Meshes must be quads OR tris, not mixed.
 # - All rotations must be in quaternions
-# - Do NOT place a keyframe on frame zero. (Blender starts 
-#   at frame 1 by default, so this shouldn't be a problem.)
 # - Unused bones (bones with no parented vertices) should not have used children.
 # - Bone scale is ignored
 
@@ -169,7 +167,7 @@ class BinFile:
 		self.NAME = None
 
 class MeshExporter:
-	def __init__(self, mesh_object, tris=True, textured=False, armature_indexed=False):
+	def __init__(self, mesh_object, tris=True, textured=False):
 		self.setMode('OBJECT')
 		bpy.ops.object.select_all(action='DESELECT')
 		bpy.context.scene.objects.active = mesh_object
@@ -222,7 +220,8 @@ class MeshExporter:
 		# store flags
 		self.tris = tris
 		self.textured = textured
-		self.armature_indexed = armature_indexed
+		self.armature_indexed = (mesh_object.parent!=None and mesh_object.parent.type=='ARMATURE')
+		print("armature_indexed = " + str(self.armature_indexed))
 		
 		# store index data
 		self.indices = [index for face in mesh.polygons for index in face.vertices]
@@ -251,15 +250,24 @@ class MeshExporter:
 						break
 		
 		# store armature weight data
-		if armature_indexed:
+		if self.armature_indexed:
+			armature = mesh_object.parent.data
 			self.bone_weights = []
 			for vertex, vert_index in zip(mesh.vertices, range(len(mesh.vertices))):
 				bones = []
 				for g in vertex.groups:
-					if g.weight:
-						bone = (mesh_object.parent.data.bones.find(mesh_object.vertex_groups[g.group].name), g.weight)
+					if g.weight != 0.0:
+						bone_index = armature.bones.find(mesh_object.vertex_groups[g.group].name)
+						bone_weight = g.weight
+						bone = (bone_index, bone_weight)
 						bones.append(bone)
-				self.armature_indices.append(bones)
+						print("vertex " + str(vert_index) + " parented to bone " + str(bone_index) + " with weight " + str(bone_weight))
+				if not len(bones):
+					print("canceling armature_indexed")
+					self.armature_indexed = False
+					self.bone_weights = None
+					break
+				self.bone_weights.append(bones)
 	
 	def export(self, directory, name):
 		file = BinFile(directory, name + ".sch3Dmesh")
@@ -546,31 +554,38 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 					if index == 0:
 						keyframe_count = len(fcurve.keyframe_points)
 					curves.append(fcurve)
-		print("key: " + key)
+		# Get the left-most keyframe in that key
+		offset = 1000000.0
+		for index in curveNames[key]:
+			for fcurve in action.fcurves:
+				if fcurve.data_path==key and fcurve.array_index==index:
+					first_keyframe = fcurve.keyframe_points[0].co[0]
+					if first_keyframe < offset:
+						offset = first_keyframe
 		# write the curves to the file
 		if len(curves) == len(curveNames):
 			file.writeByte(keyframe_count)
 			for curve in curves:
 				print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
-				writeFCurveToFile(curve, file)
+				writeFCurveToFile(curve, file, offset)
 		else:
 			file.writeByte(0)
 
-def writeFCurveToFile(fcurve, file):
+def writeFCurveToFile(fcurve, file, offset=0.0):
+	last_index = len(fcurve.keyframe_points)-1
 	i = 0
-	
 	for keyframe in fcurve.keyframe_points:
 		# Write left handle
 		if i > 0:
-			#print("left handle: " + str(keyframe.handle_left))
-			file.writeAllFloats(keyframe.handle_left)
+			file.writeFloat(keyframe.handle_left[0] - offset)
+			file.writeFloat(keyframe.handle_left[1])
 		# Write point
-		#print("point: " + str(keyframe.co))
-		file.writeAllFloats(keyframe.co)
+		file.writeFloat(keyframe.co[0] - offset)
+		file.writeFloat(keyframe.co[1])
 		# Write right handle
-		if i < len(fcurve.keyframe_points)-1:
-			#print("right handle: " + str(keyframe.handle_right))
-			file.writeAllFloats(keyframe.handle_right)
+		if i < last_index:
+			file.writeFloat(keyframe.handle_right[0] - offset)
+			file.writeFloat(keyframe.handle_right[1])
 		i+= 1
 
 print("\n\n")
@@ -592,7 +607,6 @@ if verbose:
 if logToFile:
 	print("Writing log data to " + directory + logFileName)
 	log = open(directory + logFileName, "w")
-	print(log)
 	sys.stdout = log
 	
 
@@ -622,7 +636,7 @@ bpy.ops.object.mode_set(mode='OBJECT')
 for obj in mesh_objects:
 	obj.select=False
 for obj in mesh_objects:
-	exporter = MeshExporter(obj, tris=True, textured=False, armature_indexed=False)
+	exporter = MeshExporter(obj, tris=True, textured=False)
 	exporter.export(directory, obj.name.rsplit(".",1)[0])
 bpy.ops.scene.delete()
 scene = originalScene

@@ -18,17 +18,10 @@ package com.supermercerbros.gameengine.debug;
 
 import android.util.Log;
 
-public class JankCatcher {
+public enum JankCatcher {
+	INSTANCE;
+	
 	private static final String TAG = JankCatcher.class.getSimpleName();
-	
-	private static JankCatcher instance;
-	
-	public synchronized static JankCatcher instance() {
-		if (instance == null) {
-			instance = new JankCatcher();
-		}
-		return instance;
-	}
 	
 	private int updating = -1;
 	private int rendering = -1;

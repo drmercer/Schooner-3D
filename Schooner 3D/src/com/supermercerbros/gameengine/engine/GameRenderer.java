@@ -50,26 +50,9 @@ public class GameRenderer implements Renderer {
 	 * @return The GL_ code of the error.
 	 */
 	public static int logError(String location) {
-		final String TAG = "OpenGL";
-		int error = GLES20.glGetError();
-		switch (error) {
-		default:
-		case GLES20.GL_NO_ERROR:
-			break;
-		case GLES20.GL_INVALID_ENUM:
-			Log.e(TAG, location + ": GL_INVALID_ENUM");
-			break;
-		case GLES20.GL_INVALID_VALUE:
-			Log.e(TAG, location + ": GL_INVALID_VALUE");
-			break;
-		case GLES20.GL_INVALID_OPERATION:
-			Log.e(TAG, location + ": GL_INVALID_OPERATION");
-			break;
-		case GLES20.GL_OUT_OF_MEMORY:
-			Log.e(TAG, location + ": GL_OUT_OF_MEMORY");
-			break;
-		case GLES20.GL_INVALID_FRAMEBUFFER_OPERATION:
-			Log.e(TAG, location + ": GL_INVALID_FRAMEBUFFER_OPERATION");
+		final int error = GLES20.glGetError();
+		if (error != GLES20.GL_NO_ERROR) {
+			Log.e("OpenGL", location + ": " + GLES20.glGetString(error));			
 		}
 		return error;
 	}
@@ -156,6 +139,7 @@ public class GameRenderer implements Renderer {
 		// Render each primitive
 		Iterator<float[]> matrixIter = in.modelMatrices.iterator();
 		final LinkedList<Metadata> primitives = in.primitives;
+		final int inIndexOffset = in.index * 2;
 		for (final Metadata primitive : primitives) {
 			// Ensure depth test is enabled
 			GLES20.glEnable(GLES20.GL_DEPTH_TEST);
@@ -183,7 +167,8 @@ public class GameRenderer implements Renderer {
 					program.load();
 				} catch (GLException e) {
 					Log.e(TAG, "Program could not be loaded.", e);
-					continue; // Is there something better to do here?
+					throw new RuntimeException(e); // TODO: remove after debug?
+//					continue; // Is there something better to do here?
 				}
 			}
 			GLES20.glUseProgram(program.getHandle());
@@ -211,7 +196,6 @@ public class GameRenderer implements Renderer {
 			}
 
 			// Material-specific stuff
-			final int inIndexOffset = in.index * 2;
 			final int[] bufferLocations = primitive.bufferLocations;
 			material.attachAttribs(primitive,
 					bufferLocations[inIndexOffset] * 4,

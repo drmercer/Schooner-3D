@@ -41,7 +41,7 @@ public class MovementData implements Pausable {
 	 */
 	public MovementData() {
 		matrix = new float[16];
-		Time.getInstance().addPausable(this);
+		Time.INSTANCE.addPausable(this);
 	}
 	
 	/**

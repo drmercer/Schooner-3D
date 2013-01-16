@@ -205,11 +205,13 @@ public class Sch3D {
 	}
 	
 	/**
+	 * 
 	 * @param data
 	 * @return
 	 * @throws IOException
 	 */
-	private static CurveMovement readMovement(final BetterDataInputStream data) throws IOException {
+	private static CurveMovement readMovementOld(final BetterDataInputStream data) throws IOException {
+		// TODO: Remove this method?
 		CurveMovement movement;
 		byte flagsByte = data.readByte();
 		boolean[] flags = Utils.checkBits(flagsByte, 4);
@@ -269,151 +271,31 @@ public class Sch3D {
 				Log.d(TAG, "Bone " + i + " coords: " + x + ", " + y + ", " + z);
 			}
 			
+			// connect parents to children
+			for (PreBoneData preBone : preBones) {
+				final byte parentIndex = preBone.parentIndex;
+				if (parentIndex != -1) {
+					preBones.get(parentIndex).addChild(preBone);
+				}
+			}
+			
+			// convert PreBoneDatas to Bones
 			final LinkedList<Bone> roots = new LinkedList<Bone>();
 			for (PreBoneData preBone : preBones) {
 				if (preBone.isRoot()) {
 					roots.add(preBone.toBone());
 				}
 			}
+			// Construct skeleton
 			final Skeleton skeleton = new Skeleton(id, roots);
 			
 			// Parse Actions
 			final HashMap<String, Action> actions = new HashMap<String, Action>();
-			
 			while (data.hasNext()) {
 				final String name = data.readString();
 				Log.d(TAG, "NAME: " + name);
 				
-				CurveMovement movement;
-				final byte flagsByte = data.readByteDebug();
-				
-				// Parse Movement
-				if (flagsByte != 0) { // If Movement exists for this Action...
-					boolean[] flags = Utils.checkBits(flagsByte, 4);
-					Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
-					
-					int curveCount = 0;
-					final boolean moveLoc = flags[0];
-					final boolean moveRot = flags[1];
-					final boolean moveScale = flags[2];
-					final boolean moveScaleAxis = flags[3];
-					if (moveLoc) {
-						curveCount += 3;
-					}
-					if (moveRot) {
-						curveCount += 4;
-					}
-					if (moveScale) {
-						curveCount += 1;
-					} else if (moveScaleAxis) {
-						curveCount += 3;
-					}
-					Log.d(TAG, "CURVE COUNT: " + curveCount);
-					
-					Curve[] curves = new Curve[curveCount];
-					int curveIndex = 0;
-					// Parse location curves
-					if (moveLoc) {
-						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
-						if (pointCount > 0) {
-							Log.d(TAG, "Location curves have "+ pointCount + " points.");
-							for (int i = 0; i < 3; i++) { 
-								float[] frames = new float[pointCount];
-								float[] values = new float[pointCount];
-								
-								for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-									frames[pointIndex] = data.readFloatDebug();
-									values[pointIndex] = data.readFloatDebug();
-									Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
-								}
-								curves[curveIndex + i] = new BezierCurve(frames, values);
-							}
-						} else {
-							curves[curveIndex] = null;
-							curves[curveIndex + 1] = null;
-							curves[curveIndex + 2] = null;
-							Log.d(TAG, "Location curves have 0 points.");
-						}
-						curveIndex += 3;
-					}
-					// Parse rotation curves
-					if (moveRot) {
-						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
-						if (pointCount > 0) {
-							Log.d(TAG, "Location curves have "+ pointCount + " points.");
-							for (int i = 0; i < 4; i++) { 
-								float[] frames = new float[pointCount];
-								float[] values = new float[pointCount];
-								
-								for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-									frames[pointIndex] = data.readFloatDebug();
-									values[pointIndex] = data.readFloatDebug();
-									Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
-								}
-								
-								curves[curveIndex + i] = new BezierCurve(frames, values);
-							}
-						} else {
-							curves[curveIndex] = null;
-							curves[curveIndex + 1] = null;
-							curves[curveIndex + 2] = null;
-							curves[curveIndex + 3] = null;
-							Log.d(TAG, "Location curves have 0 points.");
-						}
-						curveIndex += 4;
-					}
-					// Parse scale curves
-					if (moveScale) {
-						// Uniform scale (1 curve)
-						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
-						if (pointCount > 0) {
-							Log.d(TAG, "Scale curve (uniform) has "+ pointCount + " points.");
-							float[] frames = new float[pointCount];
-							float[] values = new float[pointCount];
-
-							for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-								frames[pointIndex] = data.readFloatDebug();
-								values[pointIndex] = data.readFloatDebug();
-								Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
-							}
-
-							curves[curveIndex] = new BezierCurve(frames, values);
-						} else {
-							curves[curveIndex] = null;
-							Log.d(TAG, "Scale curve (uniform) has 0 points.");
-						}
-						//curveIndex += 1; Don't need to increment after last curve
-					} else if (moveScaleAxis) {
-						// Per-axis scale (3 curves)
-						final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
-						if (pointCount > 0) {
-							Log.d(TAG, "Scale curves (per-axis) have "+ pointCount + " points.");
-							for (int i = 0; i < 3; i++) {
-								float[] frames = new float[pointCount];
-								float[] values = new float[pointCount];
-								
-								for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-									frames[pointIndex] = data.readFloatDebug();
-									values[pointIndex] = data.readFloatDebug();
-									Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
-								}
-								
-								curves[curveIndex + i] = new BezierCurve(frames, values);
-							}
-						} else {
-							curves[curveIndex] = null;
-							curves[curveIndex + 1] = null;
-							curves[curveIndex + 2] = null;
-							Log.d(TAG, "Scale curves (per-axis) have 0 points.");
-						}
-						//curveIndex += 3; Don't need to increment after last curves
-					}
-					
-					movement = new CurveMovement(flagsByte, curves);
-				} else {
-					Log.d(TAG, "No movement curves.");
-					movement = null;
-				}
+				CurveMovement movement = readMovement(data);
 				
 				// Parse Action
 				SparseArray<Curve> curves = new SparseArray<Curve>();
@@ -429,9 +311,6 @@ public class Sch3D {
 //							Log.d(TAG, name + "[" + i + "]." + j + " has " + pointCount + " points");
 							final float[] frames = new float[pointCount], values = new float[pointCount];
 							for (int index = 0; index < pointCount; index++) {
-								if (name.equals("Turn") && i == 1) {
-									Log.d(TAG, "debug");
-								}
 								frames[index] = data.readFloatDebug();
 								values[index] = data.readFloatDebug();
 							}
@@ -450,5 +329,145 @@ public class Sch3D {
 			data.close();
 			throw new IOException("File version is incorrect.");
 		}
+	}
+
+	/**
+	 * @param data
+	 * @return
+	 * @throws IOException
+	 */
+	private static CurveMovement readMovement(final BetterDataInputStream data)
+			throws IOException {
+		CurveMovement movement;
+		final byte flagsByte = data.readByteDebug();
+		
+		// Parse Movement
+		if (flagsByte != 0) { // If Movement exists for this Action...
+			boolean[] flags = Utils.checkBits(flagsByte, 4);
+			Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
+			
+			int curveCount = 0;
+			final boolean moveLoc = flags[0];
+			final boolean moveRot = flags[1];
+			final boolean moveScale = flags[2];
+			final boolean moveScaleAxis = flags[3];
+			if (moveLoc) {
+				curveCount += 3;
+			}
+			if (moveRot) {
+				curveCount += 4;
+			}
+			if (moveScale) {
+				curveCount += 1;
+			} else if (moveScaleAxis) {
+				curveCount += 3;
+			}
+			Log.d(TAG, "CURVE COUNT: " + curveCount);
+			
+			Curve[] curves = new Curve[curveCount];
+			int curveIndex = 0;
+			// Parse location curves
+			if (moveLoc) {
+				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				if (pointCount > 0) {
+					Log.d(TAG, "Location curves have "+ pointCount + " points.");
+					for (int i = 0; i < 3; i++) { 
+						float[] frames = new float[pointCount];
+						float[] values = new float[pointCount];
+						
+						for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+							frames[pointIndex] = data.readFloatDebug();
+							values[pointIndex] = data.readFloatDebug();
+							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+						}
+						curves[curveIndex + i] = new BezierCurve(frames, values);
+					}
+				} else {
+					curves[curveIndex] = null;
+					curves[curveIndex + 1] = null;
+					curves[curveIndex + 2] = null;
+					Log.d(TAG, "Location curves have 0 points.");
+				}
+				curveIndex += 3;
+			}
+			// Parse rotation curves
+			if (moveRot) {
+				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				if (pointCount > 0) {
+					Log.d(TAG, "Rotation curves have "+ pointCount + " points.");
+					for (int i = 0; i < 4; i++) { 
+						float[] frames = new float[pointCount];
+						float[] values = new float[pointCount];
+						
+						for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+							frames[pointIndex] = data.readFloatDebug();
+							values[pointIndex] = data.readFloatDebug();
+							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+						}
+						
+						curves[curveIndex + i] = new BezierCurve(frames, values);
+					}
+				} else {
+					curves[curveIndex] = null;
+					curves[curveIndex + 1] = null;
+					curves[curveIndex + 2] = null;
+					curves[curveIndex + 3] = null;
+					Log.d(TAG, "Rotation curves have 0 points.");
+				}
+				curveIndex += 4;
+			}
+			// Parse scale curves
+			if (moveScale) {
+				// Uniform scale (1 curve)
+				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				if (pointCount > 0) {
+					Log.d(TAG, "Scale curve (uniform) has "+ pointCount + " points.");
+					float[] frames = new float[pointCount];
+					float[] values = new float[pointCount];
+
+					for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+						frames[pointIndex] = data.readFloatDebug();
+						values[pointIndex] = data.readFloatDebug();
+						Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+					}
+
+					curves[curveIndex] = new BezierCurve(frames, values);
+				} else {
+					curves[curveIndex] = null;
+					Log.d(TAG, "Scale curve (uniform) has 0 points.");
+				}
+				//curveIndex += 1; Don't need to increment after last curve
+			} else if (moveScaleAxis) {
+				// Per-axis scale (3 curves)
+				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				if (pointCount > 0) {
+					Log.d(TAG, "Scale curves (per-axis) have "+ pointCount + " points.");
+					for (int i = 0; i < 3; i++) {
+						float[] frames = new float[pointCount];
+						float[] values = new float[pointCount];
+						
+						for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+							frames[pointIndex] = data.readFloatDebug();
+							values[pointIndex] = data.readFloatDebug();
+							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+						}
+						
+						curves[curveIndex + i] = new BezierCurve(frames, values);
+					}
+				} else {
+					curves[curveIndex] = null;
+					curves[curveIndex + 1] = null;
+					curves[curveIndex + 2] = null;
+					Log.d(TAG, "Scale curves (per-axis) have 0 points.");
+				}
+				//curveIndex += 3; Don't need to increment after last curves
+			}
+			
+			movement = new CurveMovement(flagsByte, curves);
+		} else {
+			Log.d(TAG, "No movement curves.");
+			movement = null;
+		}
+		return movement;
 	}
 }

@@ -20,7 +20,6 @@ package com.supermercerbros.gameengine.engine;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
-import com.supermercerbros.gameengine.debug.LoopLog;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 
 /**
@@ -62,7 +61,7 @@ public class DataPipe {
 	public synchronized long putData(Engine engine, RenderData newData) {
 		this.data = newData;
 		hasData = true;
-		LoopLog.i(TAG, "DataPipe now contains RD " + data.index);
+//		LoopLog.i(TAG, "DataPipe now contains RD " + data.index);
 		notify();
 		while (hasData) {
 			try {
@@ -88,7 +87,7 @@ public class DataPipe {
 		lastReadTime = System.currentTimeMillis();
 		hasData = false;
 		notify();
-		LoopLog.i(TAG, "DataPipe was read. Renderer now has RD " + ldata.index);
+//		LoopLog.i(TAG, "DataPipe was read. Renderer now has RD " + ldata.index);
 		return ldata;
 	}
 }

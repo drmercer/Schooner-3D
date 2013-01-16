@@ -18,34 +18,28 @@ package com.supermercerbros.gameengine.debug;
 
 import android.util.Log;
 
-public class LoopLog {
+public enum LoopLog {
+	INSTANCE;
+	
 	private static final String TAG = LoopLog.class.getSimpleName();
 	private static final int CALLS_TO_LOG = 100;
-	private static LoopLog instance;
-	
-	private synchronized static LoopLog instance() {
-		if (instance == null) {
-			instance = new LoopLog();
-		}
-		return instance;
-	}
 	
 	private int callCount = 0;
 	
 	public static synchronized void e(String tag, String msg) {
-		instance().logE(tag, msg);
+		INSTANCE.logE(tag, msg);
 	}
 	
 	public static synchronized void d(String tag, String msg) {
-		instance().logD(tag, msg);
+		INSTANCE.logD(tag, msg);
 	}
 	
 	public static synchronized void w(String tag, String msg) {
-		instance().logW(tag, msg);
+		INSTANCE.logW(tag, msg);
 	}
 	
 	public static synchronized void i(String tag, String msg) {
-		instance().logI(tag, msg);
+		INSTANCE.logI(tag, msg);
 	}
 	
 	public synchronized void logE(String tag, String msg) {

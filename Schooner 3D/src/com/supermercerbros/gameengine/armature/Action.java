@@ -18,25 +18,34 @@ package com.supermercerbros.gameengine.armature;
 
 import java.util.Iterator;
 
+import android.util.Log;
 import android.util.SparseArray;
 
 import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.motion.Movement;
 
 public class Action {
-	protected final SparseArray<Curve> boneCurves;
+	private static final String TAG = Action.class.getSimpleName();
+	private final SparseArray<Curve> boneCurves;
 	public final Movement movement;
 	
 	public Action(Movement movement, SparseArray<Curve> curves) {
 		this.boneCurves = curves;
+		final int length = curves.size();
+		if (length > 0) {
+			for (int i = 0; i < length; i++) {
+				Log.d(TAG, "curve " + i + ": " + curves.get(i));
+			}			
+		} else {
+			Log.e(TAG, "No curves!");
+		}
 		this.movement = movement;
 	}
 
-	public void getFrame(ActionData data, Skeleton skeleton, long time) {		
-		final float framePoint;
+	public void update(ActionData data, Skeleton skeleton, long time) {		
 		if (time < data.startTime) {
 			// Interpolating to the action
-			framePoint = (time - data.callTime) / (data.startTime - data.callTime);
+			final float framePoint = (time - data.callTime) / (data.startTime - data.callTime);
 			final Iterator<Bone> iter = skeleton.bones.iterator();
 			for (int i = 0; iter.hasNext(); i++) {
 				final int offset = i*4;
@@ -71,8 +80,13 @@ public class Action {
 			}
 		} else {
 			// Interpolating in the action
-			framePoint = (time - data.startTime) / data.duration;
-			//TODO: check if action has ended. See MeshAnimation, line 74-ish
+			final float framePoint = ((float) (time - data.startTime)) / data.duration;
+			
+			//TODO: do this more better-er. See MeshAnimation, line 74-ish
+			if (framePoint > 1.0f) {
+				return; // Don't animate.
+			}
+			
 			final Iterator<Bone> iter = skeleton.bones.iterator();
 			for (int i = 0; iter.hasNext(); i++) {
 				final int offset = i*4;

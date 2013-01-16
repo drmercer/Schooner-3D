@@ -58,7 +58,7 @@ public class ActionData implements Pausable {
 	
 	public ActionData(int boneCount) {
 		this.callState = new ArmatureState(boneCount);
-		Time.getInstance().addPausable(this);
+		Time.INSTANCE.addPausable(this);
 	}
 	
 	public void writeState(long time, long start, long duration,
