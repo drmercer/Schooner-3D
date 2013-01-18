@@ -28,7 +28,10 @@ import android.opengl.Matrix;
  */
 public class MatrixUtils extends Matrix {
 	/*
-	 * The technique of using a temp float array was obtained from Matrix.java of the AOSP
+	 * The technique of using a temp float array was obtained from 
+	 * Matrix.java of the AOSP, which was released under the Apache 
+	 * License, Version 2.0. 
+	 * (Copyright 2007 The Android Open Source Project)
 	 */
 	private static final float[] temp = new float[32];
 
