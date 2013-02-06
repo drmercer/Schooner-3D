@@ -22,7 +22,6 @@ import android.opengl.GLES20;
 
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.engine.shaders.Program;
-import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 import com.supermercerbros.gameengine.engine.shaders.VertexModifier;
 import com.supermercerbros.gameengine.objects.BonedObject;
 import com.supermercerbros.gameengine.objects.GameObject;
@@ -69,7 +68,7 @@ public class SkeletalVertexModifier extends VertexModifier {
 	public void onLoadObject(Material mtl, GameObject object, float[] vbo) {
 		BonedObject bonedObject = (BonedObject) object;
 		mtl.loadArrayToVbo(bonedObject.boneWeights, vbo, bonesPerVertex, object.info.count);
-		mtl.loadArrayToVbo(bonedObject.boneIndices, vbo, (bonesPerVertex + 3) / 4, object.info.count, bonesPerVertex);
+		mtl.loadArrayToVbo(bonedObject.boneIndices, vbo, bonesPerVertex, object.info.count);
 	}
 	
 	@Override
@@ -150,10 +149,6 @@ public class SkeletalVertexModifier extends VertexModifier {
 	@Override
 	public int getStride() {
 		return STRIDE;
-	}
-	
-	private boolean containsNormalAttrib(StringBuilder sb) {
-		return (sb.indexOf(" " + ShaderLib.A_NORMAL + ";") != -1);
 	}
 	
 }

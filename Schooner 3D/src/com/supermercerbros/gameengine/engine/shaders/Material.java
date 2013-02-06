@@ -30,20 +30,16 @@ import com.supermercerbros.gameengine.util.GLES2;
  * Superclass for materials to be used when rendering 3D objects.
  */
 public abstract class Material {
-	private static final boolean NATIVE_ORDER_IS_BIG_ENDIAN = ByteOrder.nativeOrder()==ByteOrder.BIG_ENDIAN;
+	private static final boolean NATIVE_ORDER_IS_BIG_ENDIAN = ByteOrder
+			.nativeOrder() == ByteOrder.BIG_ENDIAN;
 	
-	public static final String VAR_A_POS = 
-			"attribute vec4 a_pos; \n";
-	public static final String VAR_A_NORMAL =
-			"attribute vec3 a_normal; \n";
-	public static final String VAR_U_VIEWPROJ = 
-			"uniform mat4 u_viewProj;\n";
-	public static final String VAR_U_MODEL = 
-			"uniform mat4 u_model;\n";
+	public static final String VAR_A_POS = "attribute vec3 a_pos; \n";
+	public static final String VAR_A_NORMAL = "attribute vec3 a_normal; \n";
+	public static final String VAR_U_VIEWPROJ = "uniform mat4 u_viewProj;\n";
+	public static final String VAR_U_MODEL = "uniform mat4 u_model;\n";
 	
-	public static final String VARS_U_LIGHT = 
-			"uniform vec3 u_lightVec;\n" +
-			"uniform vec3 u_lightColor;\n";
+	public static final String VARS_U_LIGHT = "uniform vec3 u_lightVec;\n"
+			+ "uniform vec3 u_lightColor;\n";
 	
 	/**
 	 * Contains the OpenGL shader program used by this Material.
@@ -72,15 +68,15 @@ public abstract class Material {
 	
 	/**
 	 * Contains the handle to the <code>u_model</code> uniform in the shader,
-	 * the uniform used to store the object-specific tranformation matrix.
-	 * This handle is initialized during
+	 * the uniform used to store the object-specific tranformation matrix. This
+	 * handle is initialized during
 	 * {@link #attachAttribs(Metadata, int, float[])}.
 	 */
 	private int u_model;
 	/**
-	 * Contains the handle to the <code>u_matrices</code> uniform in the
-	 * shader, which is the uniform used to store extra matrices for the
-	 * object. This handle is initialized during
+	 * Contains the handle to the <code>u_matrices</code> uniform in the shader,
+	 * which is the uniform used to store extra matrices for the object. This
+	 * handle is initialized during
 	 * {@link #attachAttribs(Metadata, int, float[])}.
 	 */
 	private int u_matrices;
@@ -98,6 +94,7 @@ public abstract class Material {
 	 * The stride of this Material
 	 */
 	private int stride;
+	private int byteStride;
 	
 	private VertexModifier modifier;
 	
@@ -129,7 +126,8 @@ public abstract class Material {
 			
 			vertSB.append(ProgramSource.MAIN_HEADER);
 			modifier.getCode(vertSB);
-			vertSB.append(source.vertMain.replaceAll("\\ba_pos\\b", "pos").replaceAll("\\ba_normal\\b", "normal"));
+			vertSB.append(source.vertMain.replaceAll("\\ba_pos\\b", "pos")
+					.replaceAll("\\ba_normal\\b", "normal"));
 			vertSB.append(ProgramSource.MAIN_FOOTER);
 			vertex = vertSB.toString();
 			
@@ -167,8 +165,10 @@ public abstract class Material {
 			this.stride = stride;
 		}
 		
-		Log.d("Vertex Shader", vertex);
-		Log.d("Fragment Shader", fragment);
+		this.byteStride = stride * 4;
+		
+//		Log.d("Vertex Shader", vertex);
+//		Log.d("Fragment Shader", fragment);
 		this.program = ShaderLib.newProgram(vertex, fragment);
 	}
 	
@@ -182,10 +182,9 @@ public abstract class Material {
 	 * @param matrices
 	 *            A float array containing the matrices for this primitve,
 	 *            starting with the model matrix.
-	 * @return The byte size of the object's data in the VBO (
-	 *         <code>primitive.count * stride * 4</code>)
 	 */
-	public void attachAttribs(Metadata primitive, int vboOffset, float[] matrices) {
+	public void attachAttribs(Metadata primitive, int vboOffset,
+			float[] matrices) {
 		if (a_pos == -2) {
 			a_pos = program.getAttribLocation(ShaderLib.A_POS);
 			a_normal = program.getAttribLocation(ShaderLib.A_NORMAL);
@@ -222,7 +221,7 @@ public abstract class Material {
 	/**
 	 * @return The number of floats per vertex
 	 */
-	public int getStride(){
+	public int getStride() {
 		return stride;
 	}
 	
@@ -260,8 +259,8 @@ public abstract class Material {
 	
 	/**
 	 * Called after a VertexModifier has been set if necessary. Subclasses
-	 * should call {@link #setProgram(ProgramSource, int)} in their implementation
-	 * of this method.
+	 * should call {@link #setProgram(ProgramSource, int)} in their
+	 * implementation of this method.
 	 */
 	public abstract void makeProgram();
 	
@@ -270,24 +269,33 @@ public abstract class Material {
 	 *            The array of vertex data to load (such as obj.verts)
 	 * @param vbo
 	 *            The vertex buffer array to load to
-	 * @param vboOffset
-	 *            The offset into vbo to load the data at
 	 * @param size
 	 *            The number of values for each vertex
 	 * @param count
 	 *            The number of vertices represented
 	 */
-	public void loadArrayToVbo(float[] data, float[] vbo, int size,
-			int count) {
+	public void loadArrayToVbo(float[] data, float[] vbo, int size, int count) {
 		for (int i = 0; i < count; i++) {
 			System.arraycopy(data, i * size, vbo, inPos + i * stride, size);
 		}
 		inPos += size;
 	}
 	
-	public void loadArrayToVbo(byte[] data, float[] vbo, int intSize,
-			int count, int bytesPerVertex) {
+	/**
+	 * Loads byte vertex attribute data to the VBO array.
+	 * 
+	 * @param data
+	 *            The data to load
+	 * @param vbo
+	 *            The VBO array to load to
+	 * @param size
+	 *            The number of bytes per vertex
+	 * @param count
+	 *            The number of vertices represented
+	 */
+	public void loadArrayToVbo(byte[] data, float[] vbo, int size, int count) {
 		
+		final int intSize = (size + 3) / 4;
 		final int byteSize = intSize * 4;
 		for (int i = 0; i < count; i++) {
 			// Convert bytes to ints
@@ -298,12 +306,14 @@ public abstract class Material {
 				// Convert 4 bytes to int
 				int value = 0;
 				if (NATIVE_ORDER_IS_BIG_ENDIAN) {
-					for (int counter = bytesPerVertex - 1; counter >= 0; counter--) {
-						value |= data[byteIndex++] << (8 * counter); // First byte is most significant
+					for (int counter = size - 1; counter >= 0; counter--) {
+						value |= data[byteIndex++] << (8 * counter);
+						// First byte is most significant
 					}
 				} else {
-					for (int counter = 0; counter < bytesPerVertex; counter++) {
-						value |= data[byteIndex++] << (8 * counter); // First byte is least significant
+					for (int counter = 0; counter < size; counter++) {
+						value |= data[byteIndex++] << (8 * counter);
+						// First byte is least significant
 					}
 				}
 				vbo[intIndex] = Float.intBitsToFloat(value);
@@ -313,7 +323,7 @@ public abstract class Material {
 	}
 	
 	/**
-	 * Attaches the given attribute to the GPU.
+	 * Attaches the given float attribute to the GPU.
 	 * 
 	 * @param attrib
 	 *            The index of the attribute to attach.
@@ -321,7 +331,6 @@ public abstract class Material {
 	 *            The size of the attribute.
 	 */
 	public void attachAttrib(int attrib, int size) {
-		final int byteStride = 4 * stride;
 		GLES2.glEnableVertexAttribArray(attrib);
 		GLES2.glVertexAttribPointer(attrib, size, GLES20.GL_FLOAT, false,
 				byteStride, outPos);
@@ -334,15 +343,20 @@ public abstract class Material {
 	 * @param attrib
 	 *            The index of the attribute to attach.
 	 * @param size
-	 *            The size of the attribute.
+	 *            The number of elements in the attribute.
 	 * @param glType
 	 *            the GL_ enum describing the data type
 	 */
 	public void attachAttrib(int attrib, int size, int glType) {
-		final int byteStride = 4 * stride;
 		GLES2.glEnableVertexAttribArray(attrib);
-		GLES2.glVertexAttribPointer(attrib, size, glType, false,
-				byteStride, outPos);
+		GLES2.glVertexAttribPointer(attrib, size, glType, false, byteStride,
+				outPos);
+		if (glType == GLES20.GL_BYTE || glType == GLES20.GL_UNSIGNED_BYTE) {
+			size = (size + 3) / 4;
+		} else if (glType == GLES20.GL_SHORT
+				|| glType == GLES20.GL_UNSIGNED_SHORT) {
+			size = (size + 1) / 2;
+		}
 		outPos += size * 4;
 	}
 	

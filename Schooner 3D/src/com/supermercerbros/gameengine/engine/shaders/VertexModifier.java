@@ -53,4 +53,8 @@ public abstract class VertexModifier {
 	 * @return The number of additional floats per vertex.
 	 */
 	public abstract int getStride();
+
+	protected static boolean containsNormalAttrib(StringBuilder sb) {
+		return (sb.indexOf(" " + ShaderLib.A_NORMAL + ";") != -1);
+	}
 }

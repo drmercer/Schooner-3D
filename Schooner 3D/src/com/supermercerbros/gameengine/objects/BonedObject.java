@@ -16,8 +16,11 @@
 
 package com.supermercerbros.gameengine.objects;
 
+import android.util.Log;
+
 import com.supermercerbros.gameengine.armature.Action;
 import com.supermercerbros.gameengine.armature.ActionData;
+import com.supermercerbros.gameengine.armature.BinarySkeletalVertexModifier;
 import com.supermercerbros.gameengine.armature.SkeletalVertexModifier;
 import com.supermercerbros.gameengine.armature.Skeleton;
 import com.supermercerbros.gameengine.engine.shaders.Material;
@@ -41,28 +44,60 @@ public class BonedObject extends GameObject {
 		int vertCount = info.count;
 		boneCount = skeleton.boneCount();
 		
-		// Init boneIndices and boneWeights
-		this.boneIndices = new byte[BONES_PER_VERTEX * vertCount];
-		this.boneWeights = new float[BONES_PER_VERTEX * vertCount];
-		
-		// Fill boneIndices and boneWeights
+		// Localize arrays
 		final byte[][] localIndices = data.boneIndices;
 		final float[][] localWeights = data.boneWeights;
-		final int vertexWeightCount = Math.min(BONES_PER_VERTEX,
-				localIndices[0].length);
 		
-		for (int vert = 0; vert < vertCount; vert++) {
-			final int vertOffset = vert * 4;
-			for (int j = 0; j < vertexWeightCount; j++) {
-				int offset = vertOffset + j;
-				boneIndices[offset] = localIndices[vert][j];
-				boneWeights[offset] = localWeights[vert][j];
+		// Get largest number of bone weights per vertex
+		int vertexWeightCount = 0;
+		for (int i = 0; i < vertCount; i++) {
+			int weightCount = localWeights[i].length;
+			if (weightCount > vertexWeightCount) {
+				vertexWeightCount = weightCount;
 			}
 		}
 		
-		// Init VertexModifier and ActionData
-		material.setVertexModifier(new SkeletalVertexModifier(BONES_PER_VERTEX,
-				boneCount));
+		if (vertexWeightCount == 1) { // Single, binary weights
+			
+			// Init boneIndices and boneWeights
+			this.boneIndices = new byte[vertCount];
+			this.boneWeights = null;
+			
+			// Fill boneIndices (boneWeights is unused)
+			for (int i = 0; i < vertCount; i++) {
+				this.boneIndices[i] = localIndices[i][0];
+			}
+			
+			// Init VertexModifier and ActionData
+						material.setVertexModifier(new BinarySkeletalVertexModifier(boneCount));
+			
+		} else { // Multiple weights.
+			if (vertexWeightCount > BONES_PER_VERTEX) {
+				Log.e(TAG, "At least one vertex has more than " + BONES_PER_VERTEX
+						+ " bones parented to it. Only " + BONES_PER_VERTEX
+						+ " are supported.");
+				vertexWeightCount = BONES_PER_VERTEX;
+			}
+			
+			// Init boneIndices and boneWeights
+			this.boneIndices = new byte[BONES_PER_VERTEX * vertCount];
+			this.boneWeights = new float[BONES_PER_VERTEX * vertCount];
+			
+			// Fill boneIndices and boneWeights
+			for (int vert = 0; vert < vertCount; vert++) {
+				final int vertOffset = vert * 4;
+				for (int j = 0; j < vertexWeightCount; j++) {
+					int offset = vertOffset + j;
+					boneIndices[offset] = localIndices[vert][j];
+					boneWeights[offset] = localWeights[vert][j];
+				}
+			}
+			
+			// Init VertexModifier and ActionData
+			material.setVertexModifier(new SkeletalVertexModifier(BONES_PER_VERTEX,
+					boneCount));
+		}
+		
 		actionData = new ActionData(boneCount);
 	}
 	
@@ -79,7 +114,8 @@ public class BonedObject extends GameObject {
 			final long time = System.currentTimeMillis();
 			currentAction = action;
 			actionData.writeState(time, time, duration, skeleton);
-			// TODO: time, time? (add delay support to this method and to movements)
+			// TODO: time, time? (add delay support to this method and to
+			// movements)
 			super.startMovement(action.movement, time, duration);
 		} else {
 			throw new IllegalArgumentException("action == null");

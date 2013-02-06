@@ -31,11 +31,11 @@ public class BasicMaterial extends Material {
 			"uniform mat4 u_viewProj;\n" + 
 	
 			"uniform mat4 u_model;\n" + 
-			"attribute vec4 a_pos;\n" + 
+			"attribute vec3 a_pos;\n" + 
 			"attribute vec3 a_mtl;\n";
 	
 	private static final String VERTEX_MAIN = 
-			"gl_Position = (u_viewProj * u_model) * a_pos;\n" + 
+			"gl_Position = (u_viewProj * u_model) * vec4(a_pos, 1.0);\n" + 
 			"v_color = a_mtl;\n";
 	
 	private static final String FRAGMENT_MAIN = 
