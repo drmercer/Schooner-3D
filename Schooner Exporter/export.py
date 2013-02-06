@@ -134,9 +134,7 @@ class BinFile:
 		self.file.write(BinFile.signedInt.pack(i))
 		
 	def writeFloat(self, f):
-		import math
-		if math.fabs(f) < BinFile.roundToZeroWithin:
-			f = 0.0
+		f = clampFloat(f)
 		if BinFile.DEBUG:
 			print("#float  : " + str(f))
 		self.file.write(BinFile.signedFloat.pack(f))
@@ -272,8 +270,10 @@ class MeshExporter:
 			for vertex, vert_index in zip(mesh.vertices, range(len(mesh.vertices))):
 				bones = []
 				for g in vertex.groups:
-					if g.weight != 0.0:
+					if clampFloat(g.weight) != 0.0:
 						bone_index = armature.bones.find(mesh_object.vertex_groups[g.group].name)
+						if (bone_index < 0):
+							continue
 						bone_weight = g.weight
 						bone = (bone_index, bone_weight)
 						bones.append(bone)
@@ -603,6 +603,13 @@ def writeFCurveToFile(fcurve, file, offset=0.0):
 			file.writeFloat(keyframe.handle_right[0] - offset)
 			file.writeFloat(keyframe.handle_right[1])
 		i+= 1
+
+# Clamps floats to zero if they are within a certain tolerance.
+def clampFloat(f):
+	import math
+	if math.fabs(f) < BinFile.roundToZeroWithin:
+		f = 0.0
+	return f
 
 print("\n\n")
 # Begin script.
