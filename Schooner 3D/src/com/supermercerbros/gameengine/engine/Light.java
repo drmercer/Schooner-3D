@@ -28,23 +28,11 @@ public class Light {
 		if (light == this) {
 			return;
 		}
-		if (light.x != x) {
-			light.x = x;
-		}
-		if (light.y != y) {
-			light.y = y;
-		}
-		if (light.z != z) {
-			light.z = z;
-		}
-		if (light.r != r) {
-			light.r = r;
-		}
-		if (light.g != g) {
-			light.g = g;
-		}
-		if (light.b != b) {
-			light.b = b;
-		}
+		light.x = x;
+		light.y = y;
+		light.z = z;
+		light.r = r;
+		light.g = g;
+		light.b = b;
 	}
 }
