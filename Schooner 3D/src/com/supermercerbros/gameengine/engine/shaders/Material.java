@@ -16,6 +16,8 @@
 
 package com.supermercerbros.gameengine.engine.shaders;
 
+import java.nio.ByteOrder;
+
 import android.opengl.GLES20;
 import android.util.Log;
 
@@ -28,6 +30,8 @@ import com.supermercerbros.gameengine.util.GLES2;
  * Superclass for materials to be used when rendering 3D objects.
  */
 public abstract class Material {
+	private static final boolean NATIVE_ORDER_IS_BIG_ENDIAN = ByteOrder.nativeOrder()==ByteOrder.BIG_ENDIAN;
+	
 	public static final String VAR_A_POS = 
 			"attribute vec4 a_pos; \n";
 	public static final String VAR_A_NORMAL =
@@ -113,11 +117,16 @@ public abstract class Material {
 		final String fragment;
 		if (modifier != null) {
 			StringBuilder vertSB = new StringBuilder(source.vertPrecision);
+			
+			// variables
 			vertSB.append(source.vertVars);
 			modifier.getVars(vertSB);
 			vertSB.append(source.varyings);
+			
+			// methods
 			vertSB.append(source.vertMethods);
 			modifier.getMethods(vertSB);
+			
 			vertSB.append(ProgramSource.MAIN_HEADER);
 			modifier.getCode(vertSB);
 			vertSB.append(source.vertMain.replaceAll("\\ba_pos\\b", "pos").replaceAll("\\ba_normal\\b", "normal"));
@@ -277,18 +286,25 @@ public abstract class Material {
 	}
 	
 	public void loadArrayToVbo(byte[] data, float[] vbo, int intSize,
-			int count) {
+			int count, int bytesPerVertex) {
+		
 		final int byteSize = intSize * 4;
 		for (int i = 0; i < count; i++) {
 			// Convert bytes to ints
 			for (int intCount = 0; intCount < intSize; intCount++) {
 				final int intIndex = inPos + i * stride + intCount;
-				final int byteIndex = i * byteSize + (intCount * 4);
+				int byteIndex = i * byteSize + (intCount * 4);
 				
 				// Convert 4 bytes to int
 				int value = 0;
-				for (int index = byteIndex, counter = 3; counter >= 0; index++, counter--) {
-					value |= data[index] << (8 * counter);
+				if (NATIVE_ORDER_IS_BIG_ENDIAN) {
+					for (int counter = bytesPerVertex - 1; counter >= 0; counter--) {
+						value |= data[byteIndex++] << (8 * counter); // First byte is most significant
+					}
+				} else {
+					for (int counter = 0; counter < bytesPerVertex; counter++) {
+						value |= data[byteIndex++] << (8 * counter); // First byte is least significant
+					}
 				}
 				vbo[intIndex] = Float.intBitsToFloat(value);
 			}
