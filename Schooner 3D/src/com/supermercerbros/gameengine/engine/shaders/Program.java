@@ -105,11 +105,13 @@ public class Program implements EGLContextLostListener {
 
 	@Override
 	public void onContextLost() {
-		Log.d("Program", "received context lost notification");
+//		Log.d("Program", "received context lost notification");
 		if (!GLES20.glIsProgram(handle)){
-			Log.d("Program", "handle is not a program.");
+//			Log.d("Program", "handle is not a program.");
 			loaded = false;
 			handle = -1;
+			vertex.reset();
+			fragment.reset();
 		}
 	}
 }
