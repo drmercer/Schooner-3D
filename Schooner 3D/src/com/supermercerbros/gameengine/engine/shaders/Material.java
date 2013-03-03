@@ -126,8 +126,8 @@ public abstract class Material {
 			
 			vertSB.append(ProgramSource.MAIN_HEADER);
 			modifier.getCode(vertSB);
-			vertSB.append(source.vertMain.replaceAll("\\ba_pos\\b", "pos")
-					.replaceAll("\\ba_normal\\b", "normal"));
+			vertSB.append(source.vertMain.replaceAll("\\ba_pos\\b", "mod_pos")
+					.replaceAll("\\ba_normal\\b", "mod_normal"));
 			vertSB.append(ProgramSource.MAIN_FOOTER);
 			vertex = vertSB.toString();
 			
@@ -165,7 +165,7 @@ public abstract class Material {
 			this.stride = stride;
 		}
 		
-		this.byteStride = stride * 4;
+		this.byteStride = this.stride * 4;
 		
 //		Log.d("Vertex Shader", vertex);
 //		Log.d("Fragment Shader", fragment);
@@ -295,13 +295,14 @@ public abstract class Material {
 	 */
 	public void loadArrayToVbo(byte[] data, float[] vbo, int size, int count) {
 		
+		// The number of ints per vertex (can only put ints or floats into vbo)
 		final int intSize = (size + 3) / 4;
-		final int byteSize = intSize * 4;
-		for (int i = 0; i < count; i++) {
+		
+		for (int i = 0; i < count; i++) { // for each vertex
 			// Convert bytes to ints
-			for (int intCount = 0; intCount < intSize; intCount++) {
+			for (int intCount = 0; intCount < intSize; intCount++) { // for each int in the attribute
 				final int intIndex = inPos + i * stride + intCount;
-				int byteIndex = i * byteSize + (intCount * 4);
+				int byteIndex = i * size + (intCount * 4);
 				
 				// Convert 4 bytes to int
 				int value = 0;

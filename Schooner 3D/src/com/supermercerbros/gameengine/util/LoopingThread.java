@@ -107,6 +107,7 @@ public abstract class LoopingThread extends Thread {
 			throw new UnsupportedOperationException(
 					"Do not call LoopingThread.run()");
 		}
+		onBegin();
 		while (!ending) {
 			loop();
 			if (intermittent) {
@@ -123,6 +124,7 @@ public abstract class LoopingThread extends Thread {
 				onResume();
 			}
 		}
+		onEnd();
 
 		// Thread ends
 
@@ -167,7 +169,15 @@ public abstract class LoopingThread extends Thread {
 	}
 
 	/**
-	 * This method is called when the Thread pauses if it is intermittent.
+	 * This method is called when the Thread begins.
+	 * Override it to do something at that point.
+	 */
+	protected void onBegin() {
+		// This is overridden by subclasses
+	}
+
+	/**
+	 * This method is called when the Thread pauses.
 	 * Override it to do something at that point.
 	 */
 	protected void onPause() {
@@ -179,6 +189,14 @@ public abstract class LoopingThread extends Thread {
 	 * Override it to do something at that point.
 	 */
 	protected void onResume() {
+		// This is overridden by subclasses
+	}
+	
+	/**
+	 * This method is called when the Thread ends.
+	 * Override it to do something at that point.
+	 */
+	protected void onEnd() {
 		// This is overridden by subclasses
 	}
 

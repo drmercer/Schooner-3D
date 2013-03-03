@@ -258,10 +258,17 @@ public class Engine extends LoopingThread {
 //		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
 	}
 	
+	@Override
+	protected void onEnd() {
+		Log.i(TAG, "Engine end.");
+	}
+	
+	@Override
 	protected void onPause() {
 		Time.INSTANCE.pause();
 	}
 	
+	@Override
 	protected void onResume() {
 		Time.INSTANCE.resume();
 	}

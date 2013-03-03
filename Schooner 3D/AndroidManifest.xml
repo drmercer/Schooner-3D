@@ -4,8 +4,9 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
+    <!-- TODO: change minSdkVersion to 8 once GLES2 is finished  -->
     <uses-sdk
-        android:minSdkVersion="8"
+        android:minSdkVersion="9"
         android:targetSdkVersion="9" />
 
     <uses-feature

@@ -37,11 +37,11 @@ public class BinarySkeletalVertexModifier extends VertexModifier {
 	
 	// CODE SNIPPETS
 	private static final String POS_CODE = 
-			"vec4 a_pos4 = vec4(a_pos.xyz, 1.0);" +
-			"vec3 pos = (u_matrices[int(a_index)] * a_pos4).xyz;";
+			"vec4 a_pos4 = vec4(a_pos.xyz, 1.0);\n" +
+			"vec3 mod_pos = (u_matrices[int(a_index)] * a_pos4).xyz;\n";
 	private static final String NORMAL_CODE = 
-			"vec4 a_normal4 = vec4(a_normal.xyz, 0.0);" +
-			"vec3 pos = (u_matrices[int(a_index)] * a_normal4).xyz;";
+			"vec4 a_normal4 = vec4(a_normal.xyz, 0.0);\n" +
+			"vec3 mod_normal = (u_matrices[int(a_index)] * a_normal4).xyz;\n";
 	
 	
 	private final int boneCount;
@@ -64,7 +64,7 @@ public class BinarySkeletalVertexModifier extends VertexModifier {
 	@Override
 	public void onAttachAttribs(Material mtl, Program program) {
 		if (a_index == -1) {
-			a_index = program.getAttribLocation("a_indices");
+			a_index = program.getAttribLocation("a_index");
 		}
 		mtl.attachAttrib(a_index, 1, GLES20.GL_BYTE);
 	}

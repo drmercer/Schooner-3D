@@ -73,7 +73,8 @@ public class Program implements EGLContextLostListener {
 			String infoLog = GLES20.glGetProgramInfoLog(handle);
 			GLES20.glDeleteProgram(handle);
 			handle = 0;
-			throw new GLException(0, "Error linking program. \n" + infoLog);
+			Log.e(TAG, infoLog);
+			throw new GLException(0, "Error linking program.");
 		}
 
 		Log.d(TAG, "Program successfully created and linked!");

@@ -36,8 +36,8 @@ public abstract class VertexModifier {
 	
 	/**
 	 * @return The vertex position modifier code to be inserted at the
-	 *         beginning of the main method. Should write <code>vec3 pos</code>
-	 *         and <code>vec3 normal</code> variables containing the modified
+	 *         beginning of the main method. Should write <code>vec3 mod_pos</code>
+	 *         and <code>vec3 mod_normal</code> variables containing the modified
 	 *         position and
 	 *         normal respectively.
 	 */
