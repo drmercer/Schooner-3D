@@ -40,8 +40,8 @@ public class SkeletalVertexModifier extends VertexModifier {
 			"}\n";
 	
 	// METHOD CALLS
-	private static final String SKIN_POS = "skin_pos(a_pos4, m_weight, m_index, pos, m_weight_sum);\n";
-	private static final String SKIN_NORMAL = "skin_normal(a_normal4, m_weight, m_index, normal, m_weight_sum);\n";
+	private static final String SKIN_POS = "skin_pos(a_pos4, m_weight, m_index, mod_pos, m_weight_sum);\n";
+	private static final String SKIN_NORMAL = "skin_normal(a_normal4, m_weight, m_index, mod_normal, m_weight_sum);\n";
 	
 	// VARIABLES
 	private static final String VARS = 
@@ -103,11 +103,11 @@ public class SkeletalVertexModifier extends VertexModifier {
 				"float m_weight_sum = 0.0;\n" +
 				"int m_index;\n" +
 				"vec4 a_pos4 = vec4(a_pos.xyz, 1.0);\n" +
-				"vec3 pos = vec3(0.0);\n");
+				"vec3 mod_pos = vec3(0.0);\n");
 		if (normal) {
 			sb.append(
 					"vec4 a_normal4 = vec4(a_normal, 0.0);\n" +
-					"vec3 normal = vec3(0.0);\n");
+					"vec3 mod_normal = vec3(0.0);\n");
 		}
 		
 		// "skinning" code
@@ -132,9 +132,9 @@ public class SkeletalVertexModifier extends VertexModifier {
 		sb.append(SKIN);
 		
 		// "finishing" code
-		sb.append("pos = pos / m_weight_sum;\n");
+		sb.append("mod_pos /= m_weight_sum;\n");
 		if (normal) {
-			sb.append("normal = normal / m_weight_sum;\n");
+			sb.append("mod_normal /= m_weight_sum;\n");
 		}
 	}
 

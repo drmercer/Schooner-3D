@@ -42,7 +42,6 @@ class PreBoneData {
 		this.y = y;
 		this.z = z;
 		this.parentIndex = parent;
-		Log.d(TAG, "PreBoneData(" + index + "," + x + "," + y + "," + z + "," + parent + ")");
 	}
 	
 	void addChild(PreBoneData child) {

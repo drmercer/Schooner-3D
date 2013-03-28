@@ -41,8 +41,9 @@ public class BonedObject extends GameObject {
 		super(data, material);
 		this.skeleton = skeleton;
 		
-		int vertCount = info.count;
+		final int vertCount = info.count;
 		boneCount = skeleton.boneCount();
+		actionData = new ActionData(boneCount);
 		
 		// Localize arrays
 		final byte[][] localIndices = data.boneIndices;
@@ -57,6 +58,7 @@ public class BonedObject extends GameObject {
 			}
 		}
 		
+		Log.d(TAG, "vertexWeightCount = " + vertexWeightCount);
 		if (vertexWeightCount == 1) { // Single, binary weights
 			
 			// Init boneIndices and boneWeights
@@ -85,11 +87,15 @@ public class BonedObject extends GameObject {
 			
 			// Fill boneIndices and boneWeights
 			for (int vert = 0; vert < vertCount; vert++) {
+				final byte[] vertIndices = localIndices[vert];
+				final float[] vertWeights = localWeights[vert];
+				final int boneCount = vertIndices.length;
 				final int vertOffset = vert * 4;
-				for (int j = 0; j < vertexWeightCount; j++) {
+				
+				for (int j = 0; j < vertexWeightCount && j < boneCount; j++) {
 					int offset = vertOffset + j;
-					boneIndices[offset] = localIndices[vert][j];
-					boneWeights[offset] = localWeights[vert][j];
+					boneIndices[offset] = vertIndices[j];
+					boneWeights[offset] = vertWeights[j];
 				}
 			}
 			
@@ -97,8 +103,6 @@ public class BonedObject extends GameObject {
 			material.setVertexModifier(new SkeletalVertexModifier(BONES_PER_VERTEX,
 					boneCount));
 		}
-		
-		actionData = new ActionData(boneCount);
 	}
 	
 	/**

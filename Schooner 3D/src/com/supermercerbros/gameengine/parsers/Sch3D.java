@@ -268,7 +268,6 @@ public class Sch3D {
 						z = data.readFloatDebug();
 				preBones.add(new PreBoneData(i, x, y, z, 
 						(byte) (data.readByteDebug() - 1)));
-				Log.d(TAG, "Bone " + i + " coords: " + x + ", " + y + ", " + z);
 			}
 			
 			// connect parents to children
