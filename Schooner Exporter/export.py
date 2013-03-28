@@ -265,14 +265,19 @@ class MeshExporter:
 		
 		# store armature weight data
 		if self.armature_indexed:
-			armature = mesh_object.parent.data
+			armature_bones = filterBoneList(mesh_object.parent)
 			self.bone_weights = []
 			for vertex, vert_index in zip(mesh.vertices, range(len(mesh.vertices))):
 				bones = []
 				for g in vertex.groups:
 					if clampFloat(g.weight) != 0.0:
-						bone_index = armature.bones.find(mesh_object.vertex_groups[g.group].name)
-						if (bone_index < 0):
+						name = mesh_object.vertex_groups[g.group].name
+						bone_index = -1
+						for armature_bone in armature_bones:
+							if armature_bone.name == name:
+								bone_index = armature_bones.index(armature_bone)
+								break
+						else:
 							continue
 						bone_weight = g.weight
 						bone = (bone_index, bone_weight)
@@ -362,12 +367,7 @@ class ArmatureExporter:
 	def __init__(self, armature_object, actions, exportMovements=True):
 		self.actions = actions
 		self.armature = armature_object.data
-		self.bones = []
-		for bone in self.armature.bones:
-			for child in armature_object.children:
-				if child.vertex_groups and child.vertex_groups.get(bone.name):
-					self.bones.append(bone)
-					break
+		self.bones = filterBoneList(armature_object)
 		
 	def export(self, directory, name, options):
 		file = BinFile(directory, name + ".sch3Darmature")
@@ -407,15 +407,14 @@ class ArmatureExporter:
 					print("  " + bone.name + " group exists and has channels")
 					for array_index in range(4):
 						for fcurve in group.channels:
-							if fcurve.data_path.find("rotation_quaternion") + 1:
-								if fcurve.array_index == array_index:
-									file.writeByte(len(fcurve.keyframe_points))
-									writeFCurveToFile(fcurve, file)
-									break
+							if (fcurve.data_path.find("rotation_quaternion") + 1) and fcurve.array_index == array_index:
+								file.writeByte(len(fcurve.keyframe_points))
+								writeFCurveToFile(fcurve, file)
+								break
 						else:
 							file.writeByte(0)
 				else:
-					print("  " + bone.name + " group does not exist")
+					print("  " + bone.name + " group does not exist or does not have channels")
 					# no points for w, x, y, or z curves
 					file.writeByte(0)
 					file.writeByte(0)
@@ -476,6 +475,7 @@ def getActionsOfObject(obj):
 	else:
 		return None
 
+
 def exportActions(directory, name, actions):
 	# Exports the given list of actions to a .sch3Dmovements file with the given name in the given directory
 	file = BinFile(directory, name + ".sch3Dmovements")
@@ -483,6 +483,7 @@ def exportActions(directory, name, actions):
 	for action in actions:
 		writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM') # Only supports uniform scale for now
 	file.close()
+
 
 def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	# name
@@ -586,6 +587,7 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 			print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
 			writeFCurveToFile(curve, file, offset)
 
+
 def writeFCurveToFile(fcurve, file, offset=0.0):
 	last_index = len(fcurve.keyframe_points)-1
 	i = 0
@@ -603,12 +605,23 @@ def writeFCurveToFile(fcurve, file, offset=0.0):
 			file.writeFloat(keyframe.handle_right[1])
 		i+= 1
 
+
 # Clamps floats to zero if they are within a certain tolerance.
 def clampFloat(f):
 	import math
 	if math.fabs(f) < BinFile.roundToZeroWithin:
 		f = 0.0
 	return f
+
+
+def filterBoneList(armature_object):
+	bones = []
+	for bone in armature_object.data.bones:
+		for child in armature_object.children:
+			if child.vertex_groups and child.vertex_groups.get(bone.name):
+				bones.append(bone)
+				break
+	return bones
 
 print("\n\n")
 # Begin script.
