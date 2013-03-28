@@ -23,8 +23,8 @@
 import bpy
 import sys
 
-from struct import Struct
 
+# operators
 class InfoOperator(bpy.types.Operator):
 	""" This Operator notifies the user with an info blurb in the header
 	"""
@@ -58,7 +58,47 @@ def info(text=""):
 def warn(text=""):
 	bpy.ops.ui.warn('EXEC_DEFAULT', text=text)
 
+# End operators
+
+
+# Blend file and scene cleaner
+class Clean:
+	def cleanFile():
+		import re # regex
+		
+		# Make sure that curves are in their appropriate groups
+		for action in bpy.data.actions:
+			for curve in action.fcurves:
+				# group bone curves
+				isBoneCurve = re.match("pose\.bones\[\".+\"\]\.", curve.data_path)
+				if isBoneCurve:
+					boneName = curve.data_path.split("\"")[1]
+					if curve.group and curve.group.name == boneName:
+						continue
+					else:
+						groupIndex = action.groups.find(boneName)
+						if groupIndex + 1:
+							curve.group = action.groups[groupIndex]
+						else:
+							curve.group = action.groups.new(boneName)
+			for group in action.groups:
+				if not group.channels:
+					action.groups.remove(group)
+		bpy.context.scene.update()
+		
+	
+	def cleanScene(scene):
+		for obj in scene.objects:
+			obj.hide = False
+		scene.update()
+
+# End class Clean
+
+
+# Binary output file
 class BinFile:
+	from struct import Struct
+	
 	DEBUG = True
 	roundToZeroWithin = 0.0001
 	
@@ -179,7 +219,9 @@ class BinFile:
 			print("## CLOSE " + self.NAME)
 		self.DIRECTORY = None
 		self.NAME = None
+# End class BinFile
 
+# Mesh exporter object
 class MeshExporter:
 	def __init__(self, mesh_object, tris=True, textured=False):
 		self.setMode('OBJECT')
@@ -362,6 +404,7 @@ class MeshExporter:
 		print("mode = " + str(mode))
 		if currentMode != mode:
 			bpy.ops.object.mode_set(mode=mode)
+# End class MeshExporter
 
 class ArmatureExporter:
 	def __init__(self, armature_object, actions, exportMovements=True):
@@ -623,14 +666,17 @@ def filterBoneList(armature_object):
 				break
 	return bones
 
-print("\n\n")
-# Begin script.
 logToFile = False
 logFileName = "log.txt"
 verbose = True
 
+# Begin script.
 if verbose:
+	print("\n\n")
 	print("BEGIN SCRIPT.")
+
+Clean.cleanFile() # Clean file
+
 scene = bpy.context.scene
 if bpy.data.filepath == "" :
 	warn("You must save the .blend first!")
@@ -665,6 +711,7 @@ for obj in movementSources:
 originalScene = bpy.context.scene
 bpy.ops.scene.new(type='LINK_OBJECT_DATA')
 scene = bpy.context.scene
+Clean.cleanScene(scene) # Clean scene
 
 mesh_objects = [obj for obj in scene.objects if obj.type == 'MESH']
 bpy.ops.object.mode_set(mode='OBJECT')
