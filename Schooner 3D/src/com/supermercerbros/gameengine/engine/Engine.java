@@ -19,8 +19,6 @@ package com.supermercerbros.gameengine.engine;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.DelayQueue;
 
 import android.util.FloatMath;
 import android.util.Log;
@@ -30,7 +28,6 @@ import com.supermercerbros.gameengine.collision.OnCollisionCheckFinishedListener
 import com.supermercerbros.gameengine.engine.shaders.Material;
 import com.supermercerbros.gameengine.objects.GameObject;
 import com.supermercerbros.gameengine.objects.Metadata;
-import com.supermercerbros.gameengine.util.DelayedRunnable;
 import com.supermercerbros.gameengine.util.LoopingThread;
 import com.supermercerbros.gameengine.util.Toggle;
 
@@ -60,33 +57,8 @@ public class Engine extends LoopingThread {
 	private long time;
 	
 	// Be careful to always synchronize access of these fields:
-	private final Toggle flush = new Toggle(false);
 	private final Light light = new Light();
 	
-	// TODO: remove these queues
-	/**
-	 * Used for passing commands from the UI thread to the {@link Engine}
-	 * thread. This <b>should not</b> be polled by any thread other than the
-	 * Engine thread.
-	 */
-	ConcurrentLinkedQueue<Runnable> actions = new ConcurrentLinkedQueue<Runnable>();
-	/**
-	 * Used for passing delayed commands from the UI thread to the Engine
-	 * thread.
-	 */
-	DelayQueue<DelayedRunnable> delayedActions = new DelayQueue<DelayedRunnable>();
-	/**
-	 * Used for passing new GameObjects from the UI thread to the {@link Engine}
-	 * thread. This <b>should not</b> be polled by any thread other than the
-	 * Engine thread.
-	 */
-	ConcurrentLinkedQueue<GameObject> newObjects = new ConcurrentLinkedQueue<GameObject>();
-	/**
-	 * Used for passing GameObjects to be deleted to the {@link Engine} thread.
-	 * This <b>should not</b> be polled by any thread other than the Engine
-	 * thread.
-	 */
-	ConcurrentLinkedQueue<GameObject> delObjects = new ConcurrentLinkedQueue<GameObject>();
 	private Scene scene;
 	private Scene newScene;
 
@@ -140,7 +112,7 @@ public class Engine extends LoopingThread {
 						.getExtraMatrixCount())]);
 			}
 		} else {
-			newObjects.addAll(objects);
+			throw new IllegalStateException("Do not add GameObjects to the Engine while it is running.");
 		}
 	}
 	
@@ -166,39 +138,7 @@ public class Engine extends LoopingThread {
 			outB.modelMatrices.add(new float[16 + (16 * object
 					.getExtraMatrixCount())]);
 		} else {
-			newObjects.add(object);
-		}
-	}
-	
-	/**
-	 * Runs a Runnable on the Engine thread
-	 * 
-	 * @param r
-	 *            The Runnable to run on the Engine thread
-	 */
-	public void doRunnable(Runnable r) {
-		actions.add(r);
-	}
-	
-	/**
-	 * Runs a {@link Runnable} on the Engine thread with a delay.
-	 * 
-	 * @param r
-	 *            The Runnable to run on the Engine thread.
-	 * @param delay
-	 *            The amount by which to delay the run, in milliseconds
-	 */
-	public void doRunnable(Runnable r, long delay) {
-		delayedActions.add(new DelayedRunnable(r, delay));
-	}
-	
-	/**
-	 * Tells the Engine to actually delete all of its GameObjects that are
-	 * marked for deletion
-	 */
-	public void flushDeletedObjects() {
-		synchronized (flush) {
-			flush.setState(true);
+			throw new IllegalStateException("Do not add GameObjects to the Engine while it is running.");
 		}
 	}
 	
@@ -214,41 +154,12 @@ public class Engine extends LoopingThread {
 			outA.modelMatrices.remove(index);
 			outB.modelMatrices.remove(index);
 		} else {
-			delObjects.add(object);
+			throw new IllegalStateException("Do not remove GameObjects from the Engine while it is running.");
 		}
 	}
 	
 	@Override
 	protected void loop() {
-		// Check for new GameObjects, GameObjects to delete, and actions to
-		// perform.
-		while (!actions.isEmpty()) {
-			actions.poll().run();
-		}
-		while (!newObjects.isEmpty()) {
-			final GameObject newObject = newObjects.poll();
-			objects.add(newObject);
-			outA.modelMatrices.add(new float[16]);
-			outB.modelMatrices.add(new float[16]);
-			if (newObject.getBounds() != null) {
-				cd.addCollider(newObject);
-			}
-		}
-		while (!delObjects.isEmpty()) {
-			delObject(delObjects.poll());
-		}
-		DelayedRunnable d = delayedActions.poll();
-		while (d != null) {
-			d.r.run();
-			d = delayedActions.poll();
-		}
-		
-		synchronized (flush) {
-			if (flush.getState()) {
-				flush();
-			}
-		}
-		
 		synchronized (this) {
 			if (newScene != null) {
 				this.scene = newScene;
@@ -341,29 +252,6 @@ public class Engine extends LoopingThread {
 		
 	}
 	
-	/**
-	 * Marks the given GameObject for deletion.
-	 * 
-	 * @param object
-	 *            The GameObject to remove from the Engine.
-	 */
-	private synchronized void delObject(GameObject object) {
-		if (objects.contains(object)) {
-			object.markForDeletion();
-		}
-	}
-	
-	private void flush() {
-		for (int i = 0; i < objects.size(); i++) {
-			if (objects.get(i).isMarkedForDeletion()) {
-				objects.remove(i);
-				outA.modelMatrices.remove(i);
-				outB.modelMatrices.remove(i);
-			}
-		}
-		flush.setState(false);
-	}
-	
 	private void updatePipe(RenderData out) {
 		final int outIndexOffset = out.index * 2;
 		out.primitives.clear();
@@ -376,7 +264,7 @@ public class Engine extends LoopingThread {
 			final Material objMaterial = objData.mtl;
 			
 			synchronized (object) {
-				if (!object.isMarkedForDeletion()) {
+				if (object.isVisible()) {
 					final boolean vertsAreDirty = objBufferLocations[outIndexOffset] == -1;
 					final boolean indicesAreDirty = objBufferLocations[outIndexOffset + 1] == -1;
 					

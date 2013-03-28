@@ -267,23 +267,17 @@ public class GameObject implements Collider {
 	}
 	
 	/**
-	 * TODO change to isVisible()
-	 * @return true if this GameObject has been marked for deletion.
-	 * 
-	 * @see #markForDeletion()
+	 * @return <code>{@link #info}.visible</code>
 	 */
-	public boolean isMarkedForDeletion() {
-		return info.delete;
+	public boolean isVisible() {
+		return info.isVisible;
 	}
 	
 	/**
-	 * Marks this GameObject for deletion. The Engine doesn't update this
-	 * GameObject for rendering anymore, but it is not actually deleted from the
-	 * Engine until {@link Engine#flushDeletedObjects()} is called. Should only
-	 * be called from the Engine thread
+	 * Sets the visibility of this GameObject. Should only be called from the Engine thread.
 	 */
-	public void markForDeletion() {
-		info.delete = true;
+	public void setVisible(boolean visible) {
+		info.isVisible = visible;
 	}
 	
 	/**

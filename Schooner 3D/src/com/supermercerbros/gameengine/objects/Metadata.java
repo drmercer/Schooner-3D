@@ -33,10 +33,9 @@ public class Metadata {
 	 */
 	public int count;
 	/**
-	 * True if the described GameObject is marked for deletion.
-	 * TODO: Remove this, and put a visibility boolean in GameObject.
+	 * True if the described GameObject is isVisible
 	 */
-	public boolean delete = false;
+	public boolean isVisible = true;
 	/**
 	 * The material to render this object with.
 	 */
