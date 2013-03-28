@@ -202,7 +202,7 @@ public class Engine extends LoopingThread {
 	}
 	
 	/**
-	 * Sets the directional light of the scene
+	 * Sets the directional light of the scene. The given xyz coordinates do not need to be normalized.
 	 * 
 	 * @param x
 	 *            The x-coordinate of the light vector
