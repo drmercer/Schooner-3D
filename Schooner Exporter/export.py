@@ -351,8 +351,13 @@ class MeshExporter:
 		self.setMode(originalMode)
 	
 	def setMode(self, mode):
-		bpy.ops.object.mode_set(mode=mode)
-		
+		currentMode = bpy.context.active_object.mode
+		import sys
+		print("currentMode = " + str(currentMode))
+		print("mode = " + str(mode))
+		if currentMode != mode:
+			bpy.ops.object.mode_set(mode=mode)
+
 class ArmatureExporter:
 	def __init__(self, armature_object, actions, exportMovements=True):
 		self.actions = actions
@@ -362,6 +367,7 @@ class ArmatureExporter:
 			for child in armature_object.children:
 				if child.vertex_groups and child.vertex_groups.get(bone.name):
 					self.bones.append(bone)
+					break
 		
 	def export(self, directory, name, options):
 		file = BinFile(directory, name + ".sch3Darmature")
@@ -493,47 +499,38 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	# Note that this messes up if the curves are out of order. Hopefully that'll never happen.
 	# It may be neater to do this with filter(function, iterable)
 	if loc:
-		index = 0
-		for fcurve in action.fcurves:
-			if fcurve.data_path == "location" and fcurve.array_index == index:
-				if index == 2:
-					break # All three components have been found
-				else:
-					index += 1
-		else: # Not all three components were found
-			print("Curves don't exist for all three components of location.")
-			loc = False
+		for index in range(3):
+			for fcurve in action.fcurves:
+				if fcurve.data_path == "location" and fcurve.array_index == index:
+					break # Component was found, advance to next index
+			else: # Component wasn't found
+				print("Curve " + str(index) + " not found for location")
+				loc = False
 	
 	if rot:
-		index = 0
-		for fcurve in action.fcurves:
-			if fcurve.data_path == "rotation_quaternion" and fcurve.array_index == index:
-				if index == 3:
-					break # All four components have been found
-				else:
-					index += 1
-		else: # Not all four components were found
-			print("Curves don't exist for all four components of rotation.")
-			rot = False
+		for index in range(4):
+			for fcurve in action.fcurves:
+				if fcurve.data_path == "rotation_quaternion" and fcurve.array_index == index:
+					break # Component was found, advance to next index
+			else: # Component wasn't found
+				print("Curve " + str(index) + " not found for rotation_quaternion")
+				rot = False
 	
 	if scale == 'AXIS':
-		index = 0
-		for fcurve in action.fcurves:
-			if fcurve.data_path == "scale" and fcurve.array_index == index:
-				if index == 2:
-					break # All three components have been found
-				else:
-					index += 1
-		else: # Not all three components were found
-			print("Curves don't exist for all three components of scale.")
-			scale = 'UNIFORM'
+		for index in range(3):
+			for fcurve in action.fcurves:
+				if fcurve.data_path == "scale" and fcurve.array_index == index:
+					break # Component was found, advance to next index
+			else: # Component wasn't found
+				print("Curve " + str(index) + " not found for scale")
+				scale = 'UNIFORM'
 	
 	if scale == 'UNIFORM':
 		for fcurve in action.fcurves:
 			if fcurve.data_path == "scale" and fcurve.array_index == 0:
-				break # Component 0 was found
-		else: # Component 0 was not found
-			print("A curve does not exist for component 0 of scale.")
+				break # Component was found
+		else: # Component wasn't found
+			print("Curve 0 not found for (uniform) scale")
 			scale = ''
 	
 	# flags
@@ -558,34 +555,36 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	elif scale=='AXIS':
 		curveNames["scale"] = (0, 1, 2)
 		curveKeys.append("scale")
-			
+	
+	curveSets = {}
 	# For each data path...
 	for key in curveKeys:
-		keyframe_count = 0
 		curves = []
 		# Get the curves for that path
 		for index in curveNames[key]:
 			for fcurve in action.fcurves:
 				if fcurve.data_path==key and fcurve.array_index==index:
-					if index == 0:
-						keyframe_count = len(fcurve.keyframe_points)
 					curves.append(fcurve)
-		# Get the left-most keyframe in that key
-		offset = 1000000.0
-		for index in curveNames[key]:
-			for fcurve in action.fcurves:
-				if fcurve.data_path==key and fcurve.array_index==index:
-					first_keyframe = fcurve.keyframe_points[0].co[0]
-					if first_keyframe < offset:
-						offset = first_keyframe
-		# write the curves to the file
-		if len(curves) == len(curveNames):
-			file.writeByte(keyframe_count)
-			for curve in curves:
-				print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
-				writeFCurveToFile(curve, file, offset)
+					break
+		if len(curves) == len(curveNames[key]):
+			curveSets[key] = curves
 		else:
-			file.writeByte(0)
+			print("Something went wrong with the " + key + " curves");
+	
+	# Get the left-most keyframe in the movement
+	offset = None
+	for curves in curveSets.values():
+		for curve in curves:
+			first_keyframe = curve.keyframe_points[0].co[0]
+			if offset == None or first_keyframe < offset:
+				offset = first_keyframe
+	
+	# write the curves to the file
+	for curves in curveSets.values():
+		file.writeByte(len(curves[0].keyframe_points))
+		for curve in curves:
+			print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
+			writeFCurveToFile(curve, file, offset)
 
 def writeFCurveToFile(fcurve, file, offset=0.0):
 	last_index = len(fcurve.keyframe_points)-1
@@ -613,7 +612,7 @@ def clampFloat(f):
 
 print("\n\n")
 # Begin script.
-logToFile = True
+logToFile = False
 logFileName = "log.txt"
 verbose = True
 
@@ -656,7 +655,7 @@ scene = bpy.context.scene
 
 mesh_objects = [obj for obj in scene.objects if obj.type == 'MESH']
 bpy.ops.object.mode_set(mode='OBJECT')
-for obj in mesh_objects:
+for obj in scene.objects:
 	obj.select=False
 for obj in mesh_objects:
 	exporter = MeshExporter(obj, tris=True, textured=False)

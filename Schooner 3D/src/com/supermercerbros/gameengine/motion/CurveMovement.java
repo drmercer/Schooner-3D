@@ -37,6 +37,7 @@ public class CurveMovement implements Movement {
 	 */
 	public CurveMovement(int flags, Curve... curves) {
 		short index = 0;
+		Log.d(TAG, "flags = " + Integer.toBinaryString(flags));
 		
 		if ((flags & POSITION) != 0 && curves[index] != null) {
 			xPos = curves[index++];
@@ -118,7 +119,5 @@ public class CurveMovement implements Movement {
 				Log.d(TAG, "Scale = " + scl);
 			}
 		}
-		
-		Log.d(TAG, "matrix = " + Arrays.toString(target.modelMatrix));
 	}
 }

@@ -305,7 +305,7 @@ public class Sch3D {
 					
 					for(int j = 0; j < 4; j++) {
 						// For each curve
-						final int pointCount = ((data.readByteDebug() & 0x00FF) - 1) * 3 + 1;
+						final int pointCount = (data.readByteDebug() & 0x00FF) * 3 - 2;
 						
 						if (pointCount > 0) { // If the curve has keyframes
 //							Log.d(TAG, name + "[" + i + "]." + j + " has " + pointCount + " points");
@@ -368,7 +368,7 @@ public class Sch3D {
 			int curveIndex = 0;
 			// Parse location curves
 			if (moveLoc) {
-				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				final int pointCount = (data.readByteDebug() & 0xFFFF) * 3 - 2;
 				if (pointCount > 0) {
 					Log.d(TAG, "Location curves have "+ pointCount + " points.");
 					for (int i = 0; i < 3; i++) { 
@@ -378,7 +378,7 @@ public class Sch3D {
 						for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
 							frames[pointIndex] = data.readFloatDebug();
 							values[pointIndex] = data.readFloatDebug();
-							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
+//							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 						}
 						curves[curveIndex + i] = new BezierCurve(frames, values);
 					}
@@ -392,7 +392,7 @@ public class Sch3D {
 			}
 			// Parse rotation curves
 			if (moveRot) {
-				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				final int pointCount = (data.readByteDebug() & 0xFFFF)* 3 - 2;
 				if (pointCount > 0) {
 					Log.d(TAG, "Rotation curves have "+ pointCount + " points.");
 					for (int i = 0; i < 4; i++) { 
@@ -419,7 +419,7 @@ public class Sch3D {
 			// Parse scale curves
 			if (moveScale) {
 				// Uniform scale (1 curve)
-				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				final int pointCount = (data.readByteDebug() & 0xFFFF) * 3 - 2;
 				if (pointCount > 0) {
 					Log.d(TAG, "Scale curve (uniform) has "+ pointCount + " points.");
 					float[] frames = new float[pointCount];
@@ -439,7 +439,7 @@ public class Sch3D {
 				//curveIndex += 1; Don't need to increment after last curve
 			} else if (moveScaleAxis) {
 				// Per-axis scale (3 curves)
-				final int pointCount = ((data.readByteDebug() & 0xFFFF) - 1) * 3 + 1;
+				final int pointCount = (data.readByteDebug() & 0xFFFF) * 3 - 2;
 				if (pointCount > 0) {
 					Log.d(TAG, "Scale curves (per-axis) have "+ pointCount + " points.");
 					for (int i = 0; i < 3; i++) {

@@ -91,33 +91,17 @@ public class Bone {
 
 	public void writeMatrix(float[] matrixArray, int offset, int parentIndex) {
 		final int boneOffset = offset + index * 16;
-		if (printMatrix && DEBUG) {
-			Log.d(TAG, "Writing bone " + index + " (parent " + parentIndex + ")");
-			Log.d(TAG, "Rotation: " + w + ", " + x + ", " + y + ", " + z);
-		}
-		
+
 		if (parentIndex != -1) {
 			// Bone has a parent bone
 			final int parentOffset = offset + parentIndex * 16;
-			MatrixUtils.translateM(matrixArray, boneOffset, matrixArray, parentOffset, -locX, -locY, -locZ);
+			MatrixUtils.translateM(matrixArray, boneOffset, matrixArray, parentOffset, locX, locY, locZ);
 		} else {
 			// Bone is a root bone
-			MatrixUtils.setTranslateM(matrixArray, boneOffset, -locX, -locY, -locZ);
-			
-		}
-		if (printMatrix && DEBUG) {
-			Log.d(TAG + " A", MatrixUtils.matrixToString(matrixArray, boneOffset));
+			MatrixUtils.setTranslateM(matrixArray, boneOffset, locX, locY, locZ);
 		}
 		MatrixUtils.rotateQuaternionM(matrixArray, boneOffset, w, x, y, z);
-		if (printMatrix && DEBUG) {
-			Log.d(TAG + " B", MatrixUtils.matrixToString(matrixArray, boneOffset));
-		}
-		MatrixUtils.translateM(matrixArray, boneOffset, locX, locY, locZ);
-		
-		if (printMatrix && DEBUG) {
-			Log.d(TAG + " C", MatrixUtils.matrixToString(matrixArray, boneOffset));
-			printMatrix = false;
-		}
+		MatrixUtils.translateM(matrixArray, boneOffset, -locX, -locY, -locZ);
 		
 		if (children != null) {
 			for (Bone child : children) {

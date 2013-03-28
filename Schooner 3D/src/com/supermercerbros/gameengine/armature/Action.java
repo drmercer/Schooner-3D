@@ -31,14 +31,14 @@ public class Action {
 	
 	public Action(Movement movement, SparseArray<Curve> curves) {
 		this.boneCurves = curves;
-		final int length = curves.size();
-		if (length > 0) {
-			for (int i = 0; i < length; i++) {
-				Log.d(TAG, "curve " + i + ": " + curves.get(i));
-			}			
-		} else {
-			Log.e(TAG, "No curves!");
-		}
+//		final int length = curves.size();
+//		if (length > 0) {
+//			for (int i = 0; i < length; i++) {
+//				Log.d(TAG, "curve " + i + ": " + curves.get(i));
+//			}			
+//		} else {
+//			Log.e(TAG, "No curves!");
+//		}
 		this.movement = movement;
 	}
 
