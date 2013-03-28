@@ -40,14 +40,15 @@ import com.supermercerbros.gameengine.util.Toggle;
  * @version 1.0
  */
 public class Engine extends LoopingThread {
-	static final String TAG = "Engine";
+	private static final String TAG = "Engine";
+
 	private final DataPipe pipe;
 	private final RenderData outA;
 	private final RenderData outB;
 	private final Camera cam;
 	
 	private final CollisionDetector cd;
-	final Toggle cdIsFinished = new Toggle(false);
+	private final Toggle cdIsFinished = new Toggle(false);
 	
 	private boolean aBufs = true;
 	
@@ -55,7 +56,7 @@ public class Engine extends LoopingThread {
 	 * To be used by subclasses of Engine. Contains the GameObjects currently in
 	 * the Engine.
 	 */
-	protected LinkedList<GameObject> objects;
+	protected final LinkedList<GameObject> objects;
 	private long time;
 	
 	// Be careful to always synchronize access of these fields:
@@ -86,7 +87,9 @@ public class Engine extends LoopingThread {
 	 * thread.
 	 */
 	ConcurrentLinkedQueue<GameObject> delObjects = new ConcurrentLinkedQueue<GameObject>();
-	
+	private Scene scene;
+	private Scene newScene;
+
 	/**
 	 * @param pipe
 	 *            The DataPipe that this Engine will use to communicate with the
@@ -246,6 +249,15 @@ public class Engine extends LoopingThread {
 			}
 		}
 		
+		synchronized (this) {
+			if (newScene != null) {
+				this.scene = newScene;
+				newScene = null;
+				objects.clear();
+				scene.loadObjects(this);
+			}
+		}
+		
 		computeFrame();
 		final RenderData out;
 		if (aBufs) {
@@ -256,6 +268,11 @@ public class Engine extends LoopingThread {
 		updatePipe(out);
 		aBufs = !aBufs;
 //		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
+	}
+	
+	@Override
+	protected void onBegin() {
+		scene.onBegin();
 	}
 	
 	@Override
@@ -305,15 +322,19 @@ public class Engine extends LoopingThread {
 	}
 	
 	private void computeFrame() {
-		cd.go();
+		cd.go(); // Start collision detection (in background)
 		
+		// While collision detection is running
+		scene.onBeginFrame(time);
 		for (GameObject object : objects) {
 			object.drawVerts(time);
 		}
 		cam.update(time);
 		
-		waitOnToggle(cdIsFinished, true);
+		waitOnToggle(cdIsFinished, true); // Wait for collision detection
 		
+		// After collision detection has finished
+		scene.onCollisionDetectorFinished();
 		for (GameObject object : objects) {
 			object.drawMatrix(time);
 		}
@@ -405,7 +426,24 @@ public class Engine extends LoopingThread {
 	 */
 	@Override
 	public void start() {
+		if (this.scene == null) {
+			throw new IllegalStateException("Engine.setScene() has not been called.");
+		}
 		time = System.currentTimeMillis();
 		super.start();
+	}
+	
+	public void setScene(Scene scene) {
+		if (scene == null) {
+			throw new NullPointerException("scene cannot be null, try NullScene for debugging");
+		}
+		if (!started) {
+			this.scene = scene;
+			scene.loadObjects(this);
+		} else {
+			synchronized(this) {
+				this.newScene = scene;
+			}
+		}
 	}
 }
