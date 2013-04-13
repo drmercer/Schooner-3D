@@ -19,20 +19,15 @@ package com.supermercerbros.gameengine.armature;
 import java.util.LinkedList;
 import java.util.List;
 
-import android.util.Log;
-
 import com.supermercerbros.gameengine.math.MatrixUtils;
 
 public class Bone {
-	// TODO After skeletal anim. works, Remove debugging stuff
-	private static final boolean DEBUG = false;
 	private static final String TAG = "Bone";
 	public final byte index;
 	private final LinkedList<Bone> children;
-	public final float locX, locY, locZ; 
-	public float w = 1, x = 0, y = 0, z = 0; // TODO: change these two lines back to private
+	private final float locX, locY, locZ;
+	private float w = 1, x = 0, y = 0, z = 0; // TODO: change these two lines back to private
 	
-	private boolean printMatrix = false; // TODO: remove after debug
 	
 	/**
 	 * Creates a new Bone
@@ -62,7 +57,7 @@ public class Bone {
 	 * 
 	 * @param array
 	 */
-	public void getRotation(float[] array) { // TODO: remove "public"
+	void getRotation(float[] array) {
 		array[index * 4    ] = w;
 		array[index * 4 + 1] = x;
 		array[index * 4 + 2] = y;
@@ -81,12 +76,11 @@ public class Bone {
 	 * @param z
 	 *            The z-component of the quaternion.
 	 */
-	public void setRotation(float w, float x, float y, float z) { // TODO change back to "default"
+	void setRotation(float w, float x, float y, float z) {
 		this.w = w;
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		printMatrix = true;
 	}
 
 	public void writeMatrix(float[] matrixArray, int offset, int parentIndex) {

@@ -39,28 +39,28 @@ import com.supermercerbros.gameengine.util.Toggle;
 public class Engine extends LoopingThread {
 	private static final String TAG = "Engine";
 
-	private final DataPipe pipe;
-	private final RenderData outA;
-	private final RenderData outB;
-	private final Camera cam;
-	
-	private final CollisionDetector cd;
-	private final Toggle cdIsFinished = new Toggle(false);
-	
-	private boolean aBufs = true;
-	
 	/**
 	 * To be used by subclasses of Engine. Contains the GameObjects currently in
 	 * the Engine.
 	 */
 	protected final LinkedList<GameObject> objects;
-	private long time;
+	private boolean aBufs = true;
+	private final Camera cam;
+	private final CollisionDetector cd;
 	
+	private final Toggle cdIsFinished = new Toggle(false);
 	// Be careful to always synchronize access of these fields:
 	private final Light light = new Light();
 	
-	private Scene scene;
 	private Scene newScene;
+	
+	private final RenderData outA;
+	private final RenderData outB;
+	
+	private final DataPipe pipe;
+	
+	private Scene scene;
+	private long time;
 
 	/**
 	 * @param pipe
@@ -116,12 +116,6 @@ public class Engine extends LoopingThread {
 		}
 	}
 	
-	@Override
-	public void end() {
-		super.end();
-		cd.end();
-	}
-	
 	/**
 	 * Adds the given GameObject to the Engine
 	 * 
@@ -142,8 +136,14 @@ public class Engine extends LoopingThread {
 		}
 	}
 	
+	@Override
+	public void end() {
+		super.end();
+		cd.end();
+	}
+	
 	/**
-	 * Removes the given GameObject from the Engine.
+	 * Removes the given GameObject from the Engine. TODO remove this?
 	 * 
 	 * @param object
 	 */
@@ -156,49 +156,6 @@ public class Engine extends LoopingThread {
 		} else {
 			throw new IllegalStateException("Do not remove GameObjects from the Engine while it is running.");
 		}
-	}
-	
-	@Override
-	protected void loop() {
-		synchronized (this) {
-			if (newScene != null) {
-				this.scene = newScene;
-				newScene = null;
-				objects.clear();
-				scene.loadObjects(this);
-			}
-		}
-		
-		computeFrame();
-		final RenderData out;
-		if (aBufs) {
-			out = outA;
-		} else {
-			out = outB;
-		}
-		updatePipe(out);
-		aBufs = !aBufs;
-//		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
-	}
-	
-	@Override
-	protected void onBegin() {
-		scene.onBegin();
-	}
-	
-	@Override
-	protected void onEnd() {
-		Log.i(TAG, "Engine end.");
-	}
-	
-	@Override
-	protected void onPause() {
-		Time.INSTANCE.pause();
-	}
-	
-	@Override
-	protected void onResume() {
-		Time.INSTANCE.resume();
 	}
 	
 	/**
@@ -232,7 +189,44 @@ public class Engine extends LoopingThread {
 		}
 	}
 	
-	private void computeFrame() {
+	public void setScene(Scene scene) {
+		if (scene == null) {
+			throw new NullPointerException("scene cannot be null, try NullScene for debugging");
+		}
+		if (!started) {
+			this.scene = scene;
+			scene.loadObjects(this);
+		} else {
+			synchronized(this) {
+				this.newScene = scene;
+			}
+		}
+	}
+	
+	/* (non-Javadoc)
+	 *  Sets time to System.currentTimeMillis() for first iteration
+	 */
+	@Override
+	public void start() {
+		if (this.scene == null) {
+			throw new IllegalStateException("Engine.setScene() has not been called.");
+		}
+		time = System.currentTimeMillis();
+		super.start();
+	}
+	
+	@Override
+	protected void loop() {
+		// Change scene if necessary
+		synchronized (this) {
+			if (newScene != null) {
+				this.scene = newScene;
+				newScene = null;
+				objects.clear();
+				scene.loadObjects(this);
+			}
+		}
+		
 		cd.go(); // Start collision detection (in background)
 		
 		// While collision detection is running
@@ -250,9 +244,15 @@ public class Engine extends LoopingThread {
 			object.drawMatrix(time);
 		}
 		
-	}
-	
-	private void updatePipe(RenderData out) {
+		// Swap RenderData
+		final RenderData out;
+		if (aBufs) {
+			out = outA;
+		} else {
+			out = outB;
+		}
+		
+		// Update pipe
 		final int outIndexOffset = out.index * 2;
 		out.primitives.clear();
 		
@@ -307,31 +307,27 @@ public class Engine extends LoopingThread {
 		}
 		
 		time = pipe.putData(this, out);
+		aBufs = !aBufs;
+//		LoopLog.i(TAG, "Engine is switching to RD " + (aBufs ? 0 : 1));
 	}
 	
-	/* (non-Javadoc)
-	 *  Sets time to System.currentTimeMillis() for first iteration
-	 */
 	@Override
-	public void start() {
-		if (this.scene == null) {
-			throw new IllegalStateException("Engine.setScene() has not been called.");
-		}
-		time = System.currentTimeMillis();
-		super.start();
+	protected void onBegin() {
+		scene.onBegin();
 	}
 	
-	public void setScene(Scene scene) {
-		if (scene == null) {
-			throw new NullPointerException("scene cannot be null, try NullScene for debugging");
-		}
-		if (!started) {
-			this.scene = scene;
-			scene.loadObjects(this);
-		} else {
-			synchronized(this) {
-				this.newScene = scene;
-			}
-		}
+	@Override
+	protected void onEnd() {
+		Log.i(TAG, "Engine end.");
+	}
+	
+	@Override
+	protected void onPause() {
+		Time.INSTANCE.pause();
+	}
+	
+	@Override
+	protected void onResume() {
+		Time.INSTANCE.resume();
 	}
 }
