@@ -203,56 +203,6 @@ public class Sch3D {
 			throw new IOException("File version is incorrect.");
 		}
 	}
-	
-	/**
-	 * 
-	 * @param data
-	 * @return
-	 * @throws IOException
-	 */
-	private static CurveMovement readMovementOld(final BetterDataInputStream data) throws IOException {
-		// TODO: Remove this method?
-		CurveMovement movement;
-		byte flagsByte = data.readByte();
-		boolean[] flags = Utils.checkBits(flagsByte, 4);
-		Log.d(TAG, "FLAGS: " + Arrays.toString(flags));
-		int curveCount = 0;
-		if (flags[0]) {
-			curveCount += 3;
-		}
-		if (flags[1]) {
-			curveCount += 4;
-		}
-		if (flags[2]) {
-			curveCount += 1;
-		} else if (flags[3]) {
-			curveCount += 3;
-		}
-		Log.d(TAG, "CURVE COUNT: " + curveCount);
-
-		Curve[] curves = new Curve[curveCount];
-		for (int curveIndex = 0; curveIndex < curveCount; curveIndex++) {
-			final int pointCount = ((data.readByte() & 0x00FF) - 1) * 3 + 1;
-			Log.d(TAG, "Curve " + curveIndex + " has "+ pointCount + " points.");
-			if (pointCount == 1) {
-				data.readFloatDebug(); // Frame is not necessary
-				curves[curveIndex] = new ConstantCurve(data.readFloatDebug());
-			}
-
-			float[] frames = new float[pointCount];
-			float[] values = new float[pointCount];
-
-			for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
-				frames[pointIndex] = data.readFloatDebug();
-				values[pointIndex] = data.readFloatDebug();
-				Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
-			}
-
-			curves[curveIndex] = new BezierCurve(frames, values);
-		}
-		movement = new CurveMovement(flagsByte, curves);
-		return movement;
-	}
 
 	public static Skeleton parseSkeleton(GameFactory gf, InputStream is, String id) throws IOException {
 		final BetterDataInputStream data = new BetterDataInputStream(is);
@@ -307,15 +257,12 @@ public class Sch3D {
 						final int pointCount = (data.readByteDebug() & 0x00FF) * 3 - 2;
 						
 						if (pointCount > 0) { // If the curve has keyframes
-//							Log.d(TAG, name + "[" + i + "]." + j + " has " + pointCount + " points");
 							final float[] frames = new float[pointCount], values = new float[pointCount];
 							for (int index = 0; index < pointCount; index++) {
 								frames[index] = data.readFloatDebug();
 								values[index] = data.readFloatDebug();
 							}
 							curves.append(offset + j, new BezierCurve(frames, values));
-						} else {
-//							Log.d(TAG, name + "[" + i + "]." + j + " has no points");
 						}
 					}
 				}
@@ -377,7 +324,6 @@ public class Sch3D {
 						for (int pointIndex = 0; pointIndex < pointCount; pointIndex++) {
 							frames[pointIndex] = data.readFloatDebug();
 							values[pointIndex] = data.readFloatDebug();
-//							Log.d(TAG, "(" + frames[pointIndex] + ", " + values[pointIndex] + ")");
 						}
 						curves[curveIndex + i] = new BezierCurve(frames, values);
 					}

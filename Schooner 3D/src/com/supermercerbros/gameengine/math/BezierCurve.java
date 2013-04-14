@@ -21,7 +21,6 @@ package com.supermercerbros.gameengine.math;
  * Represents a piecewise Bezier curve, used for interpolation
  */
 public class BezierCurve implements Curve {
-	private static final String TAG = BezierCurve.class.getSimpleName();
 	private final float[] values;
 	private final float[] times;
 	private final int lastIndex;
@@ -58,7 +57,6 @@ public class BezierCurve implements Curve {
 			keyframe++;
 		}
 		
-//		Log.d(TAG, "keyframe: " + keyframe + ", frame: " + frame + ", x: " + x);
 		// Point frame coordinates
 		final float fp0 = times[(keyframe * 3) + 0];
 		final float fp1 = times[(keyframe * 3) + 1];

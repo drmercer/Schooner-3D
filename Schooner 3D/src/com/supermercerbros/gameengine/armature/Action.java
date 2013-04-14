@@ -18,27 +18,17 @@ package com.supermercerbros.gameengine.armature;
 
 import java.util.Iterator;
 
-import android.util.Log;
 import android.util.SparseArray;
 
 import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.motion.Movement;
 
 public class Action {
-	private static final String TAG = Action.class.getSimpleName();
 	private final SparseArray<Curve> boneCurves;
 	public final Movement movement;
 	
 	public Action(Movement movement, SparseArray<Curve> curves) {
 		this.boneCurves = curves;
-//		final int length = curves.size();
-//		if (length > 0) {
-//			for (int i = 0; i < length; i++) {
-//				Log.d(TAG, "curve " + i + ": " + curves.get(i));
-//			}			
-//		} else {
-//			Log.e(TAG, "No curves!");
-//		}
 		this.movement = movement;
 	}
 

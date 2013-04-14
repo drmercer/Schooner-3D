@@ -16,16 +16,11 @@
 
 package com.supermercerbros.gameengine.motion;
 
-import java.util.Arrays;
-
-import android.util.Log;
-
 import com.supermercerbros.gameengine.math.Curve;
 import com.supermercerbros.gameengine.math.MatrixUtils;
 import com.supermercerbros.gameengine.objects.GameObject;
 
 public class CurveMovement implements Movement {
-	private static final String TAG = CurveMovement.class.getSimpleName();
 	private final Curve xPos, yPos, zPos, wRot, xRot, yRot, zRot,
 			xScl, yScl, zScl;
 
@@ -37,7 +32,6 @@ public class CurveMovement implements Movement {
 	 */
 	public CurveMovement(int flags, Curve... curves) {
 		short index = 0;
-		Log.d(TAG, "flags = " + Integer.toBinaryString(flags));
 		
 		if ((flags & POSITION) != 0 && curves[index] != null) {
 			xPos = curves[index++];
@@ -90,7 +84,6 @@ public class CurveMovement implements Movement {
 			final float posY = yPos.getInterpolation(framePoint);
 			final float posZ = zPos.getInterpolation(framePoint);
 			MatrixUtils.translateM(target.modelMatrix, 0, data.matrix, 0, posX, posY, posZ);
-			Log.d(TAG, "Translate = " + posX + ", " + posY + ", " + posZ);
 		}
 		
 		// Rotate
@@ -100,7 +93,6 @@ public class CurveMovement implements Movement {
 			final float rotY = yRot.getInterpolation(framePoint);
 			final float rotZ = zRot.getInterpolation(framePoint);
 			MatrixUtils.rotateQuaternionM(target.modelMatrix, 0, rotW, rotX, rotY, rotZ);
-			Log.d(TAG, "Rotate = " + rotW + ", " + rotX + ", " + rotY + ", " + rotZ);
 		}
 		
 		// Scale
@@ -111,12 +103,10 @@ public class CurveMovement implements Movement {
 				final float sclY = yScl.getInterpolation(framePoint);
 				final float sclZ = zScl.getInterpolation(framePoint);
 				MatrixUtils.scaleM(target.modelMatrix, 0, sclX, sclY, sclZ);
-				Log.d(TAG, "Scale = " + sclX + ", " + sclY + ", " + sclZ);
 			} else {
 				// Uniform Scale
 				final float scl = xScl.getInterpolation(framePoint);
 				MatrixUtils.scaleM(target.modelMatrix, 0, scl, scl, scl);
-				Log.d(TAG, "Scale = " + scl);
 			}
 		}
 	}

@@ -22,12 +22,10 @@ import java.util.List;
 import com.supermercerbros.gameengine.math.MatrixUtils;
 
 public class Bone {
-	private static final String TAG = "Bone";
 	public final byte index;
 	private final LinkedList<Bone> children;
 	private final float locX, locY, locZ;
-	private float w = 1, x = 0, y = 0, z = 0; // TODO: change these two lines back to private
-	
+	private float w = 1, x = 0, y = 0, z = 0;
 	
 	/**
 	 * Creates a new Bone
@@ -50,7 +48,7 @@ public class Bone {
 		this.locY = y;
 		this.locZ = z;
 	}
-	
+
 	/**
 	 * Writes this Bone's current rotation (in quaternion form) to the given
 	 * array.
@@ -58,12 +56,12 @@ public class Bone {
 	 * @param array
 	 */
 	void getRotation(float[] array) {
-		array[index * 4    ] = w;
+		array[index * 4] = w;
 		array[index * 4 + 1] = x;
 		array[index * 4 + 2] = y;
 		array[index * 4 + 3] = z;
 	}
-	
+
 	/**
 	 * Sets this Bone's current rotation (in quaternion form).
 	 * 
@@ -89,14 +87,19 @@ public class Bone {
 		if (parentIndex != -1) {
 			// Bone has a parent bone
 			final int parentOffset = offset + parentIndex * 16;
-			MatrixUtils.translateM(matrixArray, boneOffset, matrixArray, parentOffset, locX, locY, locZ);
+			MatrixUtils.translateM(matrixArray, boneOffset, matrixArray,
+					parentOffset, locX, locY, locZ);
 		} else {
 			// Bone is a root bone
 			MatrixUtils.setTranslateM(matrixArray, boneOffset, locX, locY, locZ);
 		}
-		MatrixUtils.rotateQuaternionM(matrixArray, boneOffset, w, x, y, z);
+		// This "incorrect" order of coordinates seems to make skeletal
+		// animation work correctly. I think Blender uses a different axis
+		// system for rotating bones with quaternions. 
+		// TODO: Move this hack to export.py
+		MatrixUtils.rotateQuaternionM(matrixArray, boneOffset, w, -x, z, y);
 		MatrixUtils.translateM(matrixArray, boneOffset, -locX, -locY, -locZ);
-		
+
 		if (children != null) {
 			for (Bone child : children) {
 				child.writeMatrix(matrixArray, offset, index);

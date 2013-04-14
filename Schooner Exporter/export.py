@@ -1,4 +1,4 @@
-##
+#
 # Copyright 2013 Dan Mercer
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -324,7 +324,6 @@ class MeshExporter:
 						bone_weight = g.weight
 						bone = (bone_index, bone_weight)
 						bones.append(bone)
-						print("vertex " + str(vert_index) + " parented to bone " + str(bone_index) + " with weight " + str(bone_weight))
 				if not len(bones):
 					print("canceling armature_indexed")
 					self.armature_indexed = False
@@ -465,6 +464,7 @@ class ArmatureExporter:
 					file.writeByte(0)
 		file.close()
 
+
 class ArmatureOptions:
 	
 	def __init__(self, moveLoc=True, moveRot=True, moveScaleAxis=False, moveScale=True):
@@ -581,7 +581,7 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	flags = (loc, rot, scale=='UNIFORM', scale=='AXIS')
 	file.writeFlags(flags) # write flags
 	print("FLAGS: " + str(flags))
-	if not flags:
+	if not (loc or rot or scale != ''):
 		return # If flags == 0, movement is empty.
 	
 	# FCurve data_paths and array_indices to export
@@ -617,14 +617,15 @@ def writeMovementToFile(action, file, loc=True, rot=True, scale='UNIFORM'):
 	
 	# Get the left-most keyframe in the movement
 	offset = None
-	for curves in curveSets.values():
-		for curve in curves:
+	for key in curveKeys:
+		for curve in curveSets[key]:
 			first_keyframe = curve.keyframe_points[0].co[0]
 			if offset == None or first_keyframe < offset:
 				offset = first_keyframe
 	
 	# write the curves to the file
-	for curves in curveSets.values():
+	for key in curveKeys:
+		curves = curveSets[key]
 		file.writeByte(len(curves[0].keyframe_points))
 		for curve in curves:
 			print("write curve " + curve.data_path + "[" + str(curve.array_index) + "]")
@@ -666,7 +667,7 @@ def filterBoneList(armature_object):
 				break
 	return bones
 
-logToFile = False
+logToFile = True
 logFileName = "log.txt"
 verbose = True
 
@@ -687,6 +688,9 @@ if verbose:
 	print("Exporting to directory: " + directory)
 if logToFile:
 	print("Writing log data to " + directory + logFileName)
+	import os
+	if not os.path.exists(directory):
+		os.mkdir(directory)
 	log = open(directory + logFileName, "w")
 	sys.stdout = log
 	
