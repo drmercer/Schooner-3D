@@ -19,14 +19,49 @@ package com.supermercerbros.gameengine.engine;
 import java.util.LinkedList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import android.util.Log;
+
 import com.supermercerbros.gameengine.objects.Metadata;
 
 public class RenderData {
+	/**
+	 * Represents the area of a buffer (VBO or IBO) that is dirty and needs to be reloaded to the GPU.
+	 */
+	public class Range {
+		// Start is inclusive, end is exclusive
+		int start = Integer.MAX_VALUE, end = 0;
+		
+		void include(int start, int end) {
+			if (start < this.start) {
+				this.start = start;
+			}
+			if (end > this.end) { 
+				this.end = end;
+			}
+		}
+		
+		void reset() {
+			start = Integer.MAX_VALUE;
+			end = 0;
+		}
+
+		boolean needsToBeUpdated() {
+			final boolean b = end > start;
+			if (b) {
+				Log.d("Range", "from " + start + " to " + end);
+			}
+			return b;
+		}
+	}
+
+
 	public final int index;
 	
 	public final LinkedList<Metadata> primitives;
 	public final float[] vbo;
+	public final Range vboRange = new Range();
 	public final short[] ibo;
+	public final Range iboRange = new Range();
 
 	public CopyOnWriteArrayList<float[]> modelMatrices;
 	public float[] viewMatrix = new float[16];

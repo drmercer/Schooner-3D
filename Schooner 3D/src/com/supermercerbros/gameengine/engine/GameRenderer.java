@@ -78,6 +78,10 @@ public class GameRenderer implements Renderer {
 	// HUD stuff
 	private GameHud hud;
 	private boolean hasHud;
+	
+	private long frameCount = 0;
+	private long lastCalcTime;
+	private static final long frameRateCalcAt = 120;
 
 	/**
 	 * Constructs a new GameRenderer.
@@ -117,24 +121,55 @@ public class GameRenderer implements Renderer {
 
 		vbo.clear();
 		ibo.clear();
+		
+		if (true) {
+			// Load VBO data
+			vbo.put(in.vbo);
+			vbo.position(0);
 
-		// Load VBO data
-		vbo.put(in.vbo);
-		vbo.position(0);
+			// Load index data to IBO
+			ibo.put(in.ibo);
+			ibo.position(0);
 
-		// Load index data to IBO
-		ibo.put(in.ibo);
-		ibo.position(0);
+			// Bind buffers
+			GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
+			GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
 
-		// Bind buffers
-		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
-		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-
-		// Update buffer data
-		GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0,
-				in.ibo.length * 2, ibo);
-		GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, in.vbo.length * 4,
-				vbo);
+			// Update buffer data
+			GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0,
+					in.ibo.length * 2, ibo);
+			GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, in.vbo.length * 4,
+					vbo);
+		} else { // TODO: Use the OpenGL Tracer to compare the effects of these strategies
+			// Bind buffers
+			GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
+			GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+			
+			// Load VBO data
+			if (in.vboRange.needsToBeUpdated()) {
+				final int start = in.vboRange.start;
+				final int length = in.vboRange.end - start;
+				vbo.position(start).mark();
+				vbo.put(in.vbo, start, length);
+				vbo.reset();
+				GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, start * 4, length * 4,
+						vbo);
+				in.vboRange.reset();
+			}
+			
+			// Load IBO data
+			if (in.iboRange.needsToBeUpdated()) {
+				final int start = in.iboRange.start;
+				final int length = in.vboRange.end - start;
+				ibo.position(start).mark();
+				ibo.put(in.ibo, start, length);
+				ibo.reset();
+				GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, start * 2,
+						length * 2, ibo);
+				in.iboRange.reset();
+			}
+			
+		}
 
 		// Render each primitive
 		Iterator<float[]> matrixIter = in.modelMatrices.iterator();
@@ -212,6 +247,16 @@ public class GameRenderer implements Renderer {
 		if (hasHud) {
 			hud.render();
 		}
+		
+		frameCount++;
+		if (frameCount >= frameRateCalcAt) {
+			final long currentTime = System.currentTimeMillis();
+			final long timeDelta = currentTime - lastCalcTime;
+			final double fps = (1000 * frameRateCalcAt) / (double) timeDelta;
+			Log.i(TAG, fps + " FPS");
+			frameCount = 0;
+			lastCalcTime = currentTime;
+		}
 	}
 
 	@Override
@@ -219,6 +264,9 @@ public class GameRenderer implements Renderer {
 		GLES20.glViewport(0, 0, width, height);
 		aspect = width / (float) height;
 		projMatrix(projMatrix);
+		
+		frameCount = 0;
+		lastCalcTime = System.currentTimeMillis();
 	}
 
 	/**

@@ -270,7 +270,8 @@ public class Engine extends LoopingThread {
 					
 					// Load verts
 					if (vertsAreDirty) {
-						objBufferLocations[outIndexOffset] = vOffset;
+						final int rangeStart = vOffset;
+						objBufferLocations[outIndexOffset] = rangeStart;
 						if (object.isInstance) {
 							final GameObject objParent = object.parent;
 							vOffset += objParent.info.mtl.loadObjectToVBO(objParent, out.vbo, vOffset);
@@ -278,6 +279,7 @@ public class Engine extends LoopingThread {
 							vOffset += objMaterial.loadObjectToVBO(object,
 									out.vbo, vOffset);
 						}
+						out.vboRange.include(rangeStart, vOffset);
 					} else {
 						vOffset = objBufferLocations[outIndexOffset] + objData.count * objMaterial.getStride();
 					}
@@ -285,9 +287,11 @@ public class Engine extends LoopingThread {
 					// Load indices
 					final int size = objData.size;
 					if (indicesAreDirty) {
+						final int rangeStart = iOffset;
 						System.arraycopy(object.indices, 0, out.ibo, iOffset, size);
 						objBufferLocations[outIndexOffset + 1] = iOffset;
 						iOffset += size;
+						out.iboRange.include(rangeStart, iOffset);
 					} else {
 						iOffset = objBufferLocations[outIndexOffset + 1] + size;
 					}
