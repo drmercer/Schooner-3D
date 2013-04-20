@@ -46,7 +46,7 @@ public class RenderData {
 		}
 
 		boolean needsToBeUpdated() {
-			final boolean b = end > start;
+			final boolean b = end - 1 > start;
 			if (b) {
 				Log.d("Range", "from " + start + " to " + end);
 			}

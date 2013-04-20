@@ -119,56 +119,35 @@ public class GameRenderer implements Renderer {
 
 		final RenderData in = pipe.retrieveData();
 
-		vbo.clear();
-		ibo.clear();
+//		vbo.clear();
+//		ibo.clear();
 		
-		if (true) {
-			// Load VBO data
-			vbo.put(in.vbo);
-			vbo.position(0);
-
-			// Load index data to IBO
-			ibo.put(in.ibo);
-			ibo.position(0);
-
-			// Bind buffers
-			GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
-			GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-
-			// Update buffer data
-			GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0,
-					in.ibo.length * 2, ibo);
-			GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, 0, in.vbo.length * 4,
+		// Bind buffers
+		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
+		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
+		
+		// Load VBO data
+		if (in.vboRange.needsToBeUpdated()) {
+			final int start = in.vboRange.start;
+			final int length = in.vboRange.end - start;
+			vbo.position(start);
+			vbo.put(in.vbo, start, length);
+			vbo.position(start);
+			GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, start * 4, length * 4,
 					vbo);
-		} else { // TODO: Use the OpenGL Tracer to compare the effects of these strategies
-			// Bind buffers
-			GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
-			GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-			
-			// Load VBO data
-			if (in.vboRange.needsToBeUpdated()) {
-				final int start = in.vboRange.start;
-				final int length = in.vboRange.end - start;
-				vbo.position(start).mark();
-				vbo.put(in.vbo, start, length);
-				vbo.reset();
-				GLES20.glBufferSubData(GLES20.GL_ARRAY_BUFFER, start * 4, length * 4,
-						vbo);
-				in.vboRange.reset();
-			}
-			
-			// Load IBO data
-			if (in.iboRange.needsToBeUpdated()) {
-				final int start = in.iboRange.start;
-				final int length = in.vboRange.end - start;
-				ibo.position(start).mark();
-				ibo.put(in.ibo, start, length);
-				ibo.reset();
-				GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, start * 2,
-						length * 2, ibo);
-				in.iboRange.reset();
-			}
-			
+			in.vboRange.reset();
+		}
+		
+		// Load IBO data
+		if (in.iboRange.needsToBeUpdated()) {
+			final int start = in.iboRange.start;
+			final int length = in.iboRange.end - start;
+			ibo.position(start);
+			ibo.put(in.ibo, start, length);
+			ibo.position(start);
+			GLES20.glBufferSubData(GLES20.GL_ELEMENT_ARRAY_BUFFER, start * 2,
+					length * 2, ibo);
+			in.iboRange.reset();
 		}
 
 		// Render each primitive
