@@ -22,24 +22,22 @@ import java.util.LinkedList;
 import android.opengl.GLES20;
 import android.view.MotionEvent;
 
-import com.supermercerbros.gameengine.engine.GameRenderer;
-
 /**
  * Represents the Heads-Up-Display-style UI of a game.
  */
 public class GameHud {
 	// Constants
 	private static final int DEFAULT_VBO_SIZE = 8000; // 400 verts
-	private static final int DEFAULT_IBO_SIZE = 2400; // 800 verts
+	private static final int DEFAULT_IBO_SIZE = 2400; // 800 faces
 
 	private final int vboSize;
 	private final int iboSize;
 	private final LinkedList<HudElement> elements;
 
-	private volatile boolean initialized = false;
-
 	// Coordinate converter
 	private CoordsConverter converter;
+	
+	private volatile boolean isInUse = false;
 
 	// Buffer handles
 	private int arrayBuffer;
@@ -73,9 +71,9 @@ public class GameHud {
 	 *            The <code>HudElement</code> to add.
 	 */
 	public void addElement(HudElement element) {
-		if (initialized) {
+		if (isInUse) {
 			throw new IllegalStateException(
-					"Cannot addElement to already initialized gameHud");
+					"Cannot addElement to gameHud that is currently in use");
 		}
 		final LinkedList<HudElement> localElements = this.elements;
 		synchronized (localElements) {
@@ -94,7 +92,6 @@ public class GameHud {
 		// Disable depth test and face culling
 		GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 		GLES20.glDisable(GLES20.GL_CULL_FACE); // TODO delete this line
-		GameRenderer.logError("debugging");
 
 		// Render elements
 		final LinkedList<HudElement> localElements = this.elements;
@@ -108,7 +105,9 @@ public class GameHud {
 	/**
 	 * Called by GameRenderer
 	 */
-	public void init() {
+	public void load() {
+		isInUse = true;
+		
 		// Generate buffers
 		final int[] buffers = new int[2];
 		GLES20.glGenBuffers(2, buffers, 0);
@@ -131,9 +130,9 @@ public class GameHud {
 		final LinkedList<HudElement> localElements = this.elements;
 		synchronized (localElements) {
 			for (HudElement element : localElements) {
+				element.loadProgram();
 				element.writeIndicesToBuffer(ibo);
 				element.writeVertsToBuffer(vbo);
-				element.loadProgram();
 			}
 		}
 
@@ -145,7 +144,19 @@ public class GameHud {
 				GLES20.GL_STATIC_DRAW);
 		GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, iboSize, ibo,
 				GLES20.GL_STATIC_DRAW);
-
+	}
+	
+	/**
+	 * Called by GameRenderer
+	 */
+	public void unload() {
+		GLES20.glDeleteBuffers(2, new int[]{arrayBuffer, elementBuffer}, 0);
+		// TODO: check this against documentation
+		
+		arrayBuffer = -1;
+		elementBuffer = -1;
+		
+		isInUse = false;
 	}
 
 	/**

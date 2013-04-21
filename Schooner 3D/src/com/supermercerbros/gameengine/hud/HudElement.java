@@ -30,27 +30,27 @@ import com.supermercerbros.gameengine.util.GLES2;
  */
 public abstract class HudElement {
 	private final Program program;
-	final float bottom;
-	final float right;
-	final float top;
-	final float left;
-
+	protected final float bottom;
+	protected final float right;
+	protected final float top;
+	protected final float left;
+	
 	// Handles
 	private int programHandle;
 	private int a_uv;
 	private int a_pos;
 	private boolean hasUVs;
-
+	
 	private int vboOffset;
 	private int iboOffset;
 	private int indexCount;
-
+	
 	// Protected fields
 	/**
 	 * This HudElement's OpenGL primitive type
 	 */
 	protected int primitiveType = GLES20.GL_TRIANGLE_STRIP;
-
+	
 	/**
 	 * Constructs a new HudElement. Coordinates are given in the range [-1, 1].
 	 * 
@@ -83,12 +83,14 @@ public abstract class HudElement {
 		this.right = right;
 		this.top = top;
 		this.bottom = bottom;
+		
+		this.indexCount = getIndices().length;
 	}
-
+	
 	// ============================
 	// OVERRIDEABLE METHODS
 	// ============================
-
+	
 	/**
 	 * Returns the indices of the element.
 	 * 
@@ -107,7 +109,7 @@ public abstract class HudElement {
 	protected byte[] getIndices() {
 		return new byte[] { 0, 1, 2, 3 };
 	}
-
+	
 	/**
 	 * Returns the vertices of the element. By default, the returned array is
 	 * this:
@@ -116,14 +118,16 @@ public abstract class HudElement {
 	 * { left, top, left, bottom, right, top, right, bottom }
 	 * </pre>
 	 * 
-	 * Subclasses can override this to use custom vertex coordinates.
+	 * Subclasses can override this to use custom vertex coordinates. The arrays
+	 * returned by this method and {@link #getUVs()} should have the same
+	 * length.
 	 * 
 	 * @return The verts of the element.
 	 */
 	protected float[] getVerts() {
 		return new float[] { left, top, left, bottom, right, top, right, bottom };
 	}
-
+	
 	/**
 	 * Returns the texture coordinates of the element. By default, the returned
 	 * array is this:
@@ -132,57 +136,61 @@ public abstract class HudElement {
 	 * { 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f }
 	 * </pre>
 	 * 
-	 * Subclasses can override this to use custom vertex coordinates.
+	 * Subclasses can override this to use custom texture coordinates. The
+	 * arrays returned by this method and {@link #getVerts()} should have the
+	 * same length.
 	 * 
 	 * @return The UV coordinates of the element.
 	 */
 	protected float[] getUVs() {
 		return new float[] { 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f };
 	}
-
+	
 	/**
 	 * Called immediately before the element is drawn. Any custom OpenGL stuff
 	 * should be done here. This method is called while synchronized on this
 	 * object.
 	 */
 	protected abstract void onRender();
-
+	
 	// ============================
 	// OTHER METHODS
 	// ============================
-
+	
 	/** Called by the {@link GameHud}. */
 	synchronized void render() {
 		GLES20.glUseProgram(programHandle);
+		
+		// Attach vertex coordinate attribs
+		final int stride = hasUVs ? 4 : 0;
 		GLES20.glEnableVertexAttribArray(a_pos);
+		GLES2.glVertexAttribPointer(a_pos, 2, GLES20.GL_FLOAT, false, stride,
+				vboOffset);
+		
+		// Attach UV attribs
 		if (hasUVs) {
-			GLES2.glVertexAttribPointer(a_pos, 2, GLES20.GL_FLOAT, false, 4,
-					vboOffset);
 			GLES20.glEnableVertexAttribArray(a_uv);
 			GLES2.glVertexAttribPointer(a_uv, 2, GLES20.GL_FLOAT, false, 4,
 					vboOffset + 2);
-		} else {
-			GLES2.glVertexAttribPointer(a_pos, 2, GLES20.GL_FLOAT, false, 0,
-					vboOffset);
 		}
+		
 		onRender();
 		GLES2.glDrawElements(primitiveType, indexCount,
 				GLES20.GL_UNSIGNED_BYTE, iboOffset);
 	}
-
+	
 	/** Called by the {@link GameHud}. */
 	synchronized void writeIndicesToBuffer(ByteBuffer ibo) {
 		iboOffset = ibo.position();
 		final byte[] indices = getIndices();
 		ibo.put(indices);
-		indexCount = indices.length;
 	}
-
+	
 	/** Called by the {@link GameHud}. */
 	synchronized void writeVertsToBuffer(ByteBuffer vbo) {
 		// Get vboOffset
 		this.vboOffset = vbo.position();
-
+		
 		// Get verts and UVs
 		final float[] verts = getVerts();
 		final int count = verts.length;
@@ -203,24 +211,24 @@ public abstract class HudElement {
 			}
 		}
 	}
-
+	
 	/** Called by the {@link GameHud}. */
 	synchronized void loadProgram() {
 		// Load program
 		this.programHandle = program.load();
-
+		
 		// get attribute locations
 		this.a_pos = program.getAttribLocation("a_pos");
 		this.a_uv = program.getAttribLocation("a_uv");
 		this.hasUVs = (a_uv != -1);
 		onLoadProgram();
 	}
-
+	
 	/**
 	 * Called (while synchronized) after the program has been loaded.
 	 */
 	protected abstract void onLoadProgram();
-
+	
 	/**
 	 * Called when a touch event occurs in this HudElement.
 	 * 
@@ -237,13 +245,14 @@ public abstract class HudElement {
 	
 	/**
 	 * Tests whether the given coordinates are within this HudElement.
+	 * 
 	 * @param x
 	 * @param y
 	 * @return
 	 */
 	protected boolean testCoordinates(float x, float y) {
-		return x > this.left && x < this.right &&
-				y > this.bottom && y < this.top;
+		return x > this.left && x < this.right && y > this.bottom
+				&& y < this.top;
 	}
-
+	
 }

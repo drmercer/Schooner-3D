@@ -77,7 +77,8 @@ public class GameRenderer implements Renderer {
 
 	// HUD stuff
 	private GameHud hud;
-	private boolean hasHud;
+	private boolean hasHud = false;
+	private boolean isHudLoaded = false;
 	
 	private long frameCount = 0;
 	private long lastCalcTime;
@@ -223,8 +224,13 @@ public class GameRenderer implements Renderer {
 		}
 
 		// Render HUD
-		if (hasHud) {
-			hud.render();
+		synchronized (this) {
+			if (hasHud) {
+				if (!isHudLoaded) {
+					hud.load();
+				}
+				hud.render();
+			}
 		}
 		
 		frameCount++;
@@ -280,19 +286,22 @@ public class GameRenderer implements Renderer {
 		elementBuffer = localElementBuffer;
 
 		// Initialize HUD
-		if (hasHud) {
-			hud.init();
+		if (hasHud && !isHudLoaded) {
+			hud.load();
 		}
 	}
 
 	/**
-	 * Sets the GameHud to render over the game. Must be called before the
-	 * renderer is started.
+	 * Sets the GameHud to render over the game.
 	 * 
 	 * @param hud
 	 */
-	public void setHud(GameHud hud) {
+	public synchronized void setHud(GameHud hud) {
+		if (hasHud && isHudLoaded) {
+			this.hud.unload();
+		}
 		this.hud = hud;
 		this.hasHud = hud != null;
+		this.isHudLoaded = false;
 	}
 }
