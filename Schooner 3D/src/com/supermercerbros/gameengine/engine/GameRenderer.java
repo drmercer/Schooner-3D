@@ -28,8 +28,8 @@ import javax.microedition.khronos.opengles.GL10;
 
 import android.opengl.GLES20;
 import android.opengl.GLException;
-import android.opengl.Matrix;
 import android.opengl.GLSurfaceView.Renderer;
+import android.opengl.Matrix;
 import android.util.Log;
 
 import com.supermercerbros.gameengine.Schooner3D;
@@ -38,6 +38,7 @@ import com.supermercerbros.gameengine.engine.shaders.Program;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 import com.supermercerbros.gameengine.hud.GameHud;
 import com.supermercerbros.gameengine.objects.Metadata;
+import com.supermercerbros.gameengine.render.Compositor;
 import com.supermercerbros.gameengine.util.GLES2;
 import com.supermercerbros.gameengine.util.Utils;
 
@@ -79,6 +80,10 @@ public class GameRenderer implements Renderer {
 	private GameHud hud;
 	private boolean hasHud = false;
 	private boolean isHudLoaded = false;
+	
+	private Compositor compositor;
+	private boolean hasCompositor = false;
+	private boolean isCompositorLoaded = false;
 	
 	private long frameCount = 0;
 	private long lastCalcTime;
@@ -122,6 +127,11 @@ public class GameRenderer implements Renderer {
 
 //		vbo.clear();
 //		ibo.clear();
+		
+		// Setup compositor
+		if (hasCompositor && isCompositorLoaded) {
+			compositor.preDraw();
+		}
 		
 		// Bind buffers
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
@@ -177,14 +187,12 @@ public class GameRenderer implements Renderer {
 			}
 			
 			// Load program
-			if (!program.isLoaded()) {
-				try {
-					program.load();
-				} catch (GLException e) {
-					Log.e(TAG, "Program could not be loaded.", e);
-					throw new RuntimeException(e); // TODO: remove after debug?
+			try {
+				program.load();
+			} catch (GLException e) {
+				Log.e(TAG, "Program could not be loaded.", e);
+				throw new RuntimeException(e); // TODO: remove after debug?
 //					continue; // Is there something better to do here?
-				}
 			}
 			GLES20.glUseProgram(program.getHandle());
 			
@@ -222,6 +230,11 @@ public class GameRenderer implements Renderer {
 					bufferLocations[inIndexOffset + 1] * 2);
 			logError("DrawElements");
 		}
+		
+		// Render Compositor
+		if (hasCompositor && isCompositorLoaded) {
+			compositor.postDraw();
+		}
 
 		// Render HUD
 		synchronized (this) {
@@ -233,6 +246,7 @@ public class GameRenderer implements Renderer {
 			}
 		}
 		
+		// FPS calculation
 		frameCount++;
 		if (frameCount >= frameRateCalcAt) {
 			final long currentTime = System.currentTimeMillis();
@@ -249,6 +263,11 @@ public class GameRenderer implements Renderer {
 		GLES20.glViewport(0, 0, width, height);
 		aspect = width / (float) height;
 		projMatrix(projMatrix);
+		
+		if (hasCompositor) {
+			compositor.onSurfaceChanged(width, height);
+			isCompositorLoaded = true;
+		}
 		
 		frameCount = 0;
 		lastCalcTime = System.currentTimeMillis();
@@ -286,8 +305,10 @@ public class GameRenderer implements Renderer {
 		elementBuffer = localElementBuffer;
 
 		// Initialize HUD
-		if (hasHud && !isHudLoaded) {
-			hud.load();
+		synchronized (this) {
+			if (hasHud && !isHudLoaded) {
+				hud.load();
+			}
 		}
 	}
 
@@ -304,4 +325,13 @@ public class GameRenderer implements Renderer {
 		this.hasHud = hud != null;
 		this.isHudLoaded = false;
 	}
+
+	public void setCompositor(Compositor c) {
+		if (compositor != null) {
+			throw new IllegalStateException("A Compositor has already been set");
+		} else {
+			compositor = c;
+		}
+	}
+
 }

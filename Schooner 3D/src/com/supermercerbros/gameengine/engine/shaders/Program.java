@@ -42,6 +42,11 @@ public class Program implements EGLContextLostListener {
 		fragment = fragmentShader;
 		EGLContextLostHandler.addListener(this);
 	}
+	
+	public void use() throws GLException {
+		load();
+		GLES20.glUseProgram(handle);
+	}
 
 	public int load() throws GLException {
 		if (loaded) {
