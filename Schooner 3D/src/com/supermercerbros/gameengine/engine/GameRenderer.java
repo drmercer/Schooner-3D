@@ -29,6 +29,7 @@ import javax.microedition.khronos.opengles.GL10;
 import android.opengl.GLES20;
 import android.opengl.GLException;
 import android.opengl.GLSurfaceView.Renderer;
+import android.opengl.GLU;
 import android.opengl.Matrix;
 import android.util.Log;
 
@@ -44,6 +45,7 @@ import com.supermercerbros.gameengine.util.Utils;
 
 public class GameRenderer implements Renderer {
 	private static final String TAG = GameRenderer.class.getName();
+	private static final boolean CHECK_ERRORS = true;
 
 	/**
 	 * @param location
@@ -52,8 +54,8 @@ public class GameRenderer implements Renderer {
 	 */
 	public static int logError(String location) {
 		final int error = GLES20.glGetError();
-		if (error != GLES20.GL_NO_ERROR) {
-			Log.e("OpenGL", location + ": " + GLES20.glGetString(error));			
+		if (CHECK_ERRORS && error != GLES20.GL_NO_ERROR) {
+			Log.e("OpenGL", location + ": " + GLU.gluErrorString(error) + " (error code 0x" + Integer.toHexString(error) + ")");			
 		}
 		return error;
 	}
@@ -84,7 +86,7 @@ public class GameRenderer implements Renderer {
 	private Compositor compositor;
 	private boolean hasCompositor = false;
 	private boolean isCompositorLoaded = false;
-	
+
 	private long frameCount = 0;
 	private long lastCalcTime;
 	private static final long frameRateCalcAt = 120;
@@ -121,18 +123,16 @@ public class GameRenderer implements Renderer {
 		GLES20.glClearColor(Schooner3D.backgroundColor[0],
 				Schooner3D.backgroundColor[1], Schooner3D.backgroundColor[2],
 				Schooner3D.backgroundColor[3]);
-		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-		final RenderData in = pipe.retrieveData();
-
-//		vbo.clear();
-//		ibo.clear();
-		
 		// Setup compositor
 		if (hasCompositor && isCompositorLoaded) {
 			compositor.preDraw();
+			logError("compositor preDraw");
 		}
+		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 		
+		final RenderData in = pipe.retrieveData();
+
 		// Bind buffers
 		GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
 		GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
@@ -230,10 +230,11 @@ public class GameRenderer implements Renderer {
 					bufferLocations[inIndexOffset + 1] * 2);
 			logError("DrawElements");
 		}
-		
+
 		// Render Compositor
 		if (hasCompositor && isCompositorLoaded) {
 			compositor.postDraw();
+			logError("compositor postDraw");
 		}
 
 		// Render HUD
@@ -245,7 +246,7 @@ public class GameRenderer implements Renderer {
 				hud.render();
 			}
 		}
-		
+
 		// FPS calculation
 		frameCount++;
 		if (frameCount >= frameRateCalcAt) {
@@ -263,12 +264,12 @@ public class GameRenderer implements Renderer {
 		GLES20.glViewport(0, 0, width, height);
 		aspect = width / (float) height;
 		projMatrix(projMatrix);
-		
+
 		if (hasCompositor) {
 			compositor.onSurfaceChanged(width, height);
 			isCompositorLoaded = true;
 		}
-		
+
 		frameCount = 0;
 		lastCalcTime = System.currentTimeMillis();
 	}
@@ -331,6 +332,7 @@ public class GameRenderer implements Renderer {
 			throw new IllegalStateException("A Compositor has already been set");
 		} else {
 			compositor = c;
+			hasCompositor = true;
 		}
 	}
 

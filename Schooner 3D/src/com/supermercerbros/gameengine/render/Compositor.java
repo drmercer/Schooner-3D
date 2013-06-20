@@ -18,13 +18,15 @@ package com.supermercerbros.gameengine.render;
 import static android.opengl.GLES20.*;
 
 import java.io.InputStream;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.Scanner;
 
 import android.opengl.GLES20;
+import android.util.Log;
 
+import com.supermercerbros.gameengine.engine.GameRenderer;
 import com.supermercerbros.gameengine.engine.shaders.Program;
 import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
 
@@ -34,6 +36,9 @@ import com.supermercerbros.gameengine.engine.shaders.ShaderLib;
  * full-screen quad.
  */
 public abstract class Compositor {
+	private static final String TAG = "Compositor";
+
+	public static final String SAMPLER_UNIFORM_NAME = "us_image";
 
 	private int texture = -1;
 	private int renderbuffer = -1;
@@ -90,20 +95,35 @@ public abstract class Compositor {
 
 			glBindBuffer(GL_ARRAY_BUFFER, arrayBuffer);
 
-			byte[] data = { 0, 0, 1, 0, 0, 1, 1, 1 };
-			ByteBuffer buf = ByteBuffer.allocateDirect(8).order(
-					ByteOrder.nativeOrder());
+			float[] data = { 0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f };
+			FloatBuffer buf = ByteBuffer.allocateDirect(32).order(
+					ByteOrder.nativeOrder()).asFloatBuffer();
 			buf.put(data);
-			buf.clear();
+			buf.rewind();
 
-			glBufferData(GL_ARRAY_BUFFER, 8, buf, GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, data.length * 4, buf, GL_STATIC_DRAW);
 		}
-
+		
+		// Init program
 		String vert = getVertexShader();
 		String frag = getFragmentShader();
-		p = ShaderLib.newProgram(vert, frag);
-		p.use();
-		loadUniforms(p);
+		Log.i("Vert shader", vert);
+		Log.i("Frag shader", frag);
+		if (!frag.contains("varying vec2 v_texCoord;")) {
+			Log.e(TAG, "The fragment shader does not contain \"varying vec2 v_texCoord;\"");
+		}
+		if (!frag.contains("uniform sampler2D " + SAMPLER_UNIFORM_NAME + ";")) {
+			Log.e(TAG, "The fragment shader does not contain \"uniform sampler2D " + SAMPLER_UNIFORM_NAME + ";\"");
+		}
+		p = new Program(vert, frag);
+		if (!p.isLoaded()) {
+			glUseProgram(p.load());
+			int samplerLocation = p.getUniformLocation(SAMPLER_UNIFORM_NAME);
+			glActiveTexture(GLES20.GL_TEXTURE0);
+			glBindTexture(GLES20.GL_TEXTURE_2D, texture);
+			glUniform1i(samplerLocation, 0);
+			loadUniforms(p); 
+		}
 	}
 
 	public void preDraw() {
@@ -112,19 +132,28 @@ public abstract class Compositor {
 
 	public void postDraw() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // Bind screen buffer
+		
+		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_BLEND);
 
 		// Bind full-screen quad buffer
 		glBindBuffer(GLES20.GL_ARRAY_BUFFER, arrayBuffer);
 
 		// Use Program
-		p.use();
+		glUseProgram(p.load());
 
 		// Attach a_pos attribute
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_BYTE, false, 2, 0);
+		int a_pos = p.getAttribLocation("a_pos");
+		glEnableVertexAttribArray(a_pos);
+		glVertexAttribPointer(a_pos, 2, GL_FLOAT, false, 8, 0);
 		attachExtraAttribs(p);
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		GameRenderer.logError("Compositor render");
 	}
 
 	/**
@@ -133,8 +162,8 @@ public abstract class Compositor {
 	protected String getVertexShader() {
 		StringBuilder sb = new StringBuilder();
 
-		InputStream in = getClass().getResourceAsStream(
-				"compositor_vert_shader.txt");
+		InputStream in = Compositor.class.getResourceAsStream(
+				"compositor_vertex_shader.txt");
 		Scanner scan = new Scanner(in);
 		while (scan.hasNext()) {
 			sb.append(scan.nextLine());
@@ -152,16 +181,17 @@ public abstract class Compositor {
 
 	/**
 	 * This is called in {@link #postDraw()}, to attach any extra attributes.
+	 * The default implementation does nothing.
 	 */
-	private void attachExtraAttribs(Program p) {
+	protected void attachExtraAttribs(Program p) {
 		// Nothing by default
 	}
 
 	/**
 	 * This is called in {@link #onSurfaceChanged(int, int)}, to load any
-	 * uniforms for the shader.
+	 * uniforms for the shader. The default implementation does nothing.
 	 */
-	private void loadUniforms(Program p) {
+	protected void loadUniforms(Program p) {
 		// Nothing by default
 	}
 }

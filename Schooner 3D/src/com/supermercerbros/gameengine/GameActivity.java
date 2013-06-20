@@ -150,6 +150,13 @@ public abstract class GameActivity extends Activity {
 	protected void setClipDistances(float near, float far) {
 		renderer = new GameRenderer(pipe, near, far);
 	}
+	
+	public GameRenderer getRenderer() {
+		if (renderer == null) {
+			throw new IllegalStateException("getRenderer() must not be called before setClipDistances(...)");
+		}
+		return renderer;
+	}
 
 	@Override
 	public void onPause() {

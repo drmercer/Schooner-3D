@@ -37,15 +37,18 @@ public class Program implements EGLContextLostListener {
 
 	private boolean loaded;
 
-	Program(Shader vertexShader, Shader fragmentShader) {
+	public Program(Shader vertexShader, Shader fragmentShader) {
 		vertex = vertexShader;
 		fragment = fragmentShader;
 		EGLContextLostHandler.addListener(this);
 	}
-	
-	public void use() throws GLException {
-		load();
-		GLES20.glUseProgram(handle);
+
+	/**
+	 * @param vert
+	 * @param frag
+	 */
+	public Program(String vert, String frag) {
+		this(new Shader(vert), new Shader(frag));
 	}
 
 	public int load() throws GLException {

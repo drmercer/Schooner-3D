@@ -128,6 +128,12 @@ public class Utils {
 		return sb.toString();
 	}
 
+	/**
+	 * Reads the contents of the given InputStream. Uses the default charset.
+	 * NOTE: This method does not close the InputStream.
+	 * @param is
+	 * @return
+	 */
 	public static String readInputStreamAsString(InputStream is) {
 		StringBuilder sb = new StringBuilder();
 		Scanner reader = new Scanner(is);
