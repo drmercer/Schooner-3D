@@ -5,17 +5,7 @@ Schooner 3D is an open-source game engine for the Android platform. It is licens
 
 Things left to do:
 -----------------
-(See [the Schooner 3D issues list][issues])
-
-*  Debug skeletal animation
-*  Add compositors
-*  Add Scenes
-
-Things to do after first stable release:
----------------------------------------
-
-*  Patch GLES20 with NDK (maybe - Do I really need to support FroYo?)
-*  Collision response (Physics)
+See [the Schooner 3D issues list][issues]
 
 [new issue]: https://github.com/drmercer/Schooner-3D/issues/new "New Issue"
 [issues]: https://github.com/drmercer/Schooner-3D/issues
